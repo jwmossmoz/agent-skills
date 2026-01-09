@@ -1,0 +1,1368 @@
+#!/usr/bin/env python3
+"""
+Extract, create, and modify JIRA stories from Mozilla JIRA (Atlassian Cloud).
+
+Uses 1Password CLI to retrieve the API token securely.
+Fetches stories and saves them to JSON, creates new stories, or modifies existing stories.
+
+Usage:
+    # Extract stories
+    uv run extract_jira.py                              # Default: RELOPS project
+    uv run extract_jira.py --project FOO                # Specific project
+    uv run extract_jira.py --epics                      # List all epics
+    uv run extract_jira.py --epic-key RELOPS-123        # Stories in an epic
+    uv run extract_jira.py --status "In Progress"       # Filter by status
+    uv run extract_jira.py --assignee "John Doe"        # Filter by assignee
+    uv run extract_jira.py --created-after 2025-01-01   # Filter by date
+    uv run extract_jira.py --jql "custom query"         # Custom JQL
+    uv run extract_jira.py --list-projects              # List available projects
+    uv run extract_jira.py --my-issues                  # Your issues only
+
+    # Create stories
+    uv run extract_jira.py --create --create-summary "Story title"
+    uv run extract_jira.py --create --create-summary "Story title" --description "Details here"
+    uv run extract_jira.py --create --create-summary "Story title" --epic-create RELOPS-2028
+    uv run extract_jira.py --create --create-summary "Story title" --assignee-create me --priority-create Medium
+    uv run extract_jira.py --create --create-summary "Story title" --sprint-create "Sprint 2026.01"
+
+    # Modify stories
+    uv run extract_jira.py --modify RELOPS-123 --set-status "Backlog"
+    uv run extract_jira.py --modify RELOPS-123 --remove-sprint
+    uv run extract_jira.py --modify RELOPS-123 --set-epic RELOPS-456
+    uv run extract_jira.py --modify RELOPS-123 --remove-epic
+    uv run extract_jira.py --modify RELOPS-123,RELOPS-124 --set-status "Backlog" --remove-sprint
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+import tomllib
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
+
+
+def load_config() -> dict[str, Any]:
+    """Load configuration from config.toml if it exists, otherwise use defaults."""
+    config_path = Path(__file__).parent / "config.toml"
+
+    if config_path.exists():
+        with open(config_path, "rb") as f:
+            return tomllib.load(f)
+
+    # Return defaults if no config file
+    return {
+        "jira": {
+            "base_url": "https://mozilla-hub.atlassian.net",
+            "default_project": "RELOPS",
+        },
+        "onepassword": {
+            "item_name": "JiraMozillaToken",
+            "vault": "Private",
+            "credential_field": "credential",
+            "username_field": "username",
+        },
+        "output": {
+            "output_dir": str(Path.home() / "moz_artifacts"),
+        },
+    }
+
+
+# Load configuration
+CONFIG = load_config()
+
+JIRA_BASE_URL = CONFIG["jira"]["base_url"]
+JIRA_API_URL = f"{JIRA_BASE_URL}/rest/api/3"
+OP_ITEM_NAME = CONFIG["onepassword"]["item_name"]
+OP_VAULT = CONFIG["onepassword"]["vault"]
+OP_CREDENTIAL_FIELD = CONFIG["onepassword"].get("credential_field", "credential")
+OP_USERNAME_FIELD = CONFIG["onepassword"].get("username_field", "username")
+DEFAULT_PROJECT = CONFIG["jira"]["default_project"]
+DEFAULT_OUTPUT_DIR = Path(CONFIG["output"]["output_dir"]).expanduser()
+
+# Essential fields to extract
+ESSENTIAL_FIELDS = [
+    "key",
+    "summary",
+    "status",
+    "assignee",
+    "reporter",
+    "created",
+    "updated",
+    "resolved",
+    "resolutiondate",
+    "description",
+    "issuetype",
+    "priority",
+    "project",
+    "labels",
+    "fixVersions",
+    "components",
+    "parent",  # For epic link
+    "customfield_10014",  # Epic Link (common custom field)
+    "customfield_10020",  # Sprint field (common in Jira Cloud)
+]
+
+
+def get_token_from_1password() -> str:
+    """Retrieve JIRA API token from 1Password CLI."""
+    try:
+        result = subprocess.run(
+            [
+                "op",
+                "item",
+                "get",
+                OP_ITEM_NAME,
+                "--vault",
+                OP_VAULT,
+                "--fields",
+                OP_CREDENTIAL_FIELD,
+                "--reveal",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        token = result.stdout.strip()
+        if not token:
+            print("Error: Empty token retrieved from 1Password", file=sys.stderr)
+            sys.exit(1)
+        return token
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving token from 1Password: {e.stderr}", file=sys.stderr)
+        print("Make sure you're signed in to 1Password CLI: op signin", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print(
+            "Error: 1Password CLI (op) not found. Please install it.", file=sys.stderr
+        )
+        sys.exit(1)
+
+
+def get_email_from_1password() -> str | None:
+    """Try to retrieve email from 1Password item."""
+    try:
+        result = subprocess.run(
+            [
+                "op",
+                "item",
+                "get",
+                OP_ITEM_NAME,
+                "--vault",
+                OP_VAULT,
+                "--fields",
+                OP_USERNAME_FIELD,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def get_board_id_for_project(email: str, token: str, project_key: str) -> int | None:
+    """Get the board ID for a project (needed for sprint operations). Finds a board that supports sprints."""
+    auth = (email, token)
+    headers = {"Accept": "application/json"}
+
+    # Use the Agile API to find boards for the project
+    response = requests.get(
+        f"{JIRA_BASE_URL}/rest/agile/1.0/board",
+        auth=auth,
+        headers=headers,
+        params={"projectKeyOrId": project_key},
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+    boards = data.get("values", [])
+
+    # Try to find a board that supports sprints (Scrum board)
+    for board in boards:
+        board_id = board.get("id")
+        if board_id:
+            # Check if this board supports sprints by trying to get its sprints
+            test_response = requests.get(
+                f"{JIRA_BASE_URL}/rest/agile/1.0/board/{board_id}/sprint",
+                auth=auth,
+                headers=headers,
+                params={"maxResults": 1},
+                timeout=30,
+            )
+            if test_response.status_code == 200:
+                # This board supports sprints!
+                return board_id
+
+    # Fallback: return first board if none support sprints
+    if boards:
+        return boards[0].get("id")
+    return None
+
+
+def get_sprint_id_by_name(
+    email: str, token: str, board_id: int, sprint_name: str
+) -> int | None:
+    """Get sprint ID by name."""
+    auth = (email, token)
+    headers = {"Accept": "application/json"}
+
+    # Try all sprint states (active, future, closed)
+    response = requests.get(
+        f"{JIRA_BASE_URL}/rest/agile/1.0/board/{board_id}/sprint",
+        auth=auth,
+        headers=headers,
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        return None
+
+    data = response.json()
+    for sprint in data.get("values", []):
+        if sprint.get("name") == sprint_name:
+            return sprint.get("id")
+    return None
+
+
+def get_current_user_account_id(email: str, token: str) -> str | None:
+    """Get the account ID for the current user."""
+    auth = (email, token)
+    headers = {"Accept": "application/json"}
+
+    response = requests.get(
+        f"{JIRA_API_URL}/myself",
+        auth=auth,
+        headers=headers,
+        timeout=30,
+    )
+
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("accountId")
+    return None
+
+
+def create_issue(
+    email: str,
+    token: str,
+    project_key: str,
+    summary: str,
+    description: str | None = None,
+    issue_type: str = "Story",
+    priority: str | None = None,
+    assignee: str | None = None,
+    epic_key: str | None = None,
+    sprint_name: str | None = None,
+    labels: list[str] | None = None,
+    fix_versions: list[str] | None = None,
+) -> tuple[bool, str, str | None]:
+    """
+    Create a new JIRA issue.
+
+    Returns (success, message, issue_key) tuple.
+    """
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    # Build the fields payload
+    fields: dict[str, Any] = {
+        "project": {"key": project_key},
+        "summary": summary,
+        "issuetype": {"name": issue_type},
+    }
+
+    # Add description if provided
+    if description:
+        # Convert to ADF (Atlassian Document Format)
+        fields["description"] = {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": description}],
+                }
+            ],
+        }
+
+    # Add priority if provided
+    if priority:
+        fields["priority"] = {"name": priority}
+
+    # Add assignee if provided
+    if assignee:
+        if assignee.lower() in ("me", "currentuser", "current"):
+            # Get the current user's account ID
+            account_id = get_current_user_account_id(email, token)
+            if account_id:
+                fields["assignee"] = {"accountId": account_id}
+            else:
+                return False, "Failed to get current user account ID", None
+        else:
+            # Assume it's an email or account ID
+            fields["assignee"] = {"id": assignee}
+
+    # Add epic link if provided
+    if epic_key:
+        fields["parent"] = {"key": epic_key}
+
+    # Add labels if provided
+    if labels:
+        fields["labels"] = labels
+
+    # Add fix versions if provided
+    if fix_versions:
+        fields["fixVersions"] = [{"name": version} for version in fix_versions]
+
+    # Create the issue
+    payload = {"fields": fields}
+
+    response = requests.post(
+        f"{JIRA_API_URL}/issue",
+        auth=auth,
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 201):
+        error_msg = response.text
+        try:
+            error_data = response.json()
+            if "errors" in error_data:
+                error_msg = str(error_data["errors"])
+            elif "errorMessages" in error_data:
+                error_msg = ", ".join(error_data["errorMessages"])
+        except (ValueError, KeyError):
+            pass
+        return False, f"Failed to create issue: {error_msg}", None
+
+    # Get the created issue key
+    created_data = response.json()
+    issue_key = created_data.get("key")
+    issue_url = f"{JIRA_BASE_URL}/browse/{issue_key}"
+
+    messages = [f"Created {issue_key}: {issue_url}"]
+
+    # If sprint is specified, add to sprint (requires a separate API call)
+    if sprint_name and issue_key:
+        board_id = get_board_id_for_project(email, token, project_key)
+        if board_id:
+            sprint_id = get_sprint_id_by_name(email, token, board_id, sprint_name)
+            if sprint_id:
+                # Use the modify_issue function to set the sprint
+                success, msg = modify_issue(
+                    email, token, issue_key, set_sprint=sprint_name
+                )
+                if success:
+                    messages.append(f"Added to sprint '{sprint_name}'")
+                else:
+                    messages.append(f"Warning: {msg}")
+            else:
+                messages.append(f"Warning: Sprint '{sprint_name}' not found")
+        else:
+            messages.append(
+                f"Warning: Could not find board for project {project_key}"
+            )
+
+    return True, "; ".join(messages), issue_key
+
+
+def modify_issue(
+    email: str,
+    token: str,
+    issue_key: str,
+    set_status: str | None = None,
+    remove_sprint: bool = False,
+    set_sprint: str | None = None,
+    set_epic: str | None = None,
+    remove_epic: bool = False,
+    set_fix_versions: list[str] | None = None,
+) -> tuple[bool, str]:
+    """
+    Modify a JIRA issue.
+
+    Returns (success, message) tuple.
+    """
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    messages = []
+
+    # Handle status change via transitions
+    if set_status:
+        success, msg = transition_issue(email, token, issue_key, set_status)
+        messages.append(msg)
+        if not success:
+            return False, msg
+
+    # Build the update payload for other fields
+    update_payload: dict = {"fields": {}}
+
+    # Handle sprint changes
+    if remove_sprint:
+        # Set sprint field to null to remove from sprint
+        update_payload["fields"]["customfield_10020"] = None
+        messages.append("Removed from sprint")
+    elif set_sprint:
+        # Need to get sprint ID first
+        # Extract project key from issue key
+        project_key = issue_key.split("-")[0]
+        board_id = get_board_id_for_project(email, token, project_key)
+        if board_id:
+            sprint_id = get_sprint_id_by_name(email, token, board_id, set_sprint)
+            if sprint_id:
+                update_payload["fields"]["customfield_10020"] = sprint_id
+                messages.append(f"Set sprint to '{set_sprint}'")
+            else:
+                return False, f"Sprint '{set_sprint}' not found"
+        else:
+            return False, f"Could not find board for project {project_key}"
+
+    # Handle epic changes
+    if remove_epic:
+        # Try both parent (next-gen) and customfield_10014 (classic)
+        update_payload["fields"]["parent"] = None
+        messages.append("Removed from epic")
+    elif set_epic:
+        # Set epic link - try parent field for next-gen projects
+        update_payload["fields"]["parent"] = {"key": set_epic}
+        messages.append(f"Set epic to {set_epic}")
+
+    # Handle fix versions
+    if set_fix_versions:
+        update_payload["fields"]["fixVersions"] = [
+            {"name": version} for version in set_fix_versions
+        ]
+        messages.append(f"Set fix versions to {', '.join(set_fix_versions)}")
+
+    # Only make the PUT request if we have field changes
+    if update_payload["fields"]:
+        response = requests.put(
+            f"{JIRA_API_URL}/issue/{issue_key}",
+            auth=auth,
+            headers=headers,
+            json=update_payload,
+            timeout=30,
+        )
+
+        if response.status_code not in (200, 204):
+            error_msg = response.text
+            try:
+                error_data = response.json()
+                if "errors" in error_data:
+                    error_msg = str(error_data["errors"])
+                elif "errorMessages" in error_data:
+                    error_msg = ", ".join(error_data["errorMessages"])
+            except (ValueError, KeyError):
+                pass
+            return False, f"Failed to update {issue_key}: {error_msg}"
+
+    return True, "; ".join(messages) if messages else "No changes made"
+
+
+def transition_issue(
+    email: str, token: str, issue_key: str, target_status: str
+) -> tuple[bool, str]:
+    """
+    Transition an issue to a new status.
+
+    Returns (success, message) tuple.
+    """
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    # First, get available transitions
+    response = requests.get(
+        f"{JIRA_API_URL}/issue/{issue_key}/transitions",
+        auth=auth,
+        headers=headers,
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        return False, f"Failed to get transitions for {issue_key}"
+
+    transitions = response.json().get("transitions", [])
+
+    # Find the transition that leads to our target status
+    target_transition = None
+    available_statuses = []
+    for t in transitions:
+        status_name = t.get("to", {}).get("name", "")
+        available_statuses.append(status_name)
+        if status_name.lower() == target_status.lower():
+            target_transition = t
+            break
+
+    if not target_transition:
+        return (
+            False,
+            f"Cannot transition to '{target_status}'. Available: {', '.join(available_statuses)}",
+        )
+
+    # Perform the transition
+    response = requests.post(
+        f"{JIRA_API_URL}/issue/{issue_key}/transitions",
+        auth=auth,
+        headers=headers,
+        json={"transition": {"id": target_transition["id"]}},
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 204):
+        return False, f"Failed to transition {issue_key} to {target_status}"
+
+    return True, f"Status changed to '{target_status}'"
+
+
+def list_projects(email: str, token: str) -> None:
+    """List all accessible JIRA projects."""
+    auth = (email, token)
+    headers = {"Accept": "application/json"}
+
+    response = requests.get(
+        f"{JIRA_API_URL}/project",
+        auth=auth,
+        headers=headers,
+        timeout=30,
+    )
+
+    if response.status_code != 200:
+        print(
+            f"Error: Failed to fetch projects (status {response.status_code})",
+            file=sys.stderr,
+        )
+        print(response.text, file=sys.stderr)
+        sys.exit(1)
+
+    projects = response.json()
+    if isinstance(projects, dict):
+        projects = projects.get("values", [])
+
+    print(f"\nAvailable projects ({len(projects)}):\n")
+    print(f"{'KEY':<15} {'NAME'}")
+    print("-" * 60)
+    for project in sorted(projects, key=lambda p: p.get("key", "")):
+        key = project.get("key", "")
+        name = project.get("name", "")
+        print(f"{key:<15} {name}")
+
+
+def build_jql_query(args) -> str:
+    """Build JQL query from command line arguments."""
+    conditions = []
+
+    # Custom JQL takes precedence
+    if args.jql:
+        return args.jql
+
+    # Project filter
+    project = args.project or DEFAULT_PROJECT
+    conditions.append(f"project = {project}")
+
+    # Epic-related filters
+    if args.epics:
+        conditions.append("issuetype = Epic")
+    elif args.epic_key:
+        # Stories belonging to a specific epic
+        conditions.append(f"'Epic Link' = {args.epic_key} OR parent = {args.epic_key}")
+
+    # Issue type filter
+    if args.issue_type:
+        conditions.append(f"issuetype = '{args.issue_type}'")
+
+    # Status filter
+    if args.status:
+        conditions.append(f"status = '{args.status}'")
+
+    # Assignee filter
+    if args.my_issues:
+        conditions.append(
+            "(assignee = currentUser() OR reporter = currentUser() OR watcher = currentUser())"
+        )
+    elif args.assignee:
+        conditions.append(f"assignee = '{args.assignee}'")
+
+    # Reporter filter
+    if args.reporter:
+        conditions.append(f"reporter = '{args.reporter}'")
+
+    # Date filters
+    if args.created_after:
+        conditions.append(f"created >= '{args.created_after}'")
+    if args.created_before:
+        conditions.append(f"created <= '{args.created_before}'")
+    if args.updated_after:
+        conditions.append(f"updated >= '{args.updated_after}'")
+    if args.updated_before:
+        conditions.append(f"updated <= '{args.updated_before}'")
+
+    # Resolution filter
+    if args.resolved:
+        conditions.append("resolution is not EMPTY")
+    if args.unresolved:
+        conditions.append("resolution is EMPTY")
+
+    # Label filter
+    if args.label:
+        conditions.append(f"labels = '{args.label}'")
+
+    # Component filter
+    if args.component:
+        conditions.append(f"component = '{args.component}'")
+
+    # Text search
+    if args.search:
+        conditions.append(f"text ~ '{args.search}'")
+
+    # Sprint filters
+    if args.current_sprint:
+        conditions.append("Sprint in openSprints()")
+    elif args.sprint:
+        conditions.append(f"Sprint = '{args.sprint}'")
+
+    # Build the final query
+    jql = " AND ".join(conditions)
+
+    # Add ordering
+    order_by = args.order_by or "created DESC"
+    jql += f" ORDER BY {order_by}"
+
+    return jql
+
+
+def fetch_all_stories(email: str, token: str, jql: str) -> list[dict]:
+    """Fetch JIRA stories with pagination."""
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    all_issues = []
+    max_results = 100  # JIRA API max per request
+    next_page_token = None
+
+    print(f"Fetching stories from {JIRA_BASE_URL}...")
+    print(f"JQL: {jql}\n")
+
+    while True:
+        # New API uses POST with JSON body and nextPageToken for pagination
+        payload = {
+            "jql": jql,
+            "maxResults": max_results,
+            "fields": ESSENTIAL_FIELDS,
+        }
+
+        # Add pagination token if we have one
+        if next_page_token:
+            payload["nextPageToken"] = next_page_token
+
+        response = requests.post(
+            f"{JIRA_API_URL}/search/jql",
+            auth=auth,
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+
+        if response.status_code == 401:
+            print(
+                "Error: Authentication failed. Check your email and API token.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        elif response.status_code == 403:
+            print("Error: Access forbidden. Check your permissions.", file=sys.stderr)
+            sys.exit(1)
+        elif response.status_code == 400:
+            print(f"Error: Bad request - check your JQL syntax", file=sys.stderr)
+            print(response.text, file=sys.stderr)
+            sys.exit(1)
+        elif response.status_code != 200:
+            print(
+                f"Error: API request failed with status {response.status_code}",
+                file=sys.stderr,
+            )
+            print(response.text, file=sys.stderr)
+            sys.exit(1)
+
+        data = response.json()
+        issues = data.get("issues", [])
+        total = data.get("total", 0)
+
+        all_issues.extend(issues)
+
+        fetched = len(all_issues)
+        if total > 0:
+            print(f"  Fetched {fetched}/{total} stories...")
+        else:
+            print(f"  Fetched {fetched} stories...")
+
+        # Check if this is the last page
+        if data.get("isLast", True):
+            break
+
+        # Get next page token
+        next_page_token = data.get("nextPageToken")
+        if not next_page_token:
+            break
+
+    print(f"Total stories fetched: {len(all_issues)}")
+    return all_issues
+
+
+def extract_essential_data(issues: list[dict]) -> list[dict]:
+    """Extract essential fields from raw JIRA issues."""
+    extracted = []
+
+    for issue in issues:
+        fields = issue.get("fields", {})
+
+        # Extract epic information
+        epic_key = None
+        epic_name = None
+
+        # Check parent field (for next-gen projects)
+        parent = fields.get("parent")
+        if parent:
+            parent_type = get_nested(parent, "fields", "issuetype", "name")
+            if parent_type == "Epic":
+                epic_key = parent.get("key")
+                epic_name = get_nested(parent, "fields", "summary")
+
+        # Check customfield_10014 (Epic Link for classic projects)
+        if not epic_key:
+            epic_link = fields.get("customfield_10014")
+            if epic_link:
+                epic_key = epic_link
+
+        # Extract sprint information
+        sprint_names = []
+        sprint_data = fields.get("customfield_10020")
+        if sprint_data:
+            if isinstance(sprint_data, list):
+                # Sprint data is typically a list of sprint objects or strings
+                for sprint in sprint_data:
+                    if isinstance(sprint, dict):
+                        sprint_names.append(sprint.get("name", ""))
+                    elif isinstance(sprint, str):
+                        # Sometimes it's a string representation
+                        import re
+
+                        match = re.search(r"name=([^,\]]+)", sprint)
+                        if match:
+                            sprint_names.append(match.group(1))
+
+        # Extract nested values safely
+        story = {
+            "key": issue.get("key"),
+            "url": f"{JIRA_BASE_URL}/browse/{issue.get('key')}",
+            "summary": fields.get("summary"),
+            "description": extract_description(fields.get("description")),
+            "status": get_nested(fields, "status", "name"),
+            "issue_type": get_nested(fields, "issuetype", "name"),
+            "priority": get_nested(fields, "priority", "name"),
+            "project_key": get_nested(fields, "project", "key"),
+            "project_name": get_nested(fields, "project", "name"),
+            "assignee": get_nested(fields, "assignee", "displayName"),
+            "assignee_email": get_nested(fields, "assignee", "emailAddress"),
+            "reporter": get_nested(fields, "reporter", "displayName"),
+            "reporter_email": get_nested(fields, "reporter", "emailAddress"),
+            "epic_key": epic_key,
+            "epic_name": epic_name,
+            "sprints": sprint_names,
+            "created": fields.get("created"),
+            "updated": fields.get("updated"),
+            "resolved": fields.get("resolutiondate"),
+            "labels": fields.get("labels", []),
+            "components": [c.get("name") for c in fields.get("components", [])],
+            "fix_versions": [v.get("name") for v in fields.get("fixVersions", [])],
+        }
+
+        extracted.append(story)
+
+    return extracted
+
+
+def get_nested(data: dict[str, Any], *keys: str) -> Any:
+    """Safely get nested dictionary values."""
+    current: Any = data
+    for key in keys:
+        if current is None:
+            return None
+        current = current.get(key) if isinstance(current, dict) else None
+    return current
+
+
+def extract_description(description: dict | None) -> str | None:
+    """Extract plain text from Atlassian Document Format (ADF)."""
+    if description is None:
+        return None
+
+    if isinstance(description, str):
+        return description
+
+    # Handle ADF format
+    def extract_text(node: dict) -> str:
+        if node.get("type") == "text":
+            return node.get("text", "")
+
+        content = node.get("content", [])
+        return "".join(extract_text(child) for child in content)
+
+    try:
+        return extract_text(description).strip() or None
+    except (TypeError, AttributeError):
+        return None
+
+
+def save_to_json(data: list[dict], output_path: Path, jql: str) -> None:
+    """Save extracted data to JSON file."""
+    output = {
+        "extracted_at": datetime.now().isoformat(),
+        "source": JIRA_BASE_URL,
+        "jql_query": jql,
+        "total_stories": len(data),
+        "stories": data,
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
+
+    print(f"Saved {len(data)} stories to {output_path}")
+
+
+def print_summary(stories: list[dict]) -> None:
+    """Print a summary of extracted stories."""
+    if not stories:
+        return
+
+    # Count by status
+    status_counts = {}
+    type_counts = {}
+    assignee_counts = {}
+
+    for story in stories:
+        status = story.get("status") or "Unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+        issue_type = story.get("issue_type") or "Unknown"
+        type_counts[issue_type] = type_counts.get(issue_type, 0) + 1
+
+        assignee = story.get("assignee") or "Unassigned"
+        assignee_counts[assignee] = assignee_counts.get(assignee, 0) + 1
+
+    print("\n" + "=" * 50)
+    print("SUMMARY")
+    print("=" * 50)
+
+    print("\nBy Status:")
+    for status, count in sorted(status_counts.items(), key=lambda x: -x[1]):
+        print(f"  {status}: {count}")
+
+    print("\nBy Type:")
+    for issue_type, count in sorted(type_counts.items(), key=lambda x: -x[1]):
+        print(f"  {issue_type}: {count}")
+
+    print("\nTop Assignees:")
+    for assignee, count in sorted(assignee_counts.items(), key=lambda x: -x[1])[:10]:
+        print(f"  {assignee}: {count}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Extract JIRA stories from Mozilla JIRA",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                                    # All RELOPS stories
+  %(prog)s --epics                            # All RELOPS epics
+  %(prog)s --epic-key RELOPS-123              # Stories in epic RELOPS-123
+  %(prog)s --status "In Progress"             # In Progress stories
+  %(prog)s --my-issues                        # Your assigned/reported stories
+  %(prog)s --current-sprint                   # Stories in current active sprint
+  %(prog)s --current-sprint --assignee currentUser()  # Your sprint stories
+  %(prog)s --created-after 2025-01-01         # Stories created in 2025
+  %(prog)s --assignee "John Doe" --resolved   # John's resolved stories
+        """,
+    )
+
+    # Output options
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default="jira_stories.json",
+        help="Output JSON filename (default: jira_stories.json)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        "-d",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"Output directory for JSON files (default: {DEFAULT_OUTPUT_DIR})",
+    )
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print summary statistics after extraction",
+    )
+
+    # Authentication
+    parser.add_argument(
+        "--email",
+        "-e",
+        type=str,
+        help="Your JIRA email address (tries 1Password if not provided)",
+    )
+
+    # Project and issue filters
+    parser.add_argument(
+        "--project",
+        "-p",
+        type=str,
+        help=f"JIRA project key (default: {DEFAULT_PROJECT})",
+    )
+    parser.add_argument(
+        "--list-projects",
+        action="store_true",
+        help="List all accessible projects and exit",
+    )
+
+    # Epic filters
+    parser.add_argument(
+        "--epics",
+        action="store_true",
+        help="Only fetch Epic issue types",
+    )
+    parser.add_argument(
+        "--epic-key",
+        type=str,
+        help="Fetch stories belonging to a specific epic",
+    )
+
+    # Issue type and status
+    parser.add_argument(
+        "--issue-type",
+        "-t",
+        type=str,
+        help="Filter by issue type (Story, Task, Bug, Epic, etc.)",
+    )
+    parser.add_argument(
+        "--status",
+        "-s",
+        type=str,
+        help="Filter by status (e.g., 'In Progress', 'Done', 'Backlog')",
+    )
+
+    # People filters
+    parser.add_argument(
+        "--my-issues",
+        action="store_true",
+        help="Only fetch issues where you are assignee, reporter, or watcher",
+    )
+    parser.add_argument(
+        "--assignee",
+        "-a",
+        type=str,
+        help="Filter by assignee display name",
+    )
+    parser.add_argument(
+        "--reporter",
+        type=str,
+        help="Filter by reporter display name",
+    )
+
+    # Date filters
+    parser.add_argument(
+        "--created-after",
+        type=str,
+        help="Filter by created date (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--created-before",
+        type=str,
+        help="Filter by created date (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--updated-after",
+        type=str,
+        help="Filter by updated date (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--updated-before",
+        type=str,
+        help="Filter by updated date (YYYY-MM-DD)",
+    )
+
+    # Resolution filters
+    parser.add_argument(
+        "--resolved",
+        action="store_true",
+        help="Only resolved issues",
+    )
+    parser.add_argument(
+        "--unresolved",
+        action="store_true",
+        help="Only unresolved issues",
+    )
+
+    # Other filters
+    parser.add_argument(
+        "--label",
+        type=str,
+        help="Filter by label",
+    )
+    parser.add_argument(
+        "--component",
+        type=str,
+        help="Filter by component",
+    )
+    parser.add_argument(
+        "--search",
+        type=str,
+        help="Full-text search in summary and description",
+    )
+
+    # Sprint filters
+    parser.add_argument(
+        "--current-sprint",
+        action="store_true",
+        help="Only issues in the current active sprint",
+    )
+    parser.add_argument(
+        "--sprint",
+        type=str,
+        help="Filter by specific sprint name",
+    )
+
+    # Ordering
+    parser.add_argument(
+        "--order-by",
+        type=str,
+        help="Order by field (default: 'created DESC')",
+    )
+
+    # Custom JQL (overrides all other filters)
+    parser.add_argument(
+        "--jql",
+        "-q",
+        type=str,
+        help="Custom JQL query (overrides all other filters)",
+    )
+
+    # Create operations
+    create_group = parser.add_argument_group(
+        "create options", "Options for creating new issues"
+    )
+    create_group.add_argument(
+        "--create",
+        "-c",
+        action="store_true",
+        help="Create a new issue",
+    )
+    create_group.add_argument(
+        "--create-summary",
+        type=str,
+        help="Summary/title for the new issue (required with --create)",
+    )
+    create_group.add_argument(
+        "--description",
+        type=str,
+        help="Description for the new issue",
+    )
+    create_group.add_argument(
+        "--issue-type-create",
+        type=str,
+        default="Story",
+        help="Issue type for new issue (default: Story)",
+    )
+    create_group.add_argument(
+        "--priority-create",
+        type=str,
+        help="Priority for new issue (e.g., 'High', 'Medium', 'Low')",
+    )
+    create_group.add_argument(
+        "--assignee-create",
+        type=str,
+        help="Assignee for new issue (email, 'me', or account ID)",
+    )
+    create_group.add_argument(
+        "--epic-create",
+        type=str,
+        help="Epic key to link new issue to (e.g., RELOPS-2028)",
+    )
+    create_group.add_argument(
+        "--sprint-create",
+        type=str,
+        help="Sprint name to add new issue to",
+    )
+    create_group.add_argument(
+        "--labels-create",
+        type=str,
+        help="Comma-separated labels for new issue",
+    )
+    create_group.add_argument(
+        "--fix-versions-create",
+        type=str,
+        help="Comma-separated fix versions for new issue (e.g., '2026 Q1')",
+    )
+    create_group.add_argument(
+        "--project-create",
+        type=str,
+        help=f"Project key for new issue (default: {DEFAULT_PROJECT})",
+    )
+
+    # Modify operations
+    modify_group = parser.add_argument_group(
+        "modify options", "Options for modifying issues"
+    )
+    modify_group.add_argument(
+        "--modify",
+        "-m",
+        type=str,
+        help="Issue key(s) to modify (comma-separated, e.g., RELOPS-123 or RELOPS-123,RELOPS-124)",
+    )
+    modify_group.add_argument(
+        "--set-status",
+        type=str,
+        help="Set the status (e.g., 'Backlog', 'In Progress', 'Done')",
+    )
+    modify_group.add_argument(
+        "--remove-sprint",
+        action="store_true",
+        help="Remove issue(s) from their current sprint",
+    )
+    modify_group.add_argument(
+        "--set-sprint",
+        type=str,
+        help="Move issue(s) to a specific sprint by name",
+    )
+    modify_group.add_argument(
+        "--set-epic",
+        type=str,
+        help="Set the epic link (e.g., RELOPS-456)",
+    )
+    modify_group.add_argument(
+        "--remove-epic",
+        action="store_true",
+        help="Remove issue(s) from their current epic",
+    )
+    modify_group.add_argument(
+        "--set-fix-versions",
+        type=str,
+        help="Set fix versions (comma-separated, e.g., '2026 Q1')",
+    )
+    modify_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be changed without making changes",
+    )
+
+    args = parser.parse_args()
+
+    print("Retrieving API token from 1Password...")
+    token = get_token_from_1password()
+
+    # Get email from args or 1Password
+    email: str | None = args.email
+    if not email:
+        email = get_email_from_1password()
+    if not email:
+        print(
+            "Error: Email not provided and not found in 1Password item.",
+            file=sys.stderr,
+        )
+        print("Please provide your email with --email YOUR_EMAIL", file=sys.stderr)
+        sys.exit(1)
+
+    # Type narrowing: email is guaranteed to be str after the check above
+    assert email is not None
+    print(f"Using email: {email}")
+
+    # List projects mode
+    if args.list_projects:
+        list_projects(email, token)
+        return
+
+    # Create mode
+    if args.create:
+        # Validate required fields
+        if not args.create_summary:
+            print(
+                "Error: --create requires --create-summary to be provided",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Get project key
+        project_key = args.project_create or DEFAULT_PROJECT
+
+        # Parse labels if provided
+        labels = None
+        if args.labels_create:
+            labels = [label.strip() for label in args.labels_create.split(",")]
+
+        # Parse fix versions if provided
+        fix_versions = None
+        if args.fix_versions_create:
+            fix_versions = [
+                version.strip() for version in args.fix_versions_create.split(",")
+            ]
+
+        print(f"\nCreating new issue in project {project_key}...")
+        if args.dry_run:
+            print("(DRY RUN - no changes will be made)\n")
+            print(f"  Project: {project_key}")
+            print(f"  Type: {args.issue_type_create}")
+            print(f"  Summary: {args.create_summary}")
+            if args.description:
+                print(f"  Description: {args.description[:100]}...")
+            if args.priority_create:
+                print(f"  Priority: {args.priority_create}")
+            if args.assignee_create:
+                print(f"  Assignee: {args.assignee_create}")
+            if args.epic_create:
+                print(f"  Epic: {args.epic_create}")
+            if args.sprint_create:
+                print(f"  Sprint: {args.sprint_create}")
+            if labels:
+                print(f"  Labels: {', '.join(labels)}")
+            if fix_versions:
+                print(f"  Fix Versions: {', '.join(fix_versions)}")
+            print("\nWould create this issue (dry run)")
+        else:
+            success, message, issue_key = create_issue(
+                email=email,
+                token=token,
+                project_key=project_key,
+                summary=args.create_summary,
+                description=args.description,
+                issue_type=args.issue_type_create,
+                priority=args.priority_create,
+                assignee=args.assignee_create,
+                epic_key=args.epic_create,
+                sprint_name=args.sprint_create,
+                labels=labels,
+                fix_versions=fix_versions,
+            )
+            status_icon = "✓" if success else "✗"
+            print(f"  {status_icon} {message}")
+
+        print("\nDone!")
+        return
+
+    # Modify mode
+    if args.modify:
+        issue_keys = [k.strip() for k in args.modify.split(",")]
+
+        # Validate that at least one modify option is provided
+        if not any(
+            [
+                args.set_status,
+                args.remove_sprint,
+                args.set_sprint,
+                args.set_epic,
+                args.remove_epic,
+                args.set_fix_versions,
+            ]
+        ):
+            print(
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Parse fix versions if provided
+        fix_versions = None
+        if args.set_fix_versions:
+            fix_versions = [
+                version.strip() for version in args.set_fix_versions.split(",")
+            ]
+
+        print(f"\nModifying {len(issue_keys)} issue(s)...")
+        if args.dry_run:
+            print("(DRY RUN - no changes will be made)\n")
+
+        for issue_key in issue_keys:
+            if args.dry_run:
+                changes = []
+                if args.set_status:
+                    changes.append(f"set status to '{args.set_status}'")
+                if args.remove_sprint:
+                    changes.append("remove from sprint")
+                if args.set_sprint:
+                    changes.append(f"move to sprint '{args.set_sprint}'")
+                if args.set_epic:
+                    changes.append(f"set epic to {args.set_epic}")
+                if args.remove_epic:
+                    changes.append("remove from epic")
+                if fix_versions:
+                    changes.append(f"set fix versions to {', '.join(fix_versions)}")
+                print(f"  {issue_key}: Would {', '.join(changes)}")
+            else:
+                success, message = modify_issue(
+                    email=email,
+                    token=token,
+                    issue_key=issue_key,
+                    set_status=args.set_status,
+                    remove_sprint=args.remove_sprint,
+                    set_sprint=args.set_sprint,
+                    set_epic=args.set_epic,
+                    remove_epic=args.remove_epic,
+                    set_fix_versions=fix_versions,
+                )
+                status_icon = "✓" if success else "✗"
+                print(f"  {status_icon} {issue_key}: {message}")
+
+        print("\nDone!")
+        return
+
+    # Ensure output directory exists
+    output_dir = Path(args.output_dir).expanduser()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build full output path
+    output_path = output_dir / args.output
+    print(f"Output directory: {output_dir}")
+
+    # Build JQL query
+    jql = build_jql_query(args)
+
+    # Fetch all stories
+    raw_issues = fetch_all_stories(email, token, jql)
+
+    # Extract essential data
+    stories = extract_essential_data(raw_issues)
+
+    # Save to JSON
+    save_to_json(stories, output_path, jql)
+
+    # Print summary if requested
+    if args.summary:
+        print_summary(stories)
+
+    print("\nDone!")
+
+
+if __name__ == "__main__":
+    main()

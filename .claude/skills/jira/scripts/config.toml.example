@@ -1,0 +1,27 @@
+# JIRA Skill Configuration
+# Copy this file to config.toml and customize for your setup
+
+[jira]
+# Your JIRA instance base URL
+base_url = "https://mozilla-hub.atlassian.net"
+
+# Default project key for queries
+default_project = "RELOPS"
+
+[onepassword]
+# 1Password CLI configuration
+# The 1Password item name that contains your JIRA API token
+item_name = "JiraMozillaToken"
+
+# The 1Password vault where the item is stored
+vault = "Private"
+
+# Fields in the 1Password item
+# credential_field: The field name containing the API token
+# username_field: The field name containing your JIRA email
+credential_field = "credential"
+username_field = "username"
+
+[output]
+# Default output directory for JSON files
+output_dir = "~/moz_artifacts"

@@ -1,0 +1,31 @@
+internal_docs/
+
+# Large data files
+Azure/AzurePricing.json
+AzurePrice/AzurePricing.json
+azureinfo.json
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform-provider-*
+*.tfstate
+*.tfstate.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
