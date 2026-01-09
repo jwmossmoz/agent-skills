@@ -28,7 +28,7 @@ Helper for creating new agent skills.
 See [.claude/skills/skill-creator/SKILL.md](.claude/skills/skill-creator/SKILL.md) for details.
 
 ### OS Integrations
-Run Firefox mach try commands with pre-configured flags for os-integration testing on Windows alpha worker pools.
+This skill runs Firefox mach try commands for os-integration testing on Windows virtual machines. Tests execute on Windows VMs hosted in Azure, which are organized as worker pools in Mozilla's Taskcluster CI system. The skill targets "alpha" worker pools, which are used for testing new VM images before they are promoted to production. This allows for validation of OS integration features in a controlled testing environment.
 
 **Available presets:** win11-24h2, win11-hw, win10-2009, win11-amd, win11-source, b-win2022, win11-arm64
 
