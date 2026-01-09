@@ -1,0 +1,114 @@
+# Firefox mach try OS Integration Testing Presets
+# These presets define standardized configurations for running OS integration tests
+# via the Firefox mach try system
+
+presets:
+  win11-24h2:
+    description: "Windows 11 24H2 standard testing"
+    query: "-xq 'test-windows11-64'"
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2=gecko-t/win11-64-24h2-alpha
+      - win11-64-24h2-gpu=gecko-t/win11-64-24h2-gpu-alpha
+      - win11-64-24h2-source=gecko-t/win11-64-24h2-source-alpha
+      - win11-64-24h2-large=gecko-t/win11-64-24h2-large-alpha
+      - win11-64-24h2-webgpu=gecko-t/win11-64-24h2-webgpu-alpha
+    use_os_integration: true
+
+  win11-hw:
+    description: "Windows 11 hardware testing"
+    query: "-xq 'test-windows11-64'"
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2-hw=releng-hardware/win11-64-24h2-hw-alpha
+      - win11-64-24h2-hw-ref=releng-hardware/win11-64-24h2-hw-ref-alpha
+      - b-win2022=gecko-1/b-win2022-alpha
+    use_os_integration: true
+
+  win10-2009:
+    description: "Windows 10 version 2009"
+    query: "-xq 'windows10-64'"
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win10-64-2009=gecko-t/win10-64-2009-alpha
+      - win10-64-2009-gpu=gecko-t/win10-64-2009-gpu-alpha
+    use_os_integration: true
+
+  win11-amd:
+    description: "Windows 11 AMD testing"
+    query: "-xq 'test-windows11-64'"
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2=gecko-t/win11-64-24h2-amd
+    use_os_integration: true
+
+  win11-source:
+    description: "Source image testing"
+    query: ""
+    flags:
+      - "--full"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2-source=gecko-t/win11-64-24h2-source-alpha
+    use_os_integration: false
+
+  b-win2022:
+    description: "Build worker testing"
+    query: ""
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - b-win2022=gecko-1/b-win2022-alpha
+    use_os_integration: false
+
+  win11-arm64:
+    description: "ARM64 architecture testing"
+    query: ""
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-a64-24h2=gecko-t/win11-a64-24h2-alpha
+    use_os_integration: false
+
+# Preset configuration documentation
+# ===================================
+#
+# Each preset defines a standardized testing configuration with the following fields:
+#
+# - description: Human-readable description of the preset's purpose
+# - query: Task selection query (empty string if no filtering required)
+# - flags: List of command-line flags to pass to mach try
+# - worker_overrides: List of worker pool mappings in format "old-worker=pool/new-worker"
+# - use_os_integration: Boolean indicating if OS-specific integration features should be enabled
+#
+# Usage:
+#   mach try --preset=win11-24h2
+#   mach try --preset=win11-hw
+#   mach try --preset=win10-2009
+#
+# Preset Categories:
+#
+# OS Versions (use_os_integration: true):
+#   - win11-24h2: Latest Windows 11 with 24H2 updates
+#   - win10-2009: Windows 10 maintenance channel (version 2009)
+#
+# Hardware-Specific (use_os_integration: true):
+#   - win11-hw: Real hardware testing infrastructure
+#   - win11-amd: AMD-specific processor optimization testing
+#
+# Architecture-Specific (use_os_integration: false):
+#   - win11-arm64: ARM64 native testing
+#
+# Worker-Specific (use_os_integration: false):
+#   - b-win2022: Build system and source image validation
+#   - win11-source: Source distribution and compilation testing
