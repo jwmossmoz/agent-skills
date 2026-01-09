@@ -7,6 +7,10 @@ A collection of reusable skills for Claude Code and other AI agents.
 ```
 agent-skills/
 └── .claude/
+    ├── agents/
+    │   ├── coder.md      # Opus-powered code implementation
+    │   ├── explorer.md   # Haiku-powered fast exploration  
+    │   └── helper.md     # Sonnet-powered general assistance
     └── skills/
         ├── jira/               # JIRA integration skill
         ├── skill-creator/      # Skill development helper
@@ -29,6 +33,18 @@ Run Firefox mach try commands with pre-configured flags for os-integration testi
 **Available presets:** win11-24h2, win11-hw, win10-2009, win11-amd, win11-source, b-win2022, win11-arm64
 
 See [.claude/skills/os-integrations/SKILL.md](.claude/skills/os-integrations/SKILL.md) for details.
+
+## Agents
+
+Custom agents optimized for different tasks to balance cost and performance.
+
+| Agent | Model | Use Case |
+|-------|-------|----------|
+| **coder** | Opus | Writing, refactoring, implementing features. Use for code implementation. |
+| **explorer** | Haiku | Fast codebase search, finding files, understanding structure. Use for discovery. |
+| **helper** | Sonnet | Planning, research, explanations, task organization. Use for non-coding tasks. |
+
+Agent definitions are in `.claude/agents/`.
 
 ## Usage
 
