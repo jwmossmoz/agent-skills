@@ -34,7 +34,18 @@ Edit `config.toml` to match your setup:
 
 ## Usage
 
-Run the JIRA script located at `scripts/extract_jira.py` using `uv run` from the `.claude/skills/jira` directory, or use the full path `.claude/skills/jira/scripts/extract_jira.py` from the repository root. Reference examples.md for examples.
+Run the JIRA script from the `scripts` directory where `pyproject.toml` is located. Always use `uv sync && uv run` to ensure dependencies are installed:
+
+```bash
+cd .claude/skills/jira/scripts && uv sync && uv run extract_jira.py [options]
+```
+
+Or if already in the scripts directory:
+```bash
+uv sync && uv run extract_jira.py [options]
+```
+
+Reference examples.md for examples.
 
 ## Output
 
@@ -65,7 +76,12 @@ See the Prerequisites section above for setup instructions.
 
 ## Examples
 
-When the user asks to:
+First, change to the scripts directory and sync dependencies:
+```bash
+cd .claude/skills/jira/scripts && uv sync
+```
+
+Then run commands with `uv run extract_jira.py`. When the user asks to:
 - "extract my JIRA stories" → Run with `--my-issues`
 - "show my sprint stories" or "current sprint" → Run with `--current-sprint --my-issues --summary`
 - "get all RELOPS epics" → Run with `--epics`
