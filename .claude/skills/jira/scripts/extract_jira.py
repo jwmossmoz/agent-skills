@@ -83,6 +83,182 @@ OP_USERNAME_FIELD = CONFIG["onepassword"].get("username_field", "username")
 DEFAULT_PROJECT = CONFIG["jira"]["default_project"]
 DEFAULT_OUTPUT_DIR = Path(CONFIG["output"]["output_dir"]).expanduser()
 
+
+# --- Markdown to ADF Converter ---
+import re
+
+
+def markdown_to_adf(text: str) -> dict[str, Any]:
+    """
+    Convert Markdown text to Atlassian Document Format (ADF).
+
+    Supports: headings, bullet/numbered lists, code blocks, inline code,
+    links, bold, italic, and plain paragraphs.
+    """
+    if not text or not text.strip():
+        return {"type": "doc", "version": 1, "content": []}
+
+    content: list[dict[str, Any]] = []
+    lines = text.split("\n")
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        # Code block (```)
+        if line.startswith("```"):
+            language = line[3:].strip() or None
+            code_lines = []
+            i += 1
+            while i < len(lines) and not lines[i].startswith("```"):
+                code_lines.append(lines[i])
+                i += 1
+            code_text = "\n".join(code_lines)
+            node: dict[str, Any] = {
+                "type": "codeBlock",
+                "content": [{"type": "text", "text": code_text}],
+            }
+            if language:
+                node["attrs"] = {"language": language}
+            content.append(node)
+            i += 1
+            continue
+
+        # Heading (# ## ### etc.)
+        heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
+        if heading_match:
+            level = len(heading_match.group(1))
+            heading_text = heading_match.group(2)
+            content.append({
+                "type": "heading",
+                "attrs": {"level": level},
+                "content": _parse_inline(heading_text),
+            })
+            i += 1
+            continue
+
+        # Bullet list (- or *)
+        if re.match(r"^\s*[-*]\s+", line):
+            items = []
+            while i < len(lines) and re.match(r"^\s*[-*]\s+", lines[i]):
+                item_text = re.sub(r"^\s*[-*]\s+", "", lines[i])
+                items.append({
+                    "type": "listItem",
+                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}],
+                })
+                i += 1
+            content.append({"type": "bulletList", "content": items})
+            continue
+
+        # Numbered list (1. 2. etc.)
+        if re.match(r"^\s*\d+\.\s+", line):
+            items = []
+            while i < len(lines) and re.match(r"^\s*\d+\.\s+", lines[i]):
+                item_text = re.sub(r"^\s*\d+\.\s+", "", lines[i])
+                items.append({
+                    "type": "listItem",
+                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}],
+                })
+                i += 1
+            content.append({"type": "orderedList", "content": items})
+            continue
+
+        # Empty line - skip
+        if not line.strip():
+            i += 1
+            continue
+
+        # Regular paragraph - collect consecutive non-empty lines
+        para_lines = []
+        while i < len(lines) and lines[i].strip() and not _is_special_line(lines[i]):
+            para_lines.append(lines[i])
+            i += 1
+        if para_lines:
+            para_text = " ".join(para_lines)
+            content.append({"type": "paragraph", "content": _parse_inline(para_text)})
+
+    return {"type": "doc", "version": 1, "content": content}
+
+
+def _is_special_line(line: str) -> bool:
+    """Check if a line starts a special block (heading, list, code)."""
+    if line.startswith("```"):
+        return True
+    if re.match(r"^#{1,6}\s+", line):
+        return True
+    if re.match(r"^\s*[-*]\s+", line):
+        return True
+    if re.match(r"^\s*\d+\.\s+", line):
+        return True
+    return False
+
+
+def _parse_inline(text: str) -> list[dict[str, Any]]:
+    """Parse inline formatting: bold, italic, code, links."""
+    result: list[dict[str, Any]] = []
+
+    # Pattern to match inline elements
+    # Order matters: links first, then bold, italic, code
+    pattern = re.compile(
+        r"(\[([^\]]+)\]\(([^)]+)\))"  # [text](url)
+        r"|(\*\*([^*]+)\*\*)"  # **bold**
+        r"|(\*([^*]+)\*)"  # *italic*
+        r"|(`([^`]+)`)"  # `code`
+    )
+
+    last_end = 0
+    for match in pattern.finditer(text):
+        # Add text before match
+        if match.start() > last_end:
+            plain = text[last_end : match.start()]
+            if plain:
+                result.append({"type": "text", "text": plain})
+
+        if match.group(1):  # Link
+            link_text = match.group(2)
+            link_url = match.group(3)
+            result.append({
+                "type": "text",
+                "text": link_text,
+                "marks": [{"type": "link", "attrs": {"href": link_url}}],
+            })
+        elif match.group(4):  # Bold
+            bold_text = match.group(5)
+            result.append({
+                "type": "text",
+                "text": bold_text,
+                "marks": [{"type": "strong"}],
+            })
+        elif match.group(6):  # Italic
+            italic_text = match.group(7)
+            result.append({
+                "type": "text",
+                "text": italic_text,
+                "marks": [{"type": "em"}],
+            })
+        elif match.group(8):  # Inline code
+            code_text = match.group(9)
+            result.append({
+                "type": "text",
+                "text": code_text,
+                "marks": [{"type": "code"}],
+            })
+
+        last_end = match.end()
+
+    # Add remaining text
+    if last_end < len(text):
+        remaining = text[last_end:]
+        if remaining:
+            result.append({"type": "text", "text": remaining})
+
+    # If no matches, return plain text
+    if not result and text:
+        result.append({"type": "text", "text": text})
+
+    return result
+
+
 # Essential fields to extract
 ESSENTIAL_FIELDS = [
     "key",
@@ -282,19 +458,9 @@ def create_issue(
         "issuetype": {"name": issue_type},
     }
 
-    # Add description if provided
+    # Add description if provided (supports Markdown)
     if description:
-        # Convert to ADF (Atlassian Document Format)
-        fields["description"] = {
-            "type": "doc",
-            "version": 1,
-            "content": [
-                {
-                    "type": "paragraph",
-                    "content": [{"type": "text", "text": description}],
-                }
-            ],
-        }
+        fields["description"] = markdown_to_adf(description)
 
     # Add priority if provided
     if priority:
@@ -451,19 +617,9 @@ def modify_issue(
         ]
         messages.append(f"Set fix versions to {', '.join(set_fix_versions)}")
 
-    # Handle description change
+    # Handle description change (supports Markdown)
     if set_description:
-        # Convert to ADF (Atlassian Document Format)
-        update_payload["fields"]["description"] = {
-            "type": "doc",
-            "version": 1,
-            "content": [
-                {
-                    "type": "paragraph",
-                    "content": [{"type": "text", "text": set_description}],
-                }
-            ],
-        }
+        update_payload["fields"]["description"] = markdown_to_adf(set_description)
         messages.append("Updated description")
 
     # Only make the PUT request if we have field changes
@@ -508,19 +664,8 @@ def add_comment(
         "Content-Type": "application/json",
     }
 
-    # Convert to ADF (Atlassian Document Format)
-    payload = {
-        "body": {
-            "type": "doc",
-            "version": 1,
-            "content": [
-                {
-                    "type": "paragraph",
-                    "content": [{"type": "text", "text": comment_text}],
-                }
-            ],
-        }
-    }
+    # Convert to ADF (Atlassian Document Format, supports Markdown)
+    payload = {"body": markdown_to_adf(comment_text)}
 
     response = requests.post(
         f"{JIRA_API_URL}/issue/{issue_key}/comment",
