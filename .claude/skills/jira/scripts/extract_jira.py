@@ -389,6 +389,7 @@ def modify_issue(
     set_epic: str | None = None,
     remove_epic: bool = False,
     set_fix_versions: list[str] | None = None,
+    set_description: str | None = None,
 ) -> tuple[bool, str]:
     """
     Modify a JIRA issue.
@@ -450,6 +451,21 @@ def modify_issue(
         ]
         messages.append(f"Set fix versions to {', '.join(set_fix_versions)}")
 
+    # Handle description change
+    if set_description:
+        # Convert to ADF (Atlassian Document Format)
+        update_payload["fields"]["description"] = {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": set_description}],
+                }
+            ],
+        }
+        messages.append("Updated description")
+
     # Only make the PUT request if we have field changes
     if update_payload["fields"]:
         response = requests.put(
@@ -473,6 +489,60 @@ def modify_issue(
             return False, f"Failed to update {issue_key}: {error_msg}"
 
     return True, "; ".join(messages) if messages else "No changes made"
+
+
+def add_comment(
+    email: str,
+    token: str,
+    issue_key: str,
+    comment_text: str,
+) -> tuple[bool, str]:
+    """
+    Add a comment to a JIRA issue.
+
+    Returns (success, message) tuple.
+    """
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    # Convert to ADF (Atlassian Document Format)
+    payload = {
+        "body": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": comment_text}],
+                }
+            ],
+        }
+    }
+
+    response = requests.post(
+        f"{JIRA_API_URL}/issue/{issue_key}/comment",
+        auth=auth,
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 201):
+        error_msg = response.text
+        try:
+            error_data = response.json()
+            if "errors" in error_data:
+                error_msg = str(error_data["errors"])
+            elif "errorMessages" in error_data:
+                error_msg = ", ".join(error_data["errorMessages"])
+        except (ValueError, KeyError):
+            pass
+        return False, f"Failed to add comment to {issue_key}: {error_msg}"
+
+    return True, "Added comment"
 
 
 def transition_issue(
@@ -1173,6 +1243,16 @@ Examples:
         help="Set fix versions (comma-separated, e.g., '2026 Q1')",
     )
     modify_group.add_argument(
+        "--set-description",
+        type=str,
+        help="Set the issue description",
+    )
+    modify_group.add_argument(
+        "--add-comment",
+        type=str,
+        help="Add a comment to the issue",
+    )
+    modify_group.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be changed without making changes",
@@ -1284,10 +1364,12 @@ Examples:
                 args.set_epic,
                 args.remove_epic,
                 args.set_fix_versions,
+                args.set_description,
+                args.add_comment,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-description, --add-comment",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1318,21 +1400,45 @@ Examples:
                     changes.append("remove from epic")
                 if fix_versions:
                     changes.append(f"set fix versions to {', '.join(fix_versions)}")
+                if args.set_description:
+                    changes.append("update description")
+                if args.add_comment:
+                    changes.append("add comment")
                 print(f"  {issue_key}: Would {', '.join(changes)}")
             else:
-                success, message = modify_issue(
-                    email=email,
-                    token=token,
-                    issue_key=issue_key,
-                    set_status=args.set_status,
-                    remove_sprint=args.remove_sprint,
-                    set_sprint=args.set_sprint,
-                    set_epic=args.set_epic,
-                    remove_epic=args.remove_epic,
-                    set_fix_versions=fix_versions,
-                )
+                messages = []
+                # Handle field modifications
+                if any([args.set_status, args.remove_sprint, args.set_sprint,
+                        args.set_epic, args.remove_epic, fix_versions, args.set_description]):
+                    success, message = modify_issue(
+                        email=email,
+                        token=token,
+                        issue_key=issue_key,
+                        set_status=args.set_status,
+                        remove_sprint=args.remove_sprint,
+                        set_sprint=args.set_sprint,
+                        set_epic=args.set_epic,
+                        remove_epic=args.remove_epic,
+                        set_fix_versions=fix_versions,
+                        set_description=args.set_description,
+                    )
+                    messages.append(message)
+                    if not success:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
+
+                # Handle comment separately
+                if args.add_comment:
+                    success, message = add_comment(
+                        email=email,
+                        token=token,
+                        issue_key=issue_key,
+                        comment_text=args.add_comment,
+                    )
+                    messages.append(message)
+
                 status_icon = "✓" if success else "✗"
-                print(f"  {status_icon} {issue_key}: {message}")
+                print(f"  {status_icon} {issue_key}: {'; '.join(messages)}")
 
         print("\nDone!")
         return
