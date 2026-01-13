@@ -1,6 +1,6 @@
 ---
-name: Jira
-description: Extract, create, and modify JIRA stories from Mozilla JIRA (mozilla-hub.atlassian.net).
+name: jira
+description: Extract, create, and modify JIRA stories from Mozilla JIRA (mozilla-hub.atlassian.net). Use when the user asks to create JIRA stories, update JIRA issues, search for stories, list epics, add comments, or work with sprints. Supports Markdown formatting in descriptions and comments.
 ---
 
 # JIRA
@@ -96,7 +96,7 @@ The script can create new JIRA issues. Use `--create` with required and optional
 
 ### Create Options
 - `--create-summary "Title"` - Summary/title for the issue (REQUIRED)
-- `--description "Details"` - Description for the issue
+- `--description "Details"` - Description (supports Markdown formatting)
 - `--issue-type-create TYPE` - Issue type (default: Story)
 - `--priority-create PRIORITY` - Priority (e.g., "High", "Medium", "Low")
 - `--assignee-create ASSIGNEE` - Assignee (use "me" for yourself, or email/account ID)
@@ -123,6 +123,8 @@ The script can also modify JIRA issues. Use `--modify` with one or more issue ke
 
 ### Modify Options
 - `--set-status STATUS` - Change status (e.g., "Backlog", "In Progress", "Done")
+- `--set-description "Text"` - Update the description (supports Markdown)
+- `--add-comment "Text"` - Add a comment to the issue (supports Markdown)
 - `--remove-sprint` - Remove issue(s) from their current sprint
 - `--set-sprint "Sprint Name"` - Move issue(s) to a specific sprint
 - `--set-epic EPIC-KEY` - Set the epic link
@@ -138,3 +140,34 @@ When the user asks to:
 - "move RELOPS-123 to the KTLO epic" → Run with `--modify RELOPS-123 --set-epic RELOPS-56`
 - "set fix version to 2026 Q1" → Run with `--modify RELOPS-123 --set-fix-versions "2026 Q1"`
 - "remove from sprint and set to backlog" → Run with `--modify RELOPS-123 --set-status Backlog --remove-sprint`
+- "update the description" → Run with `--modify RELOPS-123 --set-description "New description"`
+- "add a comment" → Run with `--modify RELOPS-123 --add-comment "Comment text"`
+
+## Markdown Formatting
+
+Descriptions and comments support Markdown formatting, which is automatically converted to JIRA's rich text format:
+
+- `## Heading` - Headings (levels 1-6)
+- `- item` or `* item` - Bullet lists
+- `1. item` - Numbered lists
+- ` ```language ` - Code blocks with syntax highlighting
+- `` `code` `` - Inline code
+- `[text](url)` - Links
+- `**bold**` - Bold text
+- `*italic*` - Italic text
+
+Example with Markdown:
+```bash
+--description "## Summary
+
+Implemented feature X.
+
+## Changes
+- Added new endpoint
+- Updated tests
+
+## Usage
+\`\`\`bash
+curl https://api.example.com/v1/endpoint
+\`\`\`"
+```

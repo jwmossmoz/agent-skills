@@ -86,6 +86,22 @@ cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --r
 cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123,RELOPS-124,RELOPS-125 --set-status "Backlog" --remove-sprint
 ```
 
+### Update Description (with Markdown)
+```bash
+cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --set-description "## Summary
+
+Updated the feature.
+
+## Changes
+- Fixed bug
+- Added tests"
+```
+
+### Add Comment (with Markdown)
+```bash
+cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --add-comment "Completed the implementation. See [PR #123](https://github.com/org/repo/pull/123)."
+```
+
 ### Dry Run (Preview Changes)
 ```bash
 cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --set-status "Done" --dry-run
