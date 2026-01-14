@@ -14,7 +14,7 @@ default_project = "RELOPS"
 item_name = "JiraMozillaToken"
 
 # The 1Password vault where the item is stored
-vault = "Private"
+vault = "Mozilla"
 
 # Fields in the 1Password item
 # credential_field: The field name containing the API token

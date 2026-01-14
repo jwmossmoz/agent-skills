@@ -26,7 +26,7 @@ cp config.toml.example config.toml
 
 Edit `config.toml` to match your setup:
 - `onepassword.item_name`: Your 1Password item name (default: "JiraMozillaToken")
-- `onepassword.vault`: Your 1Password vault (default: "Private")
+- `onepassword.vault`: Your 1Password vault (default: "Mozilla")
 - `jira.base_url`: Your JIRA instance URL
 - `jira.default_project`: Your default project key
 
@@ -66,13 +66,31 @@ Each story includes:
 
 ## Authentication
 
-The script uses 1Password CLI to retrieve the JIRA API token. Configuration is set in `config.toml`:
+The script supports two authentication methods:
+
+### Option 1: Environment Variables (Bypass 1Password)
+
+Set these environment variables to skip 1Password authentication:
+
+```bash
+export JIRA_API_TOKEN="your-api-token"
+export JIRA_EMAIL="your@email.com"
+```
+
+This is useful when:
+- You want to avoid repeated 1Password authentication prompts
+- Running in CI/CD pipelines
+- You prefer to manage credentials via your shell profile
+
+### Option 2: 1Password CLI (Default)
+
+If environment variables are not set, the script falls back to 1Password CLI. Configuration is set in `config.toml`:
 - `onepassword.item_name`: The 1Password item containing your JIRA credentials
 - `onepassword.vault`: The vault where the item is stored
 - `onepassword.credential_field`: Field name for API token (default: `credential`)
 - `onepassword.username_field`: Field name for email (default: `username`)
 
-See the Prerequisites section above for setup instructions.
+See the Prerequisites section above for 1Password setup instructions.
 
 ## Examples
 

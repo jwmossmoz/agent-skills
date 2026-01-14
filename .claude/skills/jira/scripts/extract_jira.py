@@ -1563,19 +1563,34 @@ Examples:
 
     args = parser.parse_args()
 
-    print("Retrieving API token from 1Password...")
-    token = get_token_from_1password()
+    # Check for environment variables first (bypass 1Password)
+    env_token = os.environ.get("JIRA_API_TOKEN")
+    env_email = os.environ.get("JIRA_EMAIL")
 
-    # Get email from args or 1Password
+    if env_token:
+        print("Using API token from JIRA_API_TOKEN environment variable")
+        token = env_token
+    else:
+        print("Retrieving API token from 1Password...")
+        token = get_token_from_1password()
+
+    # Get email from args, env var, or 1Password (in that order)
     email: str | None = args.email
-    if not email:
+    if email:
+        pass  # Use provided --email arg
+    elif env_email:
+        print("Using email from JIRA_EMAIL environment variable")
+        email = env_email
+    else:
         email = get_email_from_1password()
+
     if not email:
         print(
-            "Error: Email not provided and not found in 1Password item.",
+            "Error: Email not provided via --email, JIRA_EMAIL env var, or 1Password.",
             file=sys.stderr,
         )
         print("Please provide your email with --email YOUR_EMAIL", file=sys.stderr)
+        print("Or set the JIRA_EMAIL environment variable", file=sys.stderr)
         sys.exit(1)
 
     # Type narrowing: email is guaranteed to be str after the check above
