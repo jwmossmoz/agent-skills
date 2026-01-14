@@ -37,6 +37,7 @@ import argparse
 import json
 import subprocess
 import sys
+import os
 import tomllib
 from datetime import datetime
 from pathlib import Path
@@ -614,6 +615,7 @@ def modify_issue(
     set_summary: str | None = None,
     set_description: str | None = None,
     set_reporter: str | None = None,
+    set_assignee: str | None = None,
 ) -> tuple[bool, str]:
     """
     Modify a JIRA issue.
@@ -701,6 +703,23 @@ def modify_issue(
                 messages.append(f"Set reporter to '{set_reporter}'")
             else:
                 return False, f"Could not find user: {set_reporter}"
+
+    # Handle assignee change
+    if set_assignee:
+        if set_assignee.lower() in ("me", "currentuser", "current"):
+            account_id = get_current_user_account_id(email, token)
+            if account_id:
+                update_payload["fields"]["assignee"] = {"accountId": account_id}
+                messages.append("Set assignee to current user")
+            else:
+                return False, "Failed to get current user account ID"
+        else:
+            account_id = find_user_account_id(email, token, set_assignee)
+            if account_id:
+                update_payload["fields"]["assignee"] = {"accountId": account_id}
+                messages.append(f"Set assignee to '{set_assignee}'")
+            else:
+                return False, f"Could not find user: {set_assignee}"
 
     # Only make the PUT request if we have field changes
     if update_payload["fields"]:
@@ -1540,6 +1559,11 @@ Examples:
         help="Set the reporter (email, display name, 'me', or account ID)",
     )
     modify_group.add_argument(
+        "--set-assignee",
+        type=str,
+        help="Set the assignee (email, display name, 'me', or account ID)",
+    )
+    modify_group.add_argument(
         "--add-comment",
         type=str,
         help="Add a comment to the issue",
@@ -1688,12 +1712,13 @@ Examples:
                 args.set_summary,
                 args.set_description,
                 args.set_reporter,
+                args.set_assignee,
                 args.add_comment,
                 args.link_issue,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --add-comment, --link-issue",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --set-assignee, --add-comment, --link-issue",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1730,6 +1755,8 @@ Examples:
                     changes.append("update description")
                 if args.set_reporter:
                     changes.append(f"set reporter to '{args.set_reporter}'")
+                if args.set_assignee:
+                    changes.append(f"set assignee to '{args.set_assignee}'")
                 if args.add_comment:
                     changes.append("add comment")
                 if args.link_issue:
@@ -1739,7 +1766,7 @@ Examples:
                 messages = []
                 # Handle field modifications
                 if any([args.set_status, args.remove_sprint, args.set_sprint,
-                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description, args.set_reporter]):
+                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description, args.set_reporter, args.set_assignee]):
                     success, message = modify_issue(
                         email=email,
                         token=token,
@@ -1753,6 +1780,7 @@ Examples:
                         set_summary=args.set_summary,
                         set_description=args.set_description,
                         set_reporter=args.set_reporter,
+                        set_assignee=args.set_assignee,
                     )
                     messages.append(message)
                     if not success:
