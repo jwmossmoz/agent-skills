@@ -130,6 +130,8 @@ The script can also modify JIRA issues. Use `--modify` with one or more issue ke
 - `--set-epic EPIC-KEY` - Set the epic link
 - `--remove-epic` - Remove issue(s) from their current epic
 - `--set-fix-versions "2026 Q1"` - Set fix versions (comma-separated)
+- `--link-issue ISSUE-KEY` - Link to another issue (e.g., RELOPS-456)
+- `--link-type TYPE` - Type of link: Relates (default), Blocks, Clones, Duplicate
 - `--dry-run` - Preview changes without applying them
 
 ### Modify Examples
@@ -142,6 +144,8 @@ When the user asks to:
 - "remove from sprint and set to backlog" → Run with `--modify RELOPS-123 --set-status Backlog --remove-sprint`
 - "update the description" → Run with `--modify RELOPS-123 --set-description "New description"`
 - "add a comment" → Run with `--modify RELOPS-123 --add-comment "Comment text"`
+- "link RELOPS-123 to RELOPS-456" → Run with `--modify RELOPS-123 --link-issue RELOPS-456`
+- "link as blocking" → Run with `--modify RELOPS-123 --link-issue RELOPS-456 --link-type Blocks`
 
 ## Markdown Formatting
 

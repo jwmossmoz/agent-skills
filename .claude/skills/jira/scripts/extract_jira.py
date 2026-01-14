@@ -647,6 +647,58 @@ def modify_issue(
     return True, "; ".join(messages) if messages else "No changes made"
 
 
+def link_issues(
+    email: str,
+    token: str,
+    inward_issue: str,
+    outward_issue: str,
+    link_type: str = "Relates",
+) -> tuple[bool, str]:
+    """
+    Create a link between two JIRA issues.
+
+    Args:
+        inward_issue: The source issue key (e.g., RELOPS-123)
+        outward_issue: The target issue key to link to (e.g., RELOPS-456)
+        link_type: The type of link (e.g., "Relates", "Blocks", "Clones", "Duplicate")
+
+    Returns (success, message) tuple.
+    """
+    auth = (email, token)
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "type": {"name": link_type},
+        "inwardIssue": {"key": inward_issue},
+        "outwardIssue": {"key": outward_issue},
+    }
+
+    response = requests.post(
+        f"{JIRA_API_URL}/issueLink",
+        auth=auth,
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 201):
+        error_msg = response.text
+        try:
+            error_data = response.json()
+            if "errors" in error_data:
+                error_msg = str(error_data["errors"])
+            elif "errorMessages" in error_data:
+                error_msg = ", ".join(error_data["errorMessages"])
+        except (ValueError, KeyError):
+            pass
+        return False, f"Failed to link {inward_issue} to {outward_issue}: {error_msg}"
+
+    return True, f"Linked {inward_issue} to {outward_issue} ({link_type})"
+
+
 def add_comment(
     email: str,
     token: str,
@@ -1398,6 +1450,17 @@ Examples:
         help="Add a comment to the issue",
     )
     modify_group.add_argument(
+        "--link-issue",
+        type=str,
+        help="Link to another issue (e.g., RELOPS-456)",
+    )
+    modify_group.add_argument(
+        "--link-type",
+        type=str,
+        default="Relates",
+        help="Type of link: Relates (default), Blocks, Clones, Duplicate",
+    )
+    modify_group.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be changed without making changes",
@@ -1511,10 +1574,11 @@ Examples:
                 args.set_fix_versions,
                 args.set_description,
                 args.add_comment,
+                args.link_issue,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-description, --add-comment",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-description, --add-comment, --link-issue",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1549,6 +1613,8 @@ Examples:
                     changes.append("update description")
                 if args.add_comment:
                     changes.append("add comment")
+                if args.link_issue:
+                    changes.append(f"link to {args.link_issue} ({args.link_type})")
                 print(f"  {issue_key}: Would {', '.join(changes)}")
             else:
                 messages = []
@@ -1579,6 +1645,17 @@ Examples:
                         token=token,
                         issue_key=issue_key,
                         comment_text=args.add_comment,
+                    )
+                    messages.append(message)
+
+                # Handle issue linking
+                if args.link_issue:
+                    success, message = link_issues(
+                        email=email,
+                        token=token,
+                        inward_issue=issue_key,
+                        outward_issue=args.link_issue,
+                        link_type=args.link_type,
                     )
                     messages.append(message)
 
