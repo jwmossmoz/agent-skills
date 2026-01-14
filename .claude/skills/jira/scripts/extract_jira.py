@@ -426,6 +426,44 @@ def get_current_user_account_id(email: str, token: str) -> str | None:
     return None
 
 
+def find_user_account_id(email: str, token: str, query: str) -> str | None:
+    """
+    Find a user's account ID by email or display name.
+
+    Args:
+        email: Auth email for JIRA API
+        token: Auth token for JIRA API
+        query: Email address or display name to search for
+
+    Returns:
+        Account ID if found, None otherwise
+    """
+    auth = (email, token)
+    headers = {"Accept": "application/json"}
+
+    # Try user search API
+    response = requests.get(
+        f"{JIRA_API_URL}/user/search",
+        auth=auth,
+        headers=headers,
+        params={"query": query},
+        timeout=30,
+    )
+
+    if response.status_code == 200:
+        users = response.json()
+        if users:
+            # If query looks like an email, try to match exactly
+            if "@" in query:
+                for user in users:
+                    if user.get("emailAddress", "").lower() == query.lower():
+                        return user.get("accountId")
+            # Otherwise return first match
+            return users[0].get("accountId")
+
+    return None
+
+
 def create_issue(
     email: str,
     token: str,
@@ -435,6 +473,7 @@ def create_issue(
     issue_type: str = "Story",
     priority: str | None = None,
     assignee: str | None = None,
+    reporter: str | None = None,
     epic_key: str | None = None,
     sprint_name: str | None = None,
     labels: list[str] | None = None,
@@ -478,6 +517,23 @@ def create_issue(
         else:
             # Assume it's an email or account ID
             fields["assignee"] = {"id": assignee}
+
+    # Add reporter if provided
+    if reporter:
+        if reporter.lower() in ("me", "currentuser", "current"):
+            # Get the current user's account ID
+            account_id = get_current_user_account_id(email, token)
+            if account_id:
+                fields["reporter"] = {"accountId": account_id}
+            else:
+                return False, "Failed to get current user account ID", None
+        else:
+            # Search for user by email or display name
+            account_id = find_user_account_id(email, token, reporter)
+            if account_id:
+                fields["reporter"] = {"accountId": account_id}
+            else:
+                return False, f"Could not find user: {reporter}", None
 
     # Add epic link if provided
     if epic_key:
@@ -557,6 +613,7 @@ def modify_issue(
     set_fix_versions: list[str] | None = None,
     set_summary: str | None = None,
     set_description: str | None = None,
+    set_reporter: str | None = None,
 ) -> tuple[bool, str]:
     """
     Modify a JIRA issue.
@@ -627,6 +684,23 @@ def modify_issue(
     if set_description:
         update_payload["fields"]["description"] = markdown_to_adf(set_description)
         messages.append("Updated description")
+
+    # Handle reporter change
+    if set_reporter:
+        if set_reporter.lower() in ("me", "currentuser", "current"):
+            account_id = get_current_user_account_id(email, token)
+            if account_id:
+                update_payload["fields"]["reporter"] = {"accountId": account_id}
+                messages.append("Set reporter to current user")
+            else:
+                return False, "Failed to get current user account ID"
+        else:
+            account_id = find_user_account_id(email, token, set_reporter)
+            if account_id:
+                update_payload["fields"]["reporter"] = {"accountId": account_id}
+                messages.append(f"Set reporter to '{set_reporter}'")
+            else:
+                return False, f"Could not find user: {set_reporter}"
 
     # Only make the PUT request if we have field changes
     if update_payload["fields"]:
@@ -1380,6 +1454,11 @@ Examples:
         help="Assignee for new issue (email, 'me', or account ID)",
     )
     create_group.add_argument(
+        "--reporter-create",
+        type=str,
+        help="Reporter for new issue (email, display name, 'me', or account ID)",
+    )
+    create_group.add_argument(
         "--epic-create",
         type=str,
         help="Epic key to link new issue to (e.g., RELOPS-2028)",
@@ -1454,6 +1533,11 @@ Examples:
         "--set-description",
         type=str,
         help="Set the issue description",
+    )
+    modify_group.add_argument(
+        "--set-reporter",
+        type=str,
+        help="Set the reporter (email, display name, 'me', or account ID)",
     )
     modify_group.add_argument(
         "--add-comment",
@@ -1540,6 +1624,8 @@ Examples:
                 print(f"  Priority: {args.priority_create}")
             if args.assignee_create:
                 print(f"  Assignee: {args.assignee_create}")
+            if args.reporter_create:
+                print(f"  Reporter: {args.reporter_create}")
             if args.epic_create:
                 print(f"  Epic: {args.epic_create}")
             if args.sprint_create:
@@ -1559,6 +1645,7 @@ Examples:
                 issue_type=args.issue_type_create,
                 priority=args.priority_create,
                 assignee=args.assignee_create,
+                reporter=args.reporter_create,
                 epic_key=args.epic_create,
                 sprint_name=args.sprint_create,
                 labels=labels,
@@ -1585,12 +1672,13 @@ Examples:
                 args.set_fix_versions,
                 args.set_summary,
                 args.set_description,
+                args.set_reporter,
                 args.add_comment,
                 args.link_issue,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --add-comment, --link-issue",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --add-comment, --link-issue",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1625,6 +1713,8 @@ Examples:
                     changes.append(f"set summary to '{args.set_summary}'")
                 if args.set_description:
                     changes.append("update description")
+                if args.set_reporter:
+                    changes.append(f"set reporter to '{args.set_reporter}'")
                 if args.add_comment:
                     changes.append("add comment")
                 if args.link_issue:
@@ -1634,7 +1724,7 @@ Examples:
                 messages = []
                 # Handle field modifications
                 if any([args.set_status, args.remove_sprint, args.set_sprint,
-                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description]):
+                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description, args.set_reporter]):
                     success, message = modify_issue(
                         email=email,
                         token=token,
@@ -1647,6 +1737,7 @@ Examples:
                         set_fix_versions=fix_versions,
                         set_summary=args.set_summary,
                         set_description=args.set_description,
+                        set_reporter=args.set_reporter,
                     )
                     messages.append(message)
                     if not success:

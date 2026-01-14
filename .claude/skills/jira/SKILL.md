@@ -100,6 +100,7 @@ The script can create new JIRA issues. Use `--create` with required and optional
 - `--issue-type-create TYPE` - Issue type (default: Story)
 - `--priority-create PRIORITY` - Priority (e.g., "High", "Medium", "Low")
 - `--assignee-create ASSIGNEE` - Assignee (use "me" for yourself, or email/account ID)
+- `--reporter-create REPORTER` - Reporter (use "me" for yourself, email, display name, or account ID)
 - `--epic-create EPIC-KEY` - Link to an epic (e.g., RELOPS-2028)
 - `--sprint-create "Sprint Name"` - Add to a specific sprint
 - `--labels-create "label1,label2"` - Comma-separated labels
@@ -113,6 +114,7 @@ When the user asks to:
 - "create a JIRA story with title X" → Run with `--create --create-summary "X"`
 - "create a story for epic RELOPS-2028" → Run with `--create --create-summary "Title" --epic-create RELOPS-2028`
 - "create a story and assign to me" → Run with `--create --create-summary "Title" --assignee-create me`
+- "create a story with John as reporter" → Run with `--create --create-summary "Title" --reporter-create "John Doe"` or `--reporter-create jdoe@mozilla.com`
 - "create a high priority story in current sprint" → Run with `--create --create-summary "Title" --priority-create High --sprint-create "Sprint Name"`
 - "create a story with fix version 2026 Q1" → Run with `--create --create-summary "Title" --fix-versions-create "2026 Q1"`
 - "create a bug in project FOO" → Run with `--create --create-summary "Bug title" --issue-type-create Bug --project-create FOO`
@@ -125,6 +127,7 @@ The script can also modify JIRA issues. Use `--modify` with one or more issue ke
 - `--set-status STATUS` - Change status (e.g., "Backlog", "In Progress", "Done")
 - `--set-summary "Text"` - Update the issue summary/title
 - `--set-description "Text"` - Update the description (supports Markdown)
+- `--set-reporter REPORTER` - Change the reporter (email, display name, "me", or account ID)
 - `--add-comment "Text"` - Add a comment to the issue (supports Markdown)
 - `--remove-sprint` - Remove issue(s) from their current sprint
 - `--set-sprint "Sprint Name"` - Move issue(s) to a specific sprint
@@ -146,6 +149,7 @@ When the user asks to:
 - "update the description" → Run with `--modify RELOPS-123 --set-description "New description"`
 - "change the title" → Run with `--modify RELOPS-123 --set-summary "New title"`
 - "add a comment" → Run with `--modify RELOPS-123 --add-comment "Comment text"`
+- "change the reporter to John" → Run with `--modify RELOPS-123 --set-reporter "John Doe"` or `--set-reporter jdoe@mozilla.com`
 - "link RELOPS-123 to RELOPS-456" → Run with `--modify RELOPS-123 --link-issue RELOPS-456`
 - "link as blocking" → Run with `--modify RELOPS-123 --link-issue RELOPS-456 --link-type Blocks`
 
