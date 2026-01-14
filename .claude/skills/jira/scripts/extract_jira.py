@@ -555,6 +555,7 @@ def modify_issue(
     set_epic: str | None = None,
     remove_epic: bool = False,
     set_fix_versions: list[str] | None = None,
+    set_summary: str | None = None,
     set_description: str | None = None,
 ) -> tuple[bool, str]:
     """
@@ -616,6 +617,11 @@ def modify_issue(
             {"name": version} for version in set_fix_versions
         ]
         messages.append(f"Set fix versions to {', '.join(set_fix_versions)}")
+
+    # Handle summary/title change
+    if set_summary:
+        update_payload["fields"]["summary"] = set_summary
+        messages.append(f"Updated summary to '{set_summary}'")
 
     # Handle description change (supports Markdown)
     if set_description:
@@ -1440,6 +1446,11 @@ Examples:
         help="Set fix versions (comma-separated, e.g., '2026 Q1')",
     )
     modify_group.add_argument(
+        "--set-summary",
+        type=str,
+        help="Set the issue summary/title",
+    )
+    modify_group.add_argument(
         "--set-description",
         type=str,
         help="Set the issue description",
@@ -1572,13 +1583,14 @@ Examples:
                 args.set_epic,
                 args.remove_epic,
                 args.set_fix_versions,
+                args.set_summary,
                 args.set_description,
                 args.add_comment,
                 args.link_issue,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-description, --add-comment, --link-issue",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --add-comment, --link-issue",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1609,6 +1621,8 @@ Examples:
                     changes.append("remove from epic")
                 if fix_versions:
                     changes.append(f"set fix versions to {', '.join(fix_versions)}")
+                if args.set_summary:
+                    changes.append(f"set summary to '{args.set_summary}'")
                 if args.set_description:
                     changes.append("update description")
                 if args.add_comment:
@@ -1620,7 +1634,7 @@ Examples:
                 messages = []
                 # Handle field modifications
                 if any([args.set_status, args.remove_sprint, args.set_sprint,
-                        args.set_epic, args.remove_epic, fix_versions, args.set_description]):
+                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description]):
                     success, message = modify_issue(
                         email=email,
                         token=token,
@@ -1631,6 +1645,7 @@ Examples:
                         set_epic=args.set_epic,
                         remove_epic=args.remove_epic,
                         set_fix_versions=fix_versions,
+                        set_summary=args.set_summary,
                         set_description=args.set_description,
                     )
                     messages.append(message)

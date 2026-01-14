@@ -123,6 +123,7 @@ The script can also modify JIRA issues. Use `--modify` with one or more issue ke
 
 ### Modify Options
 - `--set-status STATUS` - Change status (e.g., "Backlog", "In Progress", "Done")
+- `--set-summary "Text"` - Update the issue summary/title
 - `--set-description "Text"` - Update the description (supports Markdown)
 - `--add-comment "Text"` - Add a comment to the issue (supports Markdown)
 - `--remove-sprint` - Remove issue(s) from their current sprint
@@ -143,6 +144,7 @@ When the user asks to:
 - "set fix version to 2026 Q1" → Run with `--modify RELOPS-123 --set-fix-versions "2026 Q1"`
 - "remove from sprint and set to backlog" → Run with `--modify RELOPS-123 --set-status Backlog --remove-sprint`
 - "update the description" → Run with `--modify RELOPS-123 --set-description "New description"`
+- "change the title" → Run with `--modify RELOPS-123 --set-summary "New title"`
 - "add a comment" → Run with `--modify RELOPS-123 --add-comment "Comment text"`
 - "link RELOPS-123 to RELOPS-456" → Run with `--modify RELOPS-123 --link-issue RELOPS-456`
 - "link as blocking" → Run with `--modify RELOPS-123 --link-issue RELOPS-456 --link-type Blocks`
