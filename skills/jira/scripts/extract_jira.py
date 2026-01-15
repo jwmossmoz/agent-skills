@@ -130,11 +130,13 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
         if heading_match:
             level = len(heading_match.group(1))
             heading_text = heading_match.group(2)
-            content.append({
-                "type": "heading",
-                "attrs": {"level": level},
-                "content": _parse_inline(heading_text),
-            })
+            content.append(
+                {
+                    "type": "heading",
+                    "attrs": {"level": level},
+                    "content": _parse_inline(heading_text),
+                }
+            )
             i += 1
             continue
 
@@ -143,10 +145,14 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
             items = []
             while i < len(lines) and re.match(r"^\s*[-*]\s+", lines[i]):
                 item_text = re.sub(r"^\s*[-*]\s+", "", lines[i])
-                items.append({
-                    "type": "listItem",
-                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}],
-                })
+                items.append(
+                    {
+                        "type": "listItem",
+                        "content": [
+                            {"type": "paragraph", "content": _parse_inline(item_text)}
+                        ],
+                    }
+                )
                 i += 1
             content.append({"type": "bulletList", "content": items})
             continue
@@ -156,10 +162,14 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
             items = []
             while i < len(lines) and re.match(r"^\s*\d+\.\s+", lines[i]):
                 item_text = re.sub(r"^\s*\d+\.\s+", "", lines[i])
-                items.append({
-                    "type": "listItem",
-                    "content": [{"type": "paragraph", "content": _parse_inline(item_text)}],
-                })
+                items.append(
+                    {
+                        "type": "listItem",
+                        "content": [
+                            {"type": "paragraph", "content": _parse_inline(item_text)}
+                        ],
+                    }
+                )
                 i += 1
             content.append({"type": "orderedList", "content": items})
             continue
@@ -218,32 +228,40 @@ def _parse_inline(text: str) -> list[dict[str, Any]]:
         if match.group(1):  # Link
             link_text = match.group(2)
             link_url = match.group(3)
-            result.append({
-                "type": "text",
-                "text": link_text,
-                "marks": [{"type": "link", "attrs": {"href": link_url}}],
-            })
+            result.append(
+                {
+                    "type": "text",
+                    "text": link_text,
+                    "marks": [{"type": "link", "attrs": {"href": link_url}}],
+                }
+            )
         elif match.group(4):  # Bold
             bold_text = match.group(5)
-            result.append({
-                "type": "text",
-                "text": bold_text,
-                "marks": [{"type": "strong"}],
-            })
+            result.append(
+                {
+                    "type": "text",
+                    "text": bold_text,
+                    "marks": [{"type": "strong"}],
+                }
+            )
         elif match.group(6):  # Italic
             italic_text = match.group(7)
-            result.append({
-                "type": "text",
-                "text": italic_text,
-                "marks": [{"type": "em"}],
-            })
+            result.append(
+                {
+                    "type": "text",
+                    "text": italic_text,
+                    "marks": [{"type": "em"}],
+                }
+            )
         elif match.group(8):  # Inline code
             code_text = match.group(9)
-            result.append({
-                "type": "text",
-                "text": code_text,
-                "marks": [{"type": "code"}],
-            })
+            result.append(
+                {
+                    "type": "text",
+                    "text": code_text,
+                    "marks": [{"type": "code"}],
+                }
+            )
 
         last_end = match.end()
 
@@ -516,8 +534,13 @@ def create_issue(
             else:
                 return False, "Failed to get current user account ID", None
         else:
-            # Assume it's an email or account ID
-            fields["assignee"] = {"id": assignee}
+            account_id = find_user_account_id(email, token, assignee)
+            if account_id:
+                fields["assignee"] = {"accountId": account_id}
+            elif "@" in assignee:
+                return False, f"Could not find user: {assignee}", None
+            else:
+                fields["assignee"] = {"accountId": assignee}
 
     # Add reporter if provided
     if reporter:
@@ -595,9 +618,7 @@ def create_issue(
             else:
                 messages.append(f"Warning: Sprint '{sprint_name}' not found")
         else:
-            messages.append(
-                f"Warning: Could not find board for project {project_key}"
-            )
+            messages.append(f"Warning: Could not find board for project {project_key}")
 
     return True, "; ".join(messages), issue_key
 
@@ -1765,8 +1786,20 @@ Examples:
             else:
                 messages = []
                 # Handle field modifications
-                if any([args.set_status, args.remove_sprint, args.set_sprint,
-                        args.set_epic, args.remove_epic, fix_versions, args.set_summary, args.set_description, args.set_reporter, args.set_assignee]):
+                if any(
+                    [
+                        args.set_status,
+                        args.remove_sprint,
+                        args.set_sprint,
+                        args.set_epic,
+                        args.remove_epic,
+                        fix_versions,
+                        args.set_summary,
+                        args.set_description,
+                        args.set_reporter,
+                        args.set_assignee,
+                    ]
+                ):
                     success, message = modify_issue(
                         email=email,
                         token=token,
