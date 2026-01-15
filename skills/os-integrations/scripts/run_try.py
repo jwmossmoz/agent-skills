@@ -283,7 +283,7 @@ Examples:
         "-q",
         "--query",
         metavar="QUERY",
-        help="Override or append to the preset's query",
+        help="Override the preset's query filter",
     )
     parser.add_argument(
         "--push",
@@ -306,7 +306,9 @@ Examples:
     # Get preset configuration
     preset_config = presets.get(args.preset)
     if preset_config is None:
-        print(f"Error: Preset '{args.preset}' not found in presets file", file=sys.stderr)
+        print(
+            f"Error: Preset '{args.preset}' not found in presets file", file=sys.stderr
+        )
         print(f"Available presets: {', '.join(presets.keys())}", file=sys.stderr)
         return 1
 
