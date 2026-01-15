@@ -55,13 +55,16 @@ Agent definitions are in `agents/`.
 
 ## Usage
 
-To use these skills with Claude Code, symlink them to `~/.claude/skills/`:
+To use skills with Claude Code, symlink individual skills to `~/.claude/skills/`:
 
 ```bash
-ln -s ~/github_moz/agent-skills/skills/* ~/.claude/skills/
+# Link specific skills you want to use
+ln -s ~/github_moz/agent-skills/skills/jira ~/.claude/skills/jira
+ln -s ~/github_moz/agent-skills/skills/os-integrations ~/.claude/skills/os-integrations
+ln -s ~/github_moz/agent-skills/skills/treeherder-status ~/.claude/skills/treeherder-status
 ```
 
-Or configure Claude Code to look in this repository's `skills/` directory.
+This allows you to selectively enable only the skills you need.
 
 ## Setup
 
