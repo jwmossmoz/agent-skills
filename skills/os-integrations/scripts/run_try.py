@@ -339,24 +339,35 @@ Examples:
 
     # Execute command
     print("Executing mach try...\n")
+    process = None
     try:
-        result = subprocess.run(
+        process = subprocess.Popen(
             cmd,
             cwd=FIREFOX_DIR,
             text=True,
-            capture_output=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
         )
 
-        # Note: With capture_output=False, we don't have stdout to parse
-        # If you need to parse output, set capture_output=True
-        display_summary(args.preset, preset_config, cmd)
+        output_lines: list[str] = []
+        assert process.stdout is not None
+        for line in process.stdout:
+            print(line, end="")
+            output_lines.append(line)
 
-        return result.returncode
+        returncode = process.wait()
+        parsed_output = parse_output("".join(output_lines))
+        display_summary(args.preset, preset_config, cmd, parsed_output)
+
+        return returncode
 
     except FileNotFoundError:
         print("Error: Could not execute mach command", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
+        if process and process.poll() is None:
+            process.terminate()
         print("\nOperation cancelled by user")
         return 130
     except Exception as e:
