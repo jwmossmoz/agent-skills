@@ -12,7 +12,6 @@ agent-skills/
 │   └── helper.md     # Sonnet-powered general assistance
 └── skills/
     ├── jira/               # JIRA integration skill
-    ├── skill-creator/      # Skill development helper
     ├── os-integrations/    # Firefox mach try os-integration testing
     └── treeherder-status/  # Treeherder job status checker
 ```
@@ -22,10 +21,6 @@ agent-skills/
 ### JIRA
 Extract, create, and modify JIRA stories.
 See [skills/jira/SKILL.md](skills/jira/SKILL.md) for details.
-
-### Skill Creator
-Helper for creating new agent skills.
-See [skills/skill-creator/SKILL.md](skills/skill-creator/SKILL.md) for details.
 
 ### OS Integrations
 This skill runs Firefox mach try commands for os-integration testing on Windows and Linux virtual machines. Tests execute on VMs hosted in Azure/GCP, which are organized as worker pools in Mozilla's Taskcluster CI system. The skill targets "alpha" worker pools, which are used for testing new VM images before they are promoted to production. This allows for validation of OS integration features in a controlled testing environment.
