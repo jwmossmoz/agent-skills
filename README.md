@@ -34,6 +34,25 @@ See [skills/os-integrations/SKILL.md](skills/os-integrations/SKILL.md) for detai
 ### Treeherder Status
 Check the status of Firefox try pushes on Treeherder by landing job ID. Queries Lando API for landing status and Treeherder API for job results. Use after submitting try pushes with mach try to monitor if jobs passed or failed.
 
+**Workflow:**
+1. Submit try push with mach try (returns landing job ID)
+2. Wait 1-2 minutes for landing to complete
+3. Check status - jobs will be "unscheduled" initially (normal - waiting for builds)
+4. Wait 10-30 minutes for builds and tests to complete
+5. Re-check to see final results (success, testfailed, etc.)
+
+**Example:**
+```bash
+# After submitting a try push (landing job ID: 173178)
+cd ~/.claude/skills/treeherder-status
+uv run scripts/check_status.py 173178 marionette-integration
+
+# Check periodically until jobs complete
+# Initial: "unscheduled" (waiting for builds)
+# Later: "pending" or "running" (executing)
+# Final: "success" or "testfailed" (completed)
+```
+
 See [skills/treeherder-status/SKILL.md](skills/treeherder-status/SKILL.md) for details.
 
 ## Agents

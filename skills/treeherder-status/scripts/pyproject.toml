@@ -1,0 +1,8 @@
+[project]
+name = "treeherder-status"
+version = "0.1.0"
+description = "Check Treeherder status for try pushes"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+]

@@ -91,21 +91,53 @@ After running a try push (e.g., from the os-integrations skill):
 
 ```bash
 # 1. Submit try push (from Firefox repository)
-# This is done by os-integrations skill or manually with mach try
-# Output shows: Landing job id: 173178
+cd ~/firefox && ./mach try fuzzy \
+  --query "linux2404-64 marionette-integration" \
+  --worker-override t-linux-docker-noscratch-amd=gecko-t/t-linux-docker-noscratch-amd-alpha
 
-# 2. Wait a minute for landing, then check status
+# Output shows:
+# Treeherder: https://treeherder.mozilla.org/jobs?repo=try&landoCommitID=173178
+# Landing job id: 173178
+
+# 2. Wait 1-2 minutes for landing to complete, then check status
 cd ~/.claude/skills/treeherder-status
 uv run scripts/check_status.py 173178 marionette-integration
 
-# 3. If still SUBMITTED, wait and check again
+# First check shows:
+# Landing status: LANDED
+# Commit ID: ed901414ea5ec1e188547898b31d133731e77588
+# Marionette jobs: 2
+# test-linux2404-64/opt-marionette-integration - unknown (unscheduled)
+# test-linux2404-64/debug-marionette-integration - unknown (unscheduled)
+
+# 3. Wait 10-30 minutes for builds to complete and tests to schedule
+# Jobs remain "unscheduled" until the build jobs (linux64/opt, linux64/debug, etc.) finish
+# Check again periodically:
 uv run scripts/check_status.py 173178 marionette-integration
+
+# Eventually shows:
+# ✅ test-linux2404-64/opt-marionette-integration - success (completed)
+# ❌ test-linux2404-64/debug-marionette-integration - testfailed (completed)
 ```
+
+## Understanding Job States
+
+**Typical job lifecycle:**
+1. **unscheduled** - Job exists but waiting for dependencies (usually build jobs)
+2. **pending** - Job is scheduled and waiting for a worker
+3. **running** - Job is currently executing
+4. **completed** - Job finished with a result (success, testfailed, busted, etc.)
+
+**Important:** Test jobs cannot run until their build dependencies complete. For example, `test-linux2404-64/opt-marionette-integration` needs `build-linux64/opt` to finish first. This is why all jobs initially show as "unscheduled" - this is normal and expected.
 
 ## Limitations
 
 - **No polling** - The script checks status once and exits. Run it multiple times as needed.
-- **Timing** - Landing jobs typically take 1-2 minutes. Jobs may take longer to schedule and run.
+- **Timing expectations:**
+  - Landing: 1-2 minutes to go from SUBMITTED to LANDED
+  - Build jobs: 10-20 minutes to complete
+  - Test jobs: Can only start after builds finish, then 5-15 minutes to run
+  - Total: 15-30 minutes from try push to test results
 - **Filter matching** - Job filter uses simple substring matching on job type names.
 
 ## Exit Codes
