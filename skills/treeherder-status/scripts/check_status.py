@@ -6,16 +6,20 @@ This script checks the status of a Lando landing job and queries Treeherder
 for job results once the commit has landed.
 """
 
-import requests
-import sys
+import argparse
 import json
-from typing import Optional, Dict, Any
+import sys
+from typing import Any, Dict, Optional
+
+import requests
+
+REQUEST_TIMEOUT = 30
 
 
 def check_lando_status(landing_job_id: str) -> Dict[str, Any]:
     """Check Lando landing job status."""
     url = f"https://api.lando.services.mozilla.com/landing_jobs/{landing_job_id}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -24,7 +28,7 @@ def get_push_by_revision(repo: str, revision: str) -> Optional[Dict[str, Any]]:
     """Get push information from Treeherder by revision."""
     url = f"https://treeherder.mozilla.org/api/project/{repo}/push/"
     params = {"revision": revision}
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     data = response.json()
 
@@ -33,11 +37,13 @@ def get_push_by_revision(repo: str, revision: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_jobs_for_push(repo: str, push_id: int, filter_text: Optional[str] = None) -> list:
+def get_jobs_for_push(
+    repo: str, push_id: int, filter_text: Optional[str] = None
+) -> list:
     """Get jobs for a specific push."""
     url = f"https://treeherder.mozilla.org/api/project/{repo}/jobs/"
     params = {"push_id": push_id}
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     data = response.json()
 
@@ -71,27 +77,31 @@ def format_job_status(job: Dict[str, Any]) -> str:
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python check_status.py <landing_job_id> [job_filter] [--repo REPO]")
-        print("\nExamples:")
-        print("  python check_status.py 173178")
-        print("  python check_status.py 173178 marionette-integration")
-        print("  python check_status.py 173178 --repo try")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Check Treeherder status for a landing job ID.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  python check_status.py 173178
+  python check_status.py 173178 marionette-integration
+  python check_status.py 173178 --repo try
+""",
+    )
+    parser.add_argument("landing_job_id", help="Lando landing job ID")
+    parser.add_argument(
+        "job_filter",
+        nargs="?",
+        help="Filter jobs by name (e.g., marionette-integration)",
+    )
+    parser.add_argument(
+        "--repo",
+        default="try",
+        help="Treeherder repository (default: try)",
+    )
+    args = parser.parse_args()
 
-    landing_job_id = sys.argv[1]
-    job_filter = None
-    repo = "try"
-
-    # Parse optional arguments
-    i = 2
-    while i < len(sys.argv):
-        if sys.argv[i] == "--repo":
-            repo = sys.argv[i + 1]
-            i += 2
-        else:
-            job_filter = sys.argv[i]
-            i += 1
+    landing_job_id = args.landing_job_id
+    job_filter = args.job_filter
+    repo = args.repo
 
     print(f"Checking landing job {landing_job_id}...")
 
@@ -125,7 +135,9 @@ def main():
         push = get_push_by_revision(repo, commit_id)
 
         if not push:
-            print(f"⚠️  Push not found yet on Treeherder. It may take a few moments to appear.")
+            print(
+                f"⚠️  Push not found yet on Treeherder. It may take a few moments to appear."
+            )
             sys.exit(0)
 
         push_id = push.get("id")
@@ -135,7 +147,9 @@ def main():
         print(f"Push ID: {push_id}")
         print(f"Revision: {revision}")
         print(f"Author: {author}")
-        print(f"Treeherder URL: https://treeherder.mozilla.org/jobs?repo={repo}&revision={revision}")
+        print(
+            f"Treeherder URL: https://treeherder.mozilla.org/jobs?repo={repo}&revision={revision}"
+        )
 
     except requests.exceptions.RequestException as e:
         print(f"❌ Error querying Treeherder: {e}")
