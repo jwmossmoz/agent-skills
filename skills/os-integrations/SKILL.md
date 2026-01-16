@@ -38,11 +38,13 @@ uv run scripts/run_try.py win11-24h2 -q "-xq 'mochitest-chrome'" --push
 
 - Firefox repository at `~/firefox`
 - Must be on a feature branch (not main/master)
+- Mozilla Auth0 authentication (for Lando-based pushes)
 
 ## Additional Documentation
 
 - **Presets Configuration**: See `references/presets.yml`
 - **Linux Worker Overrides**: See `references/linux-worker-overrides.md`
+- **Pushing to Try**: See `references/pushing-to-try.md`
 - **Script Help**: Run `uv run scripts/run_try.py --help`
 
 ## Official Documentation
