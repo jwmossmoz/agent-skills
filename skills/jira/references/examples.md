@@ -81,6 +81,11 @@ cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --s
 cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --remove-epic
 ```
 
+### Sprint Removal (Backlog)
+```bash
+cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123 --remove-sprint
+```
+
 ### Modify Multiple Issues
 ```bash
 cd .claude/skills/jira/scripts && uv run extract_jira.py --modify RELOPS-123,RELOPS-124,RELOPS-125 --set-status "Backlog" --remove-sprint
