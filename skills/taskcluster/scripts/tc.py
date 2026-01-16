@@ -8,11 +8,15 @@ It primarily shells out to the `taskcluster` command and handles URL parsing.
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
+
+# Default Taskcluster root URL for Firefox CI
+DEFAULT_TASKCLUSTER_ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
 
 
 def extract_task_id(task_id_or_url: str) -> str:
@@ -47,8 +51,13 @@ def run_taskcluster_cmd(args: list[str], json_output: bool = True) -> int:
     """
     cmd = ["taskcluster"] + args
 
+    # Set default TASKCLUSTER_ROOT_URL if not already set
+    env = os.environ.copy()
+    if "TASKCLUSTER_ROOT_URL" not in env:
+        env["TASKCLUSTER_ROOT_URL"] = DEFAULT_TASKCLUSTER_ROOT_URL
+
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
 
         if result.returncode != 0:
             print(result.stderr, file=sys.stderr)
