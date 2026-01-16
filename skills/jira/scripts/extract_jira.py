@@ -511,9 +511,17 @@ def create_issue(
             else:
                 return False, f"Could not find user: {reporter}", None
 
+    epic_id = None
     # Add epic link if provided
     if epic_key:
-        fields["parent"] = {"key": epic_key}
+        try:
+            epic_id = client.issue(epic_key).id
+        except JIRAError:
+            epic_id = None
+
+        fields["customfield_10014"] = epic_key
+        if not epic_id:
+            fields["parent"] = {"key": epic_key}
 
     # Add labels if provided
     if labels:
@@ -533,6 +541,13 @@ def create_issue(
     issue_url = f"{JIRA_BASE_URL}/browse/{issue_key}" if issue_key else None
 
     messages = [f"Created {issue_key}: {issue_url}"]
+
+    if issue_key and epic_id:
+        try:
+            client.add_issues_to_epic(epic_id, [issue_key])
+            messages.append(f"Linked to epic {epic_key}")
+        except JIRAError as exc:
+            messages.append(f"Warning: Failed to set epic: {exc}")
 
     # If sprint is specified, add to sprint (requires a separate API call)
     if sprint_name and issue_key:
@@ -606,13 +621,24 @@ def modify_issue(
 
     # Handle epic changes
     if remove_epic:
-        # Try both parent (next-gen) and customfield_10014 (classic)
         update_payload["fields"]["parent"] = None
+        update_payload["fields"]["customfield_10014"] = None
         messages.append("Removed from epic")
     elif set_epic:
-        # Set epic link - try parent field for next-gen projects
-        update_payload["fields"]["parent"] = {"key": set_epic}
-        messages.append(f"Set epic to {set_epic}")
+        try:
+            epic_id = client.issue(set_epic).id
+        except JIRAError:
+            epic_id = None
+
+        if epic_id:
+            try:
+                client.add_issues_to_epic(epic_id, [issue_key])
+                messages.append(f"Set epic to {set_epic}")
+            except JIRAError as exc:
+                return False, f"Failed to set epic {set_epic}: {exc}"
+        else:
+            update_payload["fields"]["customfield_10014"] = set_epic
+            messages.append(f"Set epic to {set_epic}")
 
     # Handle fix versions
     if set_fix_versions:
