@@ -103,7 +103,8 @@ cd .claude/skills/jira/scripts && uv sync
 
 Then run commands with `uv run extract_jira.py`. When the user asks to:
 - "extract my JIRA stories" → Run with `--my-issues`
-- "show my sprint stories" or "current sprint" → Run with `--current-sprint --my-issues --summary`
+- "show my sprint stories" or "my current sprint stories" → Run with `--current-sprint --my-issues --summary`
+- "current sprint" or "all sprint stories" → Run with `--current-sprint --summary`
 - "get all RELOPS epics" → Run with `--epics`
 - "show stories in epic RELOPS-123" → Run with `--epic-key RELOPS-123`
 - "stories in specific sprint" → Run with `--sprint "Sprint Name"`

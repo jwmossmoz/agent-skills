@@ -30,6 +30,16 @@ cd .claude/skills/jira/scripts && uv run extract_jira.py --epic-key RELOPS-123
 cd .claude/skills/jira/scripts && uv run extract_jira.py --my-issues
 ```
 
+### Extract Current Sprint Stories
+```bash
+cd .claude/skills/jira/scripts && uv run extract_jira.py --current-sprint --summary
+```
+
+### Extract Your Stories in Current Sprint
+```bash
+cd .claude/skills/jira/scripts && uv run extract_jira.py --current-sprint --my-issues --summary
+```
+
 ### Filter by Status
 ```bash
 cd .claude/skills/jira/scripts && uv run extract_jira.py --status "In Progress"

@@ -15,6 +15,19 @@ This repository provides modular skills that enable AI agents to interact with M
 
 ## Usage
 
+### For Users
+
+Once skills are installed, simply ask Claude naturally:
+
+- "Show me my current sprint stories"
+- "Check the treeherder status for my push"
+- "Run os-integration tests on Windows 11"
+- "Create a JIRA story for fixing the login bug"
+
+Claude will invoke the appropriate skill and handle all the technical details (directory navigation, command execution, etc.) for you.
+
+### For Installation / Manual Use
+
 Symlink skills to your agent's skill directory:
 
 ```bash
@@ -24,7 +37,10 @@ ln -s ~/github_moz/agent-skills/skills/os-integrations ~/.claude/skills/os-integ
 ln -s ~/github_moz/agent-skills/skills/jira ~/.claude/skills/jira
 ```
 
-Each skill contains a `SKILL.md` with documentation, prerequisites, and usage examples.
+Each skill contains:
+- `SKILL.md` - Full documentation and examples for Claude's reference
+- `references/examples.md` - Command-line examples for manual execution
+- `scripts/` - The actual implementation scripts
 
 ## Design Principles
 
