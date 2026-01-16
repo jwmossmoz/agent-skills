@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["treeherder-client", "requests"]
+# ///
 """
 Check Treeherder status for try pushes by landing job ID.
 
@@ -12,6 +16,7 @@ import sys
 from typing import Any, Dict, Optional
 
 import requests
+from thclient import TreeherderClient
 
 REQUEST_TIMEOUT = 30
 
@@ -24,13 +29,11 @@ def check_lando_status(landing_job_id: str) -> Dict[str, Any]:
     return response.json()
 
 
-def get_push_by_revision(repo: str, revision: str) -> Optional[Dict[str, Any]]:
+def get_push_by_revision(
+    client: TreeherderClient, repo: str, revision: str
+) -> Optional[Dict[str, Any]]:
     """Get push information from Treeherder by revision."""
-    url = f"https://treeherder.mozilla.org/api/project/{repo}/push/"
-    params = {"revision": revision}
-    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    data = response.json()
+    data = client._get_json(client.PUSH_ENDPOINT, project=repo, revision=revision)
 
     if data.get("results"):
         return data["results"][0]
@@ -38,14 +41,10 @@ def get_push_by_revision(repo: str, revision: str) -> Optional[Dict[str, Any]]:
 
 
 def get_jobs_for_push(
-    repo: str, push_id: int, filter_text: Optional[str] = None
+    client: TreeherderClient, repo: str, push_id: int, filter_text: Optional[str] = None
 ) -> list:
     """Get jobs for a specific push."""
-    url = f"https://treeherder.mozilla.org/api/project/{repo}/jobs/"
-    params = {"push_id": push_id}
-    response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    data = response.json()
+    data = client._get_json(client.JOBS_ENDPOINT, project=repo, push_id=push_id)
 
     jobs = data.get("results", [])
 
@@ -103,6 +102,9 @@ def main():
     job_filter = args.job_filter
     repo = args.repo
 
+    # Initialize Treeherder client
+    th_client = TreeherderClient(timeout=REQUEST_TIMEOUT)
+
     print(f"Checking landing job {landing_job_id}...")
 
     # Check Lando status
@@ -132,7 +134,7 @@ def main():
     # Get push from Treeherder
     print(f"\nQuerying Treeherder for push on {repo}...")
     try:
-        push = get_push_by_revision(repo, commit_id)
+        push = get_push_by_revision(th_client, repo, commit_id)
 
         if not push:
             print(
@@ -158,7 +160,7 @@ def main():
     # Get jobs
     print(f"\nFetching jobs{' matching ' + repr(job_filter) if job_filter else ''}...")
     try:
-        jobs = get_jobs_for_push(repo, push_id, job_filter)
+        jobs = get_jobs_for_push(th_client, repo, push_id, job_filter)
 
         if not jobs:
             print(f"⚠️  No jobs found yet. Jobs may still be scheduling.")
