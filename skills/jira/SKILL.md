@@ -17,6 +17,8 @@ This skill uses 1Password CLI to securely retrieve JIRA API tokens. You must:
 
 ### 2. Configuration
 
+This skill now uses the official `jira` Python package as a thin wrapper around the Jira Cloud API.
+
 Copy the example configuration file and customize it:
 
 ```bash
@@ -34,7 +36,7 @@ Edit `config.toml` to match your setup:
 
 ## Usage
 
-Run the JIRA script from the `scripts` directory where `pyproject.toml` is located. Always use `uv sync && uv run` to ensure dependencies are installed:
+Run the JIRA script from the `scripts` directory where `pyproject.toml` is located. Always use `uv sync && uv run` to ensure dependencies are installed (this installs the official `jira` client):
 
 ```bash
 cd .claude/skills/jira/scripts && uv sync && uv run extract_jira.py [options]
