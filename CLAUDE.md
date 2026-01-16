@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository provides modular skills that enable AI agents to interact with Mozilla's development tools and CI systems. Each skill is self-contained and uses official Mozilla tools where available.
 
+## Role and Context
+
+**Your role**: Supporting Firefox CI infrastructure, not Firefox development itself. You work on CI tooling, worker pool configurations, and automation that supports Firefox developers.
+
+**Firefox Repository References**: When working with Firefox-related skills (especially os-integrations, treeherder, lando), be aware of the Firefox repository's agent guidance:
+
+- **Firefox CLAUDE.md**: https://searchfox.org/mozilla-central/source/CLAUDE.md (references AGENTS.md)
+- **Firefox AGENTS.md**: https://searchfox.org/mozilla-central/source/AGENTS.md
+
+Key Firefox workflow notes from AGENTS.md:
+- Use `searchfox-cli` for searching the large Firefox codebase (not grep/rg)
+- `./mach` is the main interface (`./mach build`, `./mach test`, `./mach try`, etc.)
+- Always run `./mach format` and `./mach lint` before committing
+- Use `./mach try auto` to run tests in CI
+- Never perform commits yourself - always let the user commit
+- Firefox repo is assumed to be at `~/firefox`
+
+These Firefox conventions apply when debugging CI issues or testing worker configurations that involve Firefox builds/tests.
+
 ## Repository Structure
 
 ```
