@@ -45,7 +45,6 @@ from typing import Any
 
 from jira import JIRA
 from jira.exceptions import JIRAError
-import requests
 
 
 def load_config() -> dict[str, Any]:
@@ -78,7 +77,6 @@ def load_config() -> dict[str, Any]:
 CONFIG = load_config()
 
 JIRA_BASE_URL = CONFIG["jira"]["base_url"]
-JIRA_API_URL = f"{JIRA_BASE_URL}/rest/api/3"
 OP_ITEM_NAME = CONFIG["onepassword"]["item_name"]
 OP_VAULT = CONFIG["onepassword"]["vault"]
 OP_CREDENTIAL_FIELD = CONFIG["onepassword"].get("credential_field", "credential")
@@ -371,132 +369,81 @@ def get_email_from_1password() -> str | None:
         return None
 
 
-def get_board_id_for_project(email: str, token: str, project_key: str) -> int | None:
-    """Get the board ID for a project (needed for sprint operations). Finds a board that supports sprints."""
-    auth = (email, token)
-    headers = {"Accept": "application/json"}
-
-    # Use the Agile API to find boards for the project
-    response = requests.get(
-        f"{JIRA_BASE_URL}/rest/agile/1.0/board",
-        auth=auth,
-        headers=headers,
-        params={"projectKeyOrId": project_key},
-        timeout=30,
-    )
-
-    if response.status_code != 200:
+def get_board_id_for_project(client: JIRA, project_key: str) -> int | None:
+    """Get the board ID for a project (needed for sprint operations)."""
+    try:
+        boards = client.boards(projectKeyOrID=project_key)
+    except JIRAError:
         return None
 
-    data = response.json()
-    boards = data.get("values", [])
-
-    # Try to find a board that supports sprints (Scrum board)
     for board in boards:
-        board_id = board.get("id")
+        board_id = getattr(board, "id", None)
         if board_id:
-            # Check if this board supports sprints by trying to get its sprints
-            test_response = requests.get(
-                f"{JIRA_BASE_URL}/rest/agile/1.0/board/{board_id}/sprint",
-                auth=auth,
-                headers=headers,
-                params={"maxResults": 1},
-                timeout=30,
-            )
-            if test_response.status_code == 200:
-                # This board supports sprints!
-                return board_id
+            try:
+                client.sprints(board_id, maxResults=1)
+                return int(board_id)
+            except JIRAError:
+                continue
 
-    # Fallback: return first board if none support sprints
     if boards:
-        return boards[0].get("id")
+        board_id = getattr(boards[0], "id", None)
+        return int(board_id) if board_id else None
     return None
 
 
-def get_sprint_id_by_name(
-    email: str, token: str, board_id: int, sprint_name: str
-) -> int | None:
+def get_sprint_id_by_name(client: JIRA, board_id: int, sprint_name: str) -> int | None:
     """Get sprint ID by name."""
-    auth = (email, token)
-    headers = {"Accept": "application/json"}
-
-    # Try all sprint states (active, future, closed)
-    response = requests.get(
-        f"{JIRA_BASE_URL}/rest/agile/1.0/board/{board_id}/sprint",
-        auth=auth,
-        headers=headers,
-        timeout=30,
-    )
-
-    if response.status_code != 200:
+    try:
+        sprints = client.sprints(board_id)
+    except JIRAError:
         return None
 
-    data = response.json()
-    for sprint in data.get("values", []):
-        if sprint.get("name") == sprint_name:
-            return sprint.get("id")
+    for sprint in sprints:
+        if getattr(sprint, "name", None) == sprint_name:
+            sprint_id = getattr(sprint, "id", None)
+            return int(sprint_id) if sprint_id else None
     return None
 
 
-def get_current_user_account_id(email: str, token: str) -> str | None:
+def get_current_user_account_id(client: JIRA) -> str | None:
     """Get the account ID for the current user."""
-    auth = (email, token)
-    headers = {"Accept": "application/json"}
-
-    response = requests.get(
-        f"{JIRA_API_URL}/myself",
-        auth=auth,
-        headers=headers,
-        timeout=30,
-    )
-
-    if response.status_code == 200:
-        data = response.json()
-        return data.get("accountId")
-    return None
+    try:
+        account_id = client.current_user()
+    except JIRAError:
+        return None
+    return account_id or None
 
 
-def find_user_account_id(email: str, token: str, query: str) -> str | None:
+def find_user_account_id(client: JIRA, query: str) -> str | None:
     """
     Find a user's account ID by email or display name.
 
     Args:
-        email: Auth email for JIRA API
-        token: Auth token for JIRA API
+        client: Jira client
         query: Email address or display name to search for
 
     Returns:
         Account ID if found, None otherwise
     """
-    auth = (email, token)
-    headers = {"Accept": "application/json"}
+    try:
+        users = client.search_users(query=query)
+    except JIRAError:
+        return None
 
-    # Try user search API
-    response = requests.get(
-        f"{JIRA_API_URL}/user/search",
-        auth=auth,
-        headers=headers,
-        params={"query": query},
-        timeout=30,
-    )
+    if not users:
+        return None
 
-    if response.status_code == 200:
-        users = response.json()
-        if users:
-            # If query looks like an email, try to match exactly
-            if "@" in query:
-                for user in users:
-                    if user.get("emailAddress", "").lower() == query.lower():
-                        return user.get("accountId")
-            # Otherwise return first match
-            return users[0].get("accountId")
+    if "@" in query:
+        for user in users:
+            email = getattr(user, "emailAddress", None)
+            if email and email.lower() == query.lower():
+                return getattr(user, "accountId", None)
 
-    return None
+    return getattr(users[0], "accountId", None)
 
 
 def create_issue(
-    email: str,
-    token: str,
+    client: JIRA,
     project_key: str,
     summary: str,
     description: str | None = None,
@@ -514,12 +461,6 @@ def create_issue(
 
     Returns (success, message, issue_key) tuple.
     """
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
-
     # Build the fields payload
     fields: dict[str, Any] = {
         "project": {"key": project_key},
@@ -539,13 +480,13 @@ def create_issue(
     if assignee:
         if assignee.lower() in ("me", "currentuser", "current"):
             # Get the current user's account ID
-            account_id = get_current_user_account_id(email, token)
+            account_id = get_current_user_account_id(client)
             if account_id:
                 fields["assignee"] = {"accountId": account_id}
             else:
                 return False, "Failed to get current user account ID", None
         else:
-            account_id = find_user_account_id(email, token, assignee)
+            account_id = find_user_account_id(client, assignee)
             if account_id:
                 fields["assignee"] = {"accountId": account_id}
             elif "@" in assignee:
@@ -557,14 +498,14 @@ def create_issue(
     if reporter:
         if reporter.lower() in ("me", "currentuser", "current"):
             # Get the current user's account ID
-            account_id = get_current_user_account_id(email, token)
+            account_id = get_current_user_account_id(client)
             if account_id:
                 fields["reporter"] = {"accountId": account_id}
             else:
                 return False, "Failed to get current user account ID", None
         else:
             # Search for user by email or display name
-            account_id = find_user_account_id(email, token, reporter)
+            account_id = find_user_account_id(client, reporter)
             if account_id:
                 fields["reporter"] = {"accountId": account_id}
             else:
@@ -583,49 +524,27 @@ def create_issue(
         fields["fixVersions"] = [{"name": version} for version in fix_versions]
 
     # Create the issue
-    payload = {"fields": fields}
+    try:
+        issue = client.create_issue(fields=fields)
+    except JIRAError as exc:
+        return False, f"Failed to create issue: {exc}", None
 
-    response = requests.post(
-        f"{JIRA_API_URL}/issue",
-        auth=auth,
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-
-    if response.status_code not in (200, 201):
-        error_msg = response.text
-        try:
-            error_data = response.json()
-            if "errors" in error_data:
-                error_msg = str(error_data["errors"])
-            elif "errorMessages" in error_data:
-                error_msg = ", ".join(error_data["errorMessages"])
-        except (ValueError, KeyError):
-            pass
-        return False, f"Failed to create issue: {error_msg}", None
-
-    # Get the created issue key
-    created_data = response.json()
-    issue_key = created_data.get("key")
-    issue_url = f"{JIRA_BASE_URL}/browse/{issue_key}"
+    issue_key = getattr(issue, "key", None)
+    issue_url = f"{JIRA_BASE_URL}/browse/{issue_key}" if issue_key else None
 
     messages = [f"Created {issue_key}: {issue_url}"]
 
     # If sprint is specified, add to sprint (requires a separate API call)
     if sprint_name and issue_key:
-        board_id = get_board_id_for_project(email, token, project_key)
+        board_id = get_board_id_for_project(client, project_key)
         if board_id:
-            sprint_id = get_sprint_id_by_name(email, token, board_id, sprint_name)
+            sprint_id = get_sprint_id_by_name(client, board_id, sprint_name)
             if sprint_id:
-                # Use the modify_issue function to set the sprint
-                success, msg = modify_issue(
-                    email, token, issue_key, set_sprint=sprint_name
-                )
-                if success:
+                try:
+                    client.add_issues_to_sprint(sprint_id, [issue_key])
                     messages.append(f"Added to sprint '{sprint_name}'")
-                else:
-                    messages.append(f"Warning: {msg}")
+                except JIRAError as exc:
+                    messages.append(f"Warning: Failed to add to sprint: {exc}")
             else:
                 messages.append(f"Warning: Sprint '{sprint_name}' not found")
         else:
@@ -635,8 +554,7 @@ def create_issue(
 
 
 def modify_issue(
-    email: str,
-    token: str,
+    client: JIRA,
     issue_key: str,
     set_status: str | None = None,
     remove_sprint: bool = False,
@@ -654,17 +572,11 @@ def modify_issue(
 
     Returns (success, message) tuple.
     """
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
-
     messages = []
 
     # Handle status change via transitions
     if set_status:
-        success, msg = transition_issue(email, token, issue_key, set_status)
+        success, msg = transition_issue(client, issue_key, set_status)
         messages.append(msg)
         if not success:
             return False, msg
@@ -681,9 +593,9 @@ def modify_issue(
         # Need to get sprint ID first
         # Extract project key from issue key
         project_key = issue_key.split("-")[0]
-        board_id = get_board_id_for_project(email, token, project_key)
+        board_id = get_board_id_for_project(client, project_key)
         if board_id:
-            sprint_id = get_sprint_id_by_name(email, token, board_id, set_sprint)
+            sprint_id = get_sprint_id_by_name(client, board_id, set_sprint)
             if sprint_id:
                 update_payload["fields"]["customfield_10020"] = sprint_id
                 messages.append(f"Set sprint to '{set_sprint}'")
@@ -722,14 +634,14 @@ def modify_issue(
     # Handle reporter change
     if set_reporter:
         if set_reporter.lower() in ("me", "currentuser", "current"):
-            account_id = get_current_user_account_id(email, token)
+            account_id = get_current_user_account_id(client)
             if account_id:
                 update_payload["fields"]["reporter"] = {"accountId": account_id}
                 messages.append("Set reporter to current user")
             else:
                 return False, "Failed to get current user account ID"
         else:
-            account_id = find_user_account_id(email, token, set_reporter)
+            account_id = find_user_account_id(client, set_reporter)
             if account_id:
                 update_payload["fields"]["reporter"] = {"accountId": account_id}
                 messages.append(f"Set reporter to '{set_reporter}'")
@@ -739,48 +651,33 @@ def modify_issue(
     # Handle assignee change
     if set_assignee:
         if set_assignee.lower() in ("me", "currentuser", "current"):
-            account_id = get_current_user_account_id(email, token)
+            account_id = get_current_user_account_id(client)
             if account_id:
                 update_payload["fields"]["assignee"] = {"accountId": account_id}
                 messages.append("Set assignee to current user")
             else:
                 return False, "Failed to get current user account ID"
         else:
-            account_id = find_user_account_id(email, token, set_assignee)
+            account_id = find_user_account_id(client, set_assignee)
             if account_id:
                 update_payload["fields"]["assignee"] = {"accountId": account_id}
                 messages.append(f"Set assignee to '{set_assignee}'")
             else:
                 return False, f"Could not find user: {set_assignee}"
 
-    # Only make the PUT request if we have field changes
+    # Only make the update request if we have field changes
     if update_payload["fields"]:
-        response = requests.put(
-            f"{JIRA_API_URL}/issue/{issue_key}",
-            auth=auth,
-            headers=headers,
-            json=update_payload,
-            timeout=30,
-        )
-
-        if response.status_code not in (200, 204):
-            error_msg = response.text
-            try:
-                error_data = response.json()
-                if "errors" in error_data:
-                    error_msg = str(error_data["errors"])
-                elif "errorMessages" in error_data:
-                    error_msg = ", ".join(error_data["errorMessages"])
-            except (ValueError, KeyError):
-                pass
-            return False, f"Failed to update {issue_key}: {error_msg}"
+        try:
+            issue = client.issue(issue_key)
+            issue.update(fields=update_payload["fields"])
+        except JIRAError as exc:
+            return False, f"Failed to update {issue_key}: {exc}"
 
     return True, "; ".join(messages) if messages else "No changes made"
 
 
 def link_issues(
-    email: str,
-    token: str,
+    client: JIRA,
     inward_issue: str,
     outward_issue: str,
     link_type: str = "Relates",
@@ -795,44 +692,16 @@ def link_issues(
 
     Returns (success, message) tuple.
     """
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
-
-    payload = {
-        "type": {"name": link_type},
-        "inwardIssue": {"key": inward_issue},
-        "outwardIssue": {"key": outward_issue},
-    }
-
-    response = requests.post(
-        f"{JIRA_API_URL}/issueLink",
-        auth=auth,
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-
-    if response.status_code not in (200, 201):
-        error_msg = response.text
-        try:
-            error_data = response.json()
-            if "errors" in error_data:
-                error_msg = str(error_data["errors"])
-            elif "errorMessages" in error_data:
-                error_msg = ", ".join(error_data["errorMessages"])
-        except (ValueError, KeyError):
-            pass
-        return False, f"Failed to link {inward_issue} to {outward_issue}: {error_msg}"
+    try:
+        client.create_issue_link(link_type, inward_issue, outward_issue)
+    except JIRAError as exc:
+        return False, f"Failed to link {inward_issue} to {outward_issue}: {exc}"
 
     return True, f"Linked {inward_issue} to {outward_issue} ({link_type})"
 
 
 def add_comment(
-    email: str,
-    token: str,
+    client: JIRA,
     issue_key: str,
     comment_text: str,
 ) -> tuple[bool, str]:
@@ -841,73 +710,34 @@ def add_comment(
 
     Returns (success, message) tuple.
     """
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
-
-    # Convert to ADF (Atlassian Document Format, supports Markdown)
-    payload = {"body": markdown_to_adf(comment_text)}
-
-    response = requests.post(
-        f"{JIRA_API_URL}/issue/{issue_key}/comment",
-        auth=auth,
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-
-    if response.status_code not in (200, 201):
-        error_msg = response.text
-        try:
-            error_data = response.json()
-            if "errors" in error_data:
-                error_msg = str(error_data["errors"])
-            elif "errorMessages" in error_data:
-                error_msg = ", ".join(error_data["errorMessages"])
-        except (ValueError, KeyError):
-            pass
-        return False, f"Failed to add comment to {issue_key}: {error_msg}"
+    try:
+        client.add_comment(issue_key, markdown_to_adf(comment_text))
+    except JIRAError as exc:
+        return False, f"Failed to add comment to {issue_key}: {exc}"
 
     return True, "Added comment"
 
 
 def transition_issue(
-    email: str, token: str, issue_key: str, target_status: str
+    client: JIRA, issue_key: str, target_status: str
 ) -> tuple[bool, str]:
     """
     Transition an issue to a new status.
 
     Returns (success, message) tuple.
     """
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
+    try:
+        transitions = client.transitions(issue_key)
+    except JIRAError as exc:
+        return False, f"Failed to get transitions for {issue_key}: {exc}"
 
-    # First, get available transitions
-    response = requests.get(
-        f"{JIRA_API_URL}/issue/{issue_key}/transitions",
-        auth=auth,
-        headers=headers,
-        timeout=30,
-    )
-
-    if response.status_code != 200:
-        return False, f"Failed to get transitions for {issue_key}"
-
-    transitions = response.json().get("transitions", [])
-
-    # Find the transition that leads to our target status
     target_transition = None
     available_statuses = []
-    for t in transitions:
-        status_name = t.get("to", {}).get("name", "")
+    for transition in transitions:
+        status_name = transition.get("to", {}).get("name", "")
         available_statuses.append(status_name)
         if status_name.lower() == target_status.lower():
-            target_transition = t
+            target_transition = transition
             break
 
     if not target_transition:
@@ -916,51 +746,28 @@ def transition_issue(
             f"Cannot transition to '{target_status}'. Available: {', '.join(available_statuses)}",
         )
 
-    # Perform the transition
-    response = requests.post(
-        f"{JIRA_API_URL}/issue/{issue_key}/transitions",
-        auth=auth,
-        headers=headers,
-        json={"transition": {"id": target_transition["id"]}},
-        timeout=30,
-    )
-
-    if response.status_code not in (200, 204):
-        return False, f"Failed to transition {issue_key} to {target_status}"
+    try:
+        client.transition_issue(issue_key, target_transition["id"])
+    except JIRAError as exc:
+        return False, f"Failed to transition {issue_key} to {target_status}: {exc}"
 
     return True, f"Status changed to '{target_status}'"
 
 
-def list_projects(email: str, token: str) -> None:
+def list_projects(client: JIRA) -> None:
     """List all accessible JIRA projects."""
-    auth = (email, token)
-    headers = {"Accept": "application/json"}
-
-    response = requests.get(
-        f"{JIRA_API_URL}/project",
-        auth=auth,
-        headers=headers,
-        timeout=30,
-    )
-
-    if response.status_code != 200:
-        print(
-            f"Error: Failed to fetch projects (status {response.status_code})",
-            file=sys.stderr,
-        )
-        print(response.text, file=sys.stderr)
+    try:
+        projects = client.projects()
+    except JIRAError as exc:
+        print(f"Error: Failed to fetch projects: {exc}", file=sys.stderr)
         sys.exit(1)
-
-    projects = response.json()
-    if isinstance(projects, dict):
-        projects = projects.get("values", [])
 
     print(f"\nAvailable projects ({len(projects)}):\n")
     print(f"{'KEY':<15} {'NAME'}")
     print("-" * 60)
-    for project in sorted(projects, key=lambda p: p.get("key", "")):
-        key = project.get("key", "")
-        name = project.get("name", "")
+    for project in sorted(projects, key=lambda p: getattr(p, "key", "")):
+        key = getattr(project, "key", "")
+        name = getattr(project, "name", "")
         print(f"{key:<15} {name}")
 
 
@@ -1047,81 +854,43 @@ def build_jql_query(args) -> str:
     return jql
 
 
-def fetch_all_stories(email: str, token: str, jql: str) -> list[dict]:
+def fetch_all_stories(client: JIRA, jql: str) -> list[dict]:
     """Fetch JIRA stories with pagination."""
-    auth = (email, token)
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
-
     all_issues = []
-    max_results = 100  # JIRA API max per request
-    next_page_token = None
+    max_results = 100
+    start_at = 0
 
     print(f"Fetching stories from {JIRA_BASE_URL}...")
     print(f"JQL: {jql}\n")
 
     while True:
-        # New API uses POST with JSON body and nextPageToken for pagination
-        payload = {
-            "jql": jql,
-            "maxResults": max_results,
-            "fields": ESSENTIAL_FIELDS,
-        }
-
-        # Add pagination token if we have one
-        if next_page_token:
-            payload["nextPageToken"] = next_page_token
-
-        response = requests.post(
-            f"{JIRA_API_URL}/search/jql",
-            auth=auth,
-            headers=headers,
-            json=payload,
-            timeout=30,
-        )
-
-        if response.status_code == 401:
-            print(
-                "Error: Authentication failed. Check your email and API token.",
-                file=sys.stderr,
+        try:
+            issues = client.search_issues(
+                jql,
+                startAt=start_at,
+                maxResults=max_results,
+                fields=ESSENTIAL_FIELDS,
             )
-            sys.exit(1)
-        elif response.status_code == 403:
-            print("Error: Access forbidden. Check your permissions.", file=sys.stderr)
-            sys.exit(1)
-        elif response.status_code == 400:
-            print(f"Error: Bad request - check your JQL syntax", file=sys.stderr)
-            print(response.text, file=sys.stderr)
-            sys.exit(1)
-        elif response.status_code != 200:
-            print(
-                f"Error: API request failed with status {response.status_code}",
-                file=sys.stderr,
-            )
-            print(response.text, file=sys.stderr)
+        except JIRAError as exc:
+            print(f"Error: API request failed: {exc}", file=sys.stderr)
             sys.exit(1)
 
-        data = response.json()
-        issues = data.get("issues", [])
-        total = data.get("total", 0)
+        if not issues:
+            break
 
-        all_issues.extend(issues)
+        all_issues.extend([issue.raw for issue in issues])
 
         fetched = len(all_issues)
-        if total > 0:
+        total = getattr(issues, "total", None)
+        if total:
             print(f"  Fetched {fetched}/{total} stories...")
         else:
             print(f"  Fetched {fetched} stories...")
 
-        # Check if this is the last page
-        if data.get("isLast", True):
+        start_at += len(issues)
+        if total is not None and start_at >= total:
             break
-
-        # Get next page token
-        next_page_token = data.get("nextPageToken")
-        if not next_page_token:
+        if len(issues) < max_results:
             break
 
     print(f"Total stories fetched: {len(all_issues)}")
@@ -1653,9 +1422,11 @@ Examples:
     assert email is not None
     print(f"Using email: {email}")
 
+    client = build_jira_client(email, token)
+
     # List projects mode
     if args.list_projects:
-        list_projects(email, token)
+        list_projects(client)
         return
 
     # Create mode
@@ -1708,8 +1479,7 @@ Examples:
             print("\nWould create this issue (dry run)")
         else:
             success, message, issue_key = create_issue(
-                email=email,
-                token=token,
+                client=client,
                 project_key=project_key,
                 summary=args.create_summary,
                 description=args.description,
@@ -1796,6 +1566,7 @@ Examples:
                 print(f"  {issue_key}: Would {', '.join(changes)}")
             else:
                 messages = []
+                success = True
                 # Handle field modifications
                 if any(
                     [
@@ -1812,8 +1583,7 @@ Examples:
                     ]
                 ):
                     success, message = modify_issue(
-                        email=email,
-                        token=token,
+                        client=client,
                         issue_key=issue_key,
                         set_status=args.set_status,
                         remove_sprint=args.remove_sprint,
@@ -1834,8 +1604,7 @@ Examples:
                 # Handle comment separately
                 if args.add_comment:
                     success, message = add_comment(
-                        email=email,
-                        token=token,
+                        client=client,
                         issue_key=issue_key,
                         comment_text=args.add_comment,
                     )
@@ -1844,8 +1613,7 @@ Examples:
                 # Handle issue linking
                 if args.link_issue:
                     success, message = link_issues(
-                        email=email,
-                        token=token,
+                        client=client,
                         inward_issue=issue_key,
                         outward_issue=args.link_issue,
                         link_type=args.link_type,
@@ -1870,7 +1638,7 @@ Examples:
     jql = build_jql_query(args)
 
     # Fetch all stories
-    raw_issues = fetch_all_stories(email, token, jql)
+    raw_issues = fetch_all_stories(client, jql)
 
     # Extract essential data
     stories = extract_essential_data(raw_issues)
