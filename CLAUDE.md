@@ -34,15 +34,71 @@ agent-skills/
 │   ├── jira/        # Mozilla JIRA integration
 │   ├── lando/       # Lando landing job status
 │   ├── treeherder/  # Treeherder CI query tool
+│   ├── taskcluster/ # Taskcluster CI interaction
 │   ├── os-integrations/  # Firefox mach try with worker overrides
 │   └── skill-creator/    # Skill creation guide
-└── agents/          # Agent persona definitions (unused by skills)
+└── agents/          # Custom subagent definitions for Task tool
 ```
 
 Each skill directory contains:
 - `SKILL.md` - Complete skill documentation with metadata header
 - `references/` - Reference documentation and examples
 - `scripts/` - Implementation scripts
+
+## Custom Subagents
+
+The `agents/` directory contains custom subagent definitions that are symlinked to `~/.claude/agents/` for global availability. These agents are automatically available in any project directory.
+
+**Setup**: `~/.claude/agents` → `~/github_moz/agent-skills/agents`
+
+Use these custom subagents with the Task tool instead of the default subagent types when appropriate:
+
+| Agent | Model | Use For |
+|-------|-------|---------|
+| **helper** | Sonnet | Reading markdown, planning, research, analysis, explanations, non-coding tasks |
+| **coder** | Opus | Writing code, refactoring, implementing features, fixing bugs, any coding task |
+| **explorer** | Haiku | Fast codebase exploration, finding files, searching for patterns, quick analysis |
+
+### When to Use Each Agent
+
+**Use `helper` for:**
+- Reading and summarizing documentation (markdown files, READMEs)
+- Planning multi-step tasks
+- Research and analysis
+- Explaining concepts
+- Reviewing and providing feedback
+- Any task that doesn't involve writing code
+
+**Use `coder` for:**
+- Writing new code or scripts
+- Refactoring existing code
+- Implementing features
+- Fixing bugs
+- Any task that requires code changes
+
+**Use `explorer` for:**
+- Quickly finding files by pattern
+- Searching for specific functions or classes
+- Understanding project structure
+- Rapid code walkthroughs
+- Any quick codebase navigation task
+
+### Example Usage
+
+These agents are automatically available via the Task tool:
+
+```
+# For reading and summarizing a markdown file
+Use the helper agent to read and summarize the README.md
+
+# For implementing a new feature
+Use the coder agent to add error handling to the tc.py script
+
+# For finding where something is implemented
+Use the explorer agent to find all files that handle authentication
+```
+
+You can also request them explicitly: "Have the coder implement..." or "Ask the explorer to find..."
 
 ## Core Design Principles
 
@@ -145,6 +201,14 @@ description: >
 - Presets defined in `references/presets.yml`
 - Must be on a feature branch (not main/master)
 - Available presets: win11-24h2, win11-hw, win10-2009, win11-amd, win11-arm64, b-win2022, win11-source
+
+### Taskcluster Skill
+- Wraps the official `taskcluster` CLI (no Python dependencies)
+- Query task status, logs, artifacts, and definitions
+- Retrigger, rerun, and cancel tasks
+- Manage task groups (list, status, cancel)
+- Accepts task IDs or full Taskcluster URLs
+- Run with: `uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py <command>`
 
 ## Working with Firefox Repository
 
