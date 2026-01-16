@@ -17,12 +17,12 @@ This repository provides modular skills that enable AI agents to interact with M
 - **Firefox AGENTS.md (GitHub)**: https://github.com/mozilla-firefox/firefox/blob/main/AGENTS.md
 
 Key Firefox workflow notes from AGENTS.md:
-- Use `searchfox-cli` for searching the large Firefox codebase (not grep/rg)
+- **Always use `searchfox-cli` for searching the Firefox codebase** (never grep/rg on ~/firefox)
 - `./mach` is the main interface (`./mach build`, `./mach test`, `./mach try`, etc.)
 - Always run `./mach format` and `./mach lint` before committing
 - Use `./mach try auto` to run tests in CI
 - Never perform commits yourself - always let the user commit
-- Firefox repo is assumed to be at `~/firefox`
+- Local Firefox repo (`~/firefox`) is only needed for `mach try` pushes, not for code searches
 
 These Firefox conventions apply when debugging CI issues or testing worker configurations that involve Firefox builds/tests.
 
@@ -123,7 +123,7 @@ uv run skills/treeherder/scripts/query.py --revision <hash> --repo try
 # Lando skill - uses uvx for zero-install execution
 uvx --from lando-cli lando check-job <job_id>
 
-# OS Integrations - requires Firefox repo at ~/firefox
+# OS Integrations - requires Firefox repo at ~/firefox for mach try
 cd skills/os-integrations/scripts && uv run run_try.py win11-24h2 --dry-run
 ```
 
@@ -197,7 +197,7 @@ description: >
 
 ### OS Integrations Skill
 - Runs Firefox `mach try` with worker pool overrides for alpha testing
-- Requires Firefox repo at `~/firefox`
+- Requires local Firefox repo at `~/firefox` (for mach try pushes only)
 - Presets defined in `references/presets.yml`
 - Must be on a feature branch (not main/master)
 - Available presets: win11-24h2, win11-hw, win10-2009, win11-amd, win11-arm64, b-win2022, win11-source
@@ -212,4 +212,4 @@ description: >
 
 ## Working with Firefox Repository
 
-Several skills assume the Firefox repository is located at `~/firefox`. This is a Mozilla development environment convention.
+The local Firefox repository (`~/firefox`) is only needed for running `mach try` pushes to test changes on CI. **Do not search the local Firefox repo** - always use `searchfox-cli` for code searches instead, as the Firefox codebase is too large for local grep/rg.
