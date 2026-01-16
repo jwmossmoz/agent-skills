@@ -1,0 +1,27 @@
+# Taskcluster Skill Configuration
+# Copy this file to config.toml and customize for your setup
+
+[taskcluster]
+# Root URL for Taskcluster instance (optional, uses TASKCLUSTER_ROOT_URL env var if not set)
+# Common values:
+#   - https://firefox-ci-tc.services.mozilla.com (Firefox CI)
+#   - https://community-tc.services.mozilla.com (Community)
+#   - https://stage.taskcluster.nonprod.cloudops.mozgcp.net (Staging)
+root_url = "https://firefox-ci-tc.services.mozilla.com"
+
+[auth]
+# Authentication method: "env", "onepassword", or "taskcluster-cli"
+# - "env": Use TASKCLUSTER_CLIENT_ID and TASKCLUSTER_ACCESS_TOKEN environment variables
+# - "onepassword": Retrieve credentials from 1Password CLI
+# - "taskcluster-cli": Use taskcluster CLI's built-in authentication (taskcluster signin)
+method = "taskcluster-cli"
+
+# 1Password configuration (only used if method = "onepassword")
+[onepassword]
+item_name = "TaskclusterCredentials"
+vault = "Mozilla"
+client_id_field = "client_id"
+access_token_field = "access_token"
+
+# Note: Most read-only operations (status, logs, artifacts) don't require authentication
+# Authentication is only needed for write operations (retrigger, cancel, etc.)

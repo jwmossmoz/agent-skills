@@ -1,0 +1,10 @@
+# This file intentionally left minimal - the tc.py script has no dependencies
+# and can be run directly with: python3 tc.py or uv run python tc.py
+
+[project]
+name = "taskcluster-skill"
+version = "0.1.0"
+description = "Mozilla Taskcluster CLI wrapper skill"
+requires-python = ">=3.11"
+# No dependencies - uses subprocess to call taskcluster CLI
+dependencies = []
