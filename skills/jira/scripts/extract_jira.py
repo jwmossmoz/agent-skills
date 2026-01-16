@@ -88,7 +88,12 @@ DEFAULT_OUTPUT_DIR = Path(CONFIG["output"]["output_dir"]).expanduser()
 def build_jira_client(email: str, token: str) -> JIRA:
     """Create a Jira client for the configured Jira Cloud instance."""
     try:
-        return JIRA(server=JIRA_BASE_URL, basic_auth=(email, token))
+        # Use API v3 for Atlassian Document Format (ADF) support in descriptions/comments
+        return JIRA(
+            server=JIRA_BASE_URL,
+            basic_auth=(email, token),
+            options={"rest_api_version": "3"},
+        )
     except JIRAError as exc:
         print(f"Error: Failed to connect to JIRA: {exc}", file=sys.stderr)
         sys.exit(1)
