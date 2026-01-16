@@ -43,6 +43,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from jira import JIRA
+from jira.exceptions import JIRAError
 import requests
 
 
@@ -83,6 +85,15 @@ OP_CREDENTIAL_FIELD = CONFIG["onepassword"].get("credential_field", "credential"
 OP_USERNAME_FIELD = CONFIG["onepassword"].get("username_field", "username")
 DEFAULT_PROJECT = CONFIG["jira"]["default_project"]
 DEFAULT_OUTPUT_DIR = Path(CONFIG["output"]["output_dir"]).expanduser()
+
+
+def build_jira_client(email: str, token: str) -> JIRA:
+    """Create a Jira client for the configured Jira Cloud instance."""
+    try:
+        return JIRA(server=JIRA_BASE_URL, basic_auth=(email, token))
+    except JIRAError as exc:
+        print(f"Error: Failed to connect to JIRA: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 # --- Markdown to ADF Converter ---
