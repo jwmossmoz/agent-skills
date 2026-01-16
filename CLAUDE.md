@@ -12,8 +12,9 @@ This repository provides modular skills that enable AI agents to interact with M
 
 **Firefox Repository References**: When working with Firefox-related skills (especially os-integrations, treeherder, lando), be aware of the Firefox repository's agent guidance:
 
-- **Firefox CLAUDE.md**: https://searchfox.org/mozilla-central/source/CLAUDE.md (references AGENTS.md)
-- **Firefox AGENTS.md**: https://searchfox.org/mozilla-central/source/AGENTS.md
+- **Local Firefox CLAUDE.md**: `/Users/jwmoss/firefox/CLAUDE.md` (read this file for full Firefox development guidance)
+- **Firefox CLAUDE.md (GitHub)**: https://github.com/mozilla-firefox/firefox/blob/main/CLAUDE.md (references AGENTS.md)
+- **Firefox AGENTS.md (GitHub)**: https://github.com/mozilla-firefox/firefox/blob/main/AGENTS.md
 
 Key Firefox workflow notes from AGENTS.md:
 - Use `searchfox-cli` for searching the large Firefox codebase (not grep/rg)
