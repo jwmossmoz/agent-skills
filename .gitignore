@@ -19,6 +19,7 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+uv.lock
 
 # IDE
 .vscode/

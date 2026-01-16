@@ -1,151 +1,276 @@
 ---
 name: treeherder-status
 description: >
-  Check the status of Firefox try pushes on Treeherder by landing job ID. Use after
-  submitting try pushes with mach try to monitor job results. Queries Lando API for
-  landing status and Treeherder API for job results. Triggers on "treeherder status",
-  "check try push", "try results", "landing job", "job status", "check treeherder".
+  Check the status of Firefox try pushes on Treeherder by landing job ID. Uses official
+  Mozilla tools: lando-cli for landing job status and treeherder-client for job results.
+  Triggers on "treeherder status", "check try push", "try results", "landing job", "job status".
 ---
 
 # Treeherder Status Checker
 
 ## Overview
 
-This skill checks the status of Firefox try pushes on Treeherder. After submitting a try push with `mach try`, you get a landing job ID. Use this skill to check if the commit has landed and query the status of the jobs.
+This skill provides documentation and utilities for checking Firefox try push status using official Mozilla Python packages:
+- **lando-cli**: Check landing job status
+- **treeherder-client**: Query job results from Treeherder
 
-**When to use:** After running `mach try` commands (especially from the os-integrations skill) to check if jobs passed or failed.
+**When to use:** After running `mach try` commands to monitor if your commit landed and check test results.
 
-**Note:** This skill does not need to be run from any specific directory - it only queries APIs.
+## Prerequisites
+
+### Lando CLI Configuration
+
+To use `lando` commands, you need a config file at `~/.mozbuild/lando.toml`:
+
+```toml
+[auth]
+api_token = "<TOKEN HERE>"
+user_email = "your.email@mozilla.com"
+```
+
+Reach out to the Conduit team to request an API token.
 
 ## Quick Start
 
-Check status by landing job ID:
+### Complete Workflow
+
+After submitting a try push:
 
 ```bash
-cd ~/.claude/skills/treeherder-status
-uv run scripts/check_status.py 173178
+# 1. Check if the landing job completed
+uvx --from lando-cli lando check-job 173397
+
+# 2. Once landed, query Treeherder for job results by revision
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123def456 \
+  --repo try
+
+# 3. Filter for specific test types
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123def456 \
+  --filter mochitest-chrome
 ```
 
-Filter for specific job types:
+## Official Tool Usage
 
+### lando-cli
+
+The `lando` command provides access to Mozilla's Lando automation API.
+
+**Check landing job status:**
 ```bash
-cd ~/.claude/skills/treeherder-status
-uv run scripts/check_status.py 173178 marionette-integration
+uvx --from lando-cli lando check-job <JOB_ID>
 ```
 
-## How It Works
-
-1. **Queries Lando API** - Checks if the landing job has completed and gets the commit ID
-2. **Queries Treeherder API** - Gets the push information and all associated jobs
-3. **Reports Status** - Shows job results with clear visual indicators
-
-## Script Usage
-
-```
-python scripts/check_status.py <landing_job_id> [job_filter] [--repo REPO]
-```
-
-### Parameters
-
-- `landing_job_id` (required): The Lando landing job ID from `mach try` output
-- `job_filter` (optional): Filter jobs by name (e.g., "marionette-integration")
-- `--repo` (optional): Repository name (default: "try")
-
-### Examples
-
-**Check all jobs for a try push:**
+**Example:**
 ```bash
-uv run scripts/check_status.py 173178
+# After mach try, you get a landing job ID like 173397
+uvx --from lando-cli lando check-job 173397
 ```
 
-**Filter for marionette tests:**
+**Output shows:**
+- Job status (SUBMITTED, LANDED, FAILED, etc.)
+- Commit revision (once landed)
+- Any error messages
+
+### treeherder-client
+
+The `treeherder-client` package provides Python API for querying Treeherder.
+
+**Query with convenience script:**
 ```bash
-uv run scripts/check_status.py 173178 marionette-integration
+# By revision
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123def456 \
+  --repo try
+
+# By push ID
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --push-id 12345 \
+  --repo try
+
+# With job filter
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123 \
+  --filter "marionette-integration"
 ```
 
-**Check a mozilla-central push:**
-```bash
-uv run scripts/check_status.py 173178 --repo mozilla-central
+**Direct Python usage:**
+```python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["treeherder-client"]
+# ///
+
+from thclient import TreeherderClient
+
+client = TreeherderClient()
+
+# Get push by revision
+data = client._get_json(
+    client.PUSH_ENDPOINT,
+    project="try",
+    revision="abc123def456"
+)
+push = data["results"][0]
+push_id = push["id"]
+
+# Get jobs for push
+data = client._get_json(
+    client.JOBS_ENDPOINT,
+    project="try",
+    push_id=push_id
+)
+jobs = data["results"]
+
+for job in jobs:
+    print(f"{job['job_type_name']}: {job['result']}")
 ```
 
-## Output Explained
+## Job Status Reference
 
-### Landing Status
+### Landing Status (Lando)
 
-- **SUBMITTED** - The commit is still landing, try again in a few moments
-- **LANDED** - The commit has landed and jobs are available
+- **SUBMITTED** - Landing job queued, commit not landed yet (wait 1-2 minutes)
+- **LANDED** - Commit successfully landed, jobs scheduling on Treeherder
+- **FAILED** - Landing failed due to errors
 
-### Job Results
+### Job Results (Treeherder)
 
 - ✅ **success** - Job passed
 - ❌ **testfailed** - Tests failed
 - 💥 **busted** - Build or infrastructure failure
 - 🔄 **retry** - Job is being retried
 - 🚫 **usercancel** - Job was cancelled
-- 🏃 **running** - Job is currently running
-- ⏳ **pending** - Job is waiting to start
+- 🏃 **running** - Job is currently executing
+- ⏳ **pending** - Job scheduled, waiting for worker
+- ❓ **unknown/unscheduled** - Job exists but waiting for dependencies (e.g., build jobs)
 
-## Common Workflow
+## Typical Workflow Timeline
 
-After running a try push (e.g., from the os-integrations skill):
+After `mach try` submission:
+
+1. **0-2 minutes**: Landing job processes (SUBMITTED → LANDED)
+2. **2-5 minutes**: Jobs appear on Treeherder as "unscheduled"
+3. **10-20 minutes**: Build jobs complete
+4. **15-30 minutes**: Test jobs run and complete
+
+**Note:** Test jobs show "unscheduled" until their build dependencies finish. This is normal.
+
+## Common Use Cases
+
+### After os-integrations Try Push
 
 ```bash
-# 1. Submit try push (from Firefox repository)
-cd ~/firefox && ./mach try fuzzy \
-  --query "linux2404-64 marionette-integration" \
-  --worker-override t-linux-docker-noscratch-amd=gecko-t/t-linux-docker-noscratch-amd-alpha
+# 1. Submit try push with worker overrides
+cd ~/firefox
+./mach try fuzzy \
+  --query 'windows11 24h2 debug mochitest-chrome' \
+  --preset os-integration \
+  --worker-override win11-64-24h2=gecko-t/win11-64-24h2-alpha
 
-# Output shows:
-# Treeherder: https://treeherder.mozilla.org/jobs?repo=try&landoCommitID=173178
-# Landing job id: 173178
+# Output shows landing job ID: 173397
 
-# 2. Wait 1-2 minutes for landing to complete, then check status
-cd ~/.claude/skills/treeherder-status
-uv run scripts/check_status.py 173178 marionette-integration
+# 2. Check landing status
+uvx --from lando-cli lando check-job 173397
+# Output: Status LANDED, revision: c081f3f7d219...
 
-# First check shows:
-# Landing status: LANDED
-# Commit ID: ed901414ea5ec1e188547898b31d133731e77588
-# Marionette jobs: 2
-# test-linux2404-64/opt-marionette-integration - unknown (unscheduled)
-# test-linux2404-64/debug-marionette-integration - unknown (unscheduled)
+# 3. Query Treeherder for results
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision c081f3f7d219 \
+  --filter mochitest-chrome
 
-# 3. Wait 10-30 minutes for builds to complete and tests to schedule
-# Jobs remain "unscheduled" until the build jobs (linux64/opt, linux64/debug, etc.) finish
-# Check again periodically:
-uv run scripts/check_status.py 173178 marionette-integration
-
-# Eventually shows:
-# ✅ test-linux2404-64/opt-marionette-integration - success (completed)
-# ❌ test-linux2404-64/debug-marionette-integration - testfailed (completed)
+# 4. Check results periodically until tests complete
 ```
 
-## Understanding Job States
+### Monitoring Specific Test Suites
 
-**Typical job lifecycle:**
-1. **unscheduled** - Job exists but waiting for dependencies (usually build jobs)
-2. **pending** - Job is scheduled and waiting for a worker
-3. **running** - Job is currently executing
-4. **completed** - Job finished with a result (success, testfailed, busted, etc.)
+```bash
+# Check only marionette tests
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123 \
+  --filter marionette-integration
 
-**Important:** Test jobs cannot run until their build dependencies complete. For example, `test-linux2404-64/opt-marionette-integration` needs `build-linux64/opt` to finish first. This is why all jobs initially show as "unscheduled" - this is normal and expected.
+# Check only mochitest-chrome tests
+uv run ~/.claude/skills/treeherder-status/scripts/query-treeherder.py \
+  --revision abc123 \
+  --filter mochitest-chrome
+```
 
-## Limitations
+## Advanced: Direct API Usage
 
-- **No polling** - The script checks status once and exits. Run it multiple times as needed.
-- **Timing expectations:**
-  - Landing: 1-2 minutes to go from SUBMITTED to LANDED
-  - Build jobs: 10-20 minutes to complete
-  - Test jobs: Can only start after builds finish, then 5-15 minutes to run
-  - Total: 15-30 minutes from try push to test results
-- **Filter matching** - Job filter uses simple substring matching on job type names.
+### Using lando-cli as a Library
 
-## Exit Codes
+```python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["lando-cli"]
+# ///
 
-- `0` - Success (all jobs passed or still pending)
-- `1` - Failure (one or more jobs failed)
+# lando-cli is primarily a CLI tool
+# For API access, use direct HTTP requests to Lando API
+# See: https://api.lando.services.mozilla.com/landing_jobs/{job_id}
+```
 
-## Dependencies
+### Using treeherder-client for Complex Queries
 
-Requires `requests` library (included in uv environment).
+```python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["treeherder-client"]
+# ///
+
+from thclient import TreeherderClient
+
+client = TreeherderClient(timeout=30)
+
+# Get multiple pushes
+pushes = client.get_pushes("try", count=10)
+
+# Get all jobs for a push with filters
+jobs = client.get_jobs(
+    "try",
+    push_id=12345,
+    result="testfailed",  # Only failed jobs
+    job_type_name="mochitest"  # Job name contains "mochitest"
+)
+```
+
+## Benefits of Official Tools
+
+Using `lando-cli` and `treeherder-client` instead of custom wrappers:
+- ✅ **Maintained by Mozilla** - Stays up-to-date with API changes
+- ✅ **Isolated with uvx/uv** - No global package pollution
+- ✅ **Standard interfaces** - Works like other Mozilla developer tools
+- ✅ **Better error handling** - Built-in retry logic and error messages
+- ✅ **Documentation** - Official docs and community support
+
+## Troubleshooting
+
+### "lando: command not found"
+```bash
+# Use full uvx command
+uvx --from lando-cli lando check-job 173397
+```
+
+### "No API token configured"
+Create `~/.mozbuild/lando.toml` with your API token (request from Conduit team).
+
+### "No push found for this revision"
+- Wait 1-2 minutes after landing for Treeherder to index the push
+- Verify the revision hash is correct
+- Check if the commit landed successfully with `lando check-job`
+
+### Jobs show "unscheduled"
+This is normal. Test jobs wait for build dependencies to complete (10-20 minutes).
+
+## Resources
+
+- **lando-cli**: [PyPI](https://pypi.org/project/lando-cli/) | [GitHub](https://github.com/mozilla-conduit/lando-api)
+- **treeherder-client**: [PyPI](https://pypi.org/project/treeherder-client/) | [GitHub](https://github.com/mozilla/treeherder)
+- **Treeherder**: https://treeherder.mozilla.org/
+- **Lando API**: https://api.lando.services.mozilla.com/
 
