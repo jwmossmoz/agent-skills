@@ -601,9 +601,11 @@ def modify_issue(
 
     # Handle sprint changes
     if remove_sprint:
-        # Set sprint field to null to remove from sprint
-        update_payload["fields"]["customfield_10020"] = None
-        messages.append("Removed from sprint")
+        try:
+            client.move_to_backlog([issue_key])
+            messages.append("Removed from sprint")
+        except JIRAError as exc:
+            return False, f"Failed to remove from sprint: {exc}"
     elif set_sprint:
         # Need to get sprint ID first
         # Extract project key from issue key
