@@ -26,7 +26,7 @@ api_token = "<YOUR_API_TOKEN>"
 user_email = "your.email@mozilla.com"
 ```
 
-**Getting an API token:** Request one from the Mozilla Conduit team in #conduit on Slack.
+**Getting an API token:** Request one from the Mozilla Conduit team.
 
 ## Quick Start
 
@@ -199,4 +199,3 @@ uv run ~/.claude/skills/treeherder-query/scripts/query.py \
 - **lando-cli**: [PyPI](https://pypi.org/project/lando-cli/) | [GitHub](https://github.com/mozilla-conduit/lando-api)
 - **Lando API**: https://api.lando.services.mozilla.com/
 - **Conduit Documentation**: https://moz-conduit.readthedocs.io/
-- **#conduit on Slack**: For API token requests and support
