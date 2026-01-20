@@ -188,6 +188,68 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
             content.append({"type": "orderedList", "content": items})
             continue
 
+        # Markdown table (| col | col |)
+        if re.match(r"^\s*\|.+\|\s*$", line):
+            table_rows: list[dict[str, Any]] = []
+            is_first_row = True
+            has_header = False
+
+            while i < len(lines) and re.match(r"^\s*\|.+\|\s*$", lines[i]):
+                row_line = lines[i].strip()
+
+                # Check if this is a separator row (|---|---|)
+                # Remove all spaces and check if it only contains |, -, and :
+                stripped = row_line.replace(" ", "")
+                if re.match(r"^\|[-:|]+\|$", stripped) and "-" in stripped:
+                    has_header = True
+                    i += 1
+                    is_first_row = False
+                    continue
+
+                # Parse cells from the row
+                # Remove leading/trailing pipes and split by |
+                cells_text = row_line[1:-1].split("|")
+                cells = [cell.strip() for cell in cells_text]
+
+                # Determine cell type based on position
+                if is_first_row:
+                    # First row - will be header if followed by separator
+                    cell_type = "tableHeader"
+                else:
+                    cell_type = "tableCell"
+
+                row_content = []
+                for cell in cells:
+                    row_content.append(
+                        {
+                            "type": cell_type,
+                            "attrs": {},
+                            "content": [
+                                {"type": "paragraph", "content": _parse_inline(cell)}
+                            ],
+                        }
+                    )
+
+                table_rows.append({"type": "tableRow", "content": row_content})
+                i += 1
+                is_first_row = False
+
+            # If we detected a header separator, the first row cells should be headers
+            # They already are set as tableHeader, so no change needed.
+            # If no separator was found, convert first row to regular cells
+            if not has_header and table_rows:
+                for cell in table_rows[0]["content"]:
+                    cell["type"] = "tableCell"
+
+            content.append(
+                {
+                    "type": "table",
+                    "attrs": {"isNumberColumnEnabled": False, "layout": "default"},
+                    "content": table_rows,
+                }
+            )
+            continue
+
         # Empty line - skip
         if not line.strip():
             i += 1
@@ -206,7 +268,7 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
 
 
 def _is_special_line(line: str) -> bool:
-    """Check if a line starts a special block (heading, list, code)."""
+    """Check if a line starts a special block (heading, list, code, table)."""
     if line.startswith("```"):
         return True
     if re.match(r"^#{1,6}\s+", line):
@@ -214,6 +276,8 @@ def _is_special_line(line: str) -> bool:
     if re.match(r"^\s*[-*]\s+", line):
         return True
     if re.match(r"^\s*\d+\.\s+", line):
+        return True
+    if re.match(r"^\s*\|.+\|\s*$", line):
         return True
     return False
 
