@@ -35,8 +35,7 @@ agent-skills/
 │   ├── lando/       # Lando landing job status
 │   ├── treeherder/  # Treeherder CI query tool
 │   ├── taskcluster/ # Taskcluster CI interaction
-│   ├── os-integrations/  # Firefox mach try with worker overrides
-│   └── skill-creator/    # Skill creation guide
+│   └── os-integrations/  # Firefox mach try with worker overrides
 └── agents/          # Custom subagent definitions for Task tool
 ```
 
