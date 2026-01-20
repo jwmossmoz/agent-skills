@@ -157,6 +157,7 @@ The script can also modify JIRA issues. Use `--modify` with one or more issue ke
 - `--set-fix-versions "2026 Q1"` - Set fix versions (comma-separated)
 - `--link-issue ISSUE-KEY` - Link to another issue (e.g., RELOPS-456)
 - `--link-type TYPE` - Type of link: Relates (default), Blocks, Clones, Duplicate
+- `--unlink-issue ISSUE-KEY` - Remove link to another issue (e.g., RELOPS-456)
 - `--dry-run` - Preview changes without applying them
 
 ### Modify Examples
