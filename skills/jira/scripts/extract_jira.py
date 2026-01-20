@@ -797,6 +797,52 @@ def link_issues(
     return True, f"Linked {inward_issue} to {outward_issue} ({link_type})"
 
 
+def unlink_issues(
+    client: JIRA,
+    source_issue: str,
+    target_issue: str,
+) -> tuple[bool, str]:
+    """
+    Remove a link between two JIRA issues.
+
+    Uses the native jira library's delete_issue_link() method.
+
+    Args:
+        source_issue: The source issue key (e.g., RELOPS-123)
+        target_issue: The target issue key to unlink from (e.g., RELOPS-456)
+
+    Returns (success, message) tuple.
+    """
+    try:
+        issue = client.issue(source_issue)
+    except JIRAError as exc:
+        return False, f"Failed to get issue {source_issue}: {exc}"
+
+    # Find the link to the target issue
+    link_id = None
+    for link in issue.fields.issuelinks:
+        linked_key = None
+        if hasattr(link, "outwardIssue"):
+            linked_key = link.outwardIssue.key
+        elif hasattr(link, "inwardIssue"):
+            linked_key = link.inwardIssue.key
+
+        if linked_key == target_issue:
+            link_id = link.id
+            break
+
+    if not link_id:
+        return False, f"No link found between {source_issue} and {target_issue}"
+
+    # Delete the link using the native jira library method
+    try:
+        client.delete_issue_link(link_id)
+    except JIRAError as exc:
+        return False, f"Failed to unlink {source_issue} from {target_issue}: {exc}"
+
+    return True, f"Unlinked {source_issue} from {target_issue}"
+
+
 def add_comment(
     client: JIRA,
     issue_key: str,
@@ -1478,6 +1524,11 @@ Examples:
         help="Type of link: Relates (default), Blocks, Clones, Duplicate",
     )
     modify_group.add_argument(
+        "--unlink-issue",
+        type=str,
+        help="Remove link to another issue (e.g., RELOPS-456)",
+    )
+    modify_group.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be changed without making changes",
@@ -1614,10 +1665,11 @@ Examples:
                 args.set_assignee,
                 args.add_comment,
                 args.link_issue,
+                args.unlink_issue,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --set-assignee, --add-comment, --link-issue",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --set-assignee, --add-comment, --link-issue, --unlink-issue",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1660,6 +1712,8 @@ Examples:
                     changes.append("add comment")
                 if args.link_issue:
                     changes.append(f"link to {args.link_issue} ({args.link_type})")
+                if args.unlink_issue:
+                    changes.append(f"unlink from {args.unlink_issue}")
                 print(f"  {issue_key}: Would {', '.join(changes)}")
             else:
                 messages = []
@@ -1714,6 +1768,15 @@ Examples:
                         inward_issue=issue_key,
                         outward_issue=args.link_issue,
                         link_type=args.link_type,
+                    )
+                    messages.append(message)
+
+                # Handle issue unlinking
+                if args.unlink_issue:
+                    success, message = unlink_issues(
+                        client=client,
+                        source_issue=issue_key,
+                        target_issue=args.unlink_issue,
                     )
                     messages.append(message)
 
