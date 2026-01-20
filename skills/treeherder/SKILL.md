@@ -14,17 +14,17 @@ Query Mozilla Treeherder for CI job results using the official `treeherder-clien
 
 ```bash
 # Query by revision
-uv run ~/.claude/skills/treeherder/scripts/query.py \
+uv run ~/github_moz/agent-skills/skills/treeherder/scripts/query.py \
   --revision <COMMIT_HASH> \
   --repo try
 
 # Filter for specific tests
-uv run ~/.claude/skills/treeherder/scripts/query.py \
+uv run ~/github_moz/agent-skills/skills/treeherder/scripts/query.py \
   --revision <COMMIT_HASH> \
   --filter mochitest-chrome
 
 # Query by push ID
-uv run ~/.claude/skills/treeherder/scripts/query.py \
+uv run ~/github_moz/agent-skills/skills/treeherder/scripts/query.py \
   --push-id <PUSH_ID>
 ```
 
