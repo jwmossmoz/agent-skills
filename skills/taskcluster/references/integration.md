@@ -55,9 +55,13 @@ gecko-t/win11-64-24h2-alpha:
 **Purpose**: Packer templates and scripts for building Taskcluster worker images (Windows, Linux, macOS).
 
 **Key Files**:
-- `packer/` - Packer templates for building images
-- `scripts/` - Provisioning scripts (install software, configure workers)
-- `.taskcluster.yml` - Builds and publishes worker images via Taskcluster
+- `azure.pkr.hcl`, `gcp.pkr.hcl` - Packer HCL configs for cloud providers
+- `packer/` - Packer variable definitions and templates
+- `provisioners/` - Provisioning scripts (install software, configure workers)
+- `scripts/` - Helper scripts for image building
+- `.taskcluster.yml` - Taskgraph decision task config for on-demand image builds
+- `.cron.yml` - Cron job definitions for scheduled image builds
+- `taskcluster/` - Taskgraph configuration (kinds, transforms, parameters)
 
 **Image Types**:
 1. **Windows Images**:
@@ -73,10 +77,25 @@ gecko-t/win11-64-24h2-alpha:
 3. **macOS Images**:
    - Built for macOS worker pools
 
+**Taskcluster Integration** (via `.taskcluster.yml`):
+
+The worker-images repo uses Taskgraph for on-demand image builds. Key points:
+
+1. **NOT triggered by push/PR events** - Regular PRs don't auto-build images
+2. **Triggered by**:
+   - **PR comments** - Collaborators comment to trigger builds via `taskcluster_comment`
+   - **Cron jobs** - Scheduled builds specify images via `cron.input.images`
+   - **Actions** - Taskcluster action callbacks for manual triggers
+
+3. **Decision Task Flow**:
+   - Spawns `taskgraph decision` using `mozillareleases/taskgraph:decision` image
+   - Sets `DEPLOY_IMAGES` env var (from cron input) to specify which images to build
+   - Taskgraph generates the actual Packer build tasks
+
 **Common Use Cases**:
 1. **Updating Taskcluster Version**: Edit provisioning scripts to install new taskcluster-worker version
 2. **Adding Software**: Modify provisioning scripts (e.g., add podman, docker, compilers)
-3. **Debugging Image Issues**: Check build logs in Taskcluster tasks
+3. **Debugging Image Issues**: Check Packer build logs and Taskcluster task artifacts
 
 **Example Workflow**:
 ```bash
@@ -86,11 +105,12 @@ vim scripts/linux/install_taskcluster.sh
 # 2. Create a pull request
 gh pr create --title "feat: Update taskcluster to 95.1.3"
 
-# 3. PR triggers Taskcluster build tasks
-# 4. Check task status with taskcluster skill
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID>
+# 3. Trigger image build via PR comment (collaborators only)
+# Comment on PR with taskcluster_comment to trigger specific builds
 
-# 5. After images are built, update fxci-config to use new images
+# 4. Or wait for scheduled cron job to build images
+
+# 5. After images are built and published, update fxci-config to use new images
 cd ../fxci-config
 vim worker-images.yml
 ```
@@ -172,10 +192,10 @@ Common issues and how to debug with Taskcluster skill:
 
 ```bash
 # 1. Check task status to see worker pool errors
-uv run tc.py status <TASK_ID>
+uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID>
 
 # 2. Get full task definition to check worker pool config
-uv run tc.py definition <TASK_ID> | jq '.workerType, .provisionerId'
+uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py definition <TASK_ID> | jq '.workerType, .provisionerId'
 
 # 3. Check fxci-config for worker pool definition
 cd ~/github_moz/fxci-config
@@ -191,14 +211,14 @@ az ts show --name taskcluster-arm-template-v6-nvme --version 1.0 \
 ```bash
 # 1. Check if it's a capacity issue
 # Look for "waiting for worker" in status
-uv run tc.py status <TASK_ID> | jq '.status.runs[-1]'
+uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID> | jq '.status.runs[-1]'
 
 # 2. Check worker pool max capacity
 cd ~/github_moz/fxci-config
 yq eval '.["gecko-t/win11-64-24h2-alpha"].config.maxCapacity' worker-pools.yml
 
 # 3. See all pending tasks in the group
-uv run tc.py group-list <GROUP_ID> | \
+uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py group-list <GROUP_ID> | \
   jq '.tasks[] | select(.status.state == "pending") | .task.metadata.name'
 ```
 
@@ -206,7 +226,7 @@ uv run tc.py group-list <GROUP_ID> | \
 
 ```bash
 # 1. Get task definition to see what was requested
-uv run tc.py definition <TASK_ID> | jq '.payload'
+uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py definition <TASK_ID> | jq '.payload'
 
 # 2. Check worker pool configuration in fxci-config
 cd ~/github_moz/fxci-config
