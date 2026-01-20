@@ -172,15 +172,15 @@ description: >
 
 - User-specific config files (e.g., `config.toml`) should have `.example` versions committed
 - Add actual config files to `.gitignore`
-- Use environment variables for credentials when possible
-- Prefer 1Password CLI integration for secure credential retrieval
+- Prefer environment variables for credentials (simple, works in CI/CD)
+- 1Password CLI is an optional fallback for local development
 
 ## Skill-Specific Details
 
 ### JIRA Skill
 - Uses official `jira` Python package (v3.10.0+)
-- Requires 1Password CLI or environment variables for authentication
-- Config file: `skills/jira/scripts/config.toml` (create from `config.toml.example`)
+- Auth: Set `JIRA_API_TOKEN` and `JIRA_EMAIL` env vars (1Password CLI optional fallback)
+- Config file: `skills/jira/scripts/config.toml` (optional, for custom JIRA URL/project)
 - Outputs to `~/moz_artifacts/jira_stories.json` by default
 - Supports creating, modifying, and querying issues with Markdown formatting
 
