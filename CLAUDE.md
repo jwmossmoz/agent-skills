@@ -35,8 +35,7 @@ agent-skills/
 │   ├── lando/       # Lando landing job status
 │   ├── treeherder/  # Treeherder CI query tool
 │   ├── taskcluster/ # Taskcluster CI interaction
-│   ├── os-integrations/  # Firefox mach try with worker overrides
-│   └── skill-creator/    # Skill creation guide
+│   └── os-integrations/  # Firefox mach try with worker overrides
 └── agents/          # Custom subagent definitions for Task tool
 ```
 
@@ -49,7 +48,7 @@ Each skill directory contains:
 
 The `agents/` directory contains custom subagent definitions that are symlinked to `~/.claude/agents/` for global availability. These agents are automatically available in any project directory.
 
-**Setup**: `~/.claude/agents` → `~/github_moz/agent-skills/agents`
+**Setup**: `~/.claude/agents` → `/path/to/agent-skills/agents`
 
 Use these custom subagents with the Task tool instead of the default subagent types when appropriate:
 
@@ -208,7 +207,7 @@ description: >
 - Retrigger, rerun, and cancel tasks
 - Manage task groups (list, status, cancel)
 - Accepts task IDs or full Taskcluster URLs
-- Run with: `uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py <command>`
+- Run with: `uv run skills/taskcluster/scripts/tc.py <command>`
 
 ## Working with Firefox Repository
 

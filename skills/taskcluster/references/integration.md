@@ -2,6 +2,8 @@
 
 This document provides references to Mozilla repositories that integrate with Taskcluster, showing real-world usage patterns.
 
+Command snippets assume you're running from the taskcluster skill directory; adjust paths as needed.
+
 ## Key Repositories
 
 ### mozilla-releng/fxci-config
@@ -192,10 +194,10 @@ Common issues and how to debug with Taskcluster skill:
 
 ```bash
 # 1. Check task status to see worker pool errors
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID>
+uv run scripts/tc.py status <TASK_ID>
 
 # 2. Get full task definition to check worker pool config
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py definition <TASK_ID> | jq '.workerType, .provisionerId'
+uv run scripts/tc.py definition <TASK_ID> | jq '.workerType, .provisionerId'
 
 # 3. Check fxci-config for worker pool definition
 cd ~/github_moz/fxci-config
@@ -211,14 +213,14 @@ az ts show --name taskcluster-arm-template-v6-nvme --version 1.0 \
 ```bash
 # 1. Check if it's a capacity issue
 # Look for "waiting for worker" in status
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID> | jq '.status.runs[-1]'
+uv run scripts/tc.py status <TASK_ID> | jq '.status.runs[-1]'
 
 # 2. Check worker pool max capacity
 cd ~/github_moz/fxci-config
 yq eval '.["gecko-t/win11-64-24h2-alpha"].config.maxCapacity' worker-pools.yml
 
 # 3. See all pending tasks in the group
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py group-list <GROUP_ID> | \
+uv run scripts/tc.py group-list <GROUP_ID> | \
   jq '.tasks[] | select(.status.state == "pending") | .task.metadata.name'
 ```
 
@@ -226,7 +228,7 @@ uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py group-list <GR
 
 ```bash
 # 1. Get task definition to see what was requested
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py definition <TASK_ID> | jq '.payload'
+uv run scripts/tc.py definition <TASK_ID> | jq '.payload'
 
 # 2. Check worker pool configuration in fxci-config
 cd ~/github_moz/fxci-config
