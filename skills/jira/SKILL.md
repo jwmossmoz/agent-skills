@@ -7,44 +7,43 @@ description: Extract, create, and modify JIRA stories from Mozilla JIRA (mozilla
 
 ## Prerequisites
 
-### 1. 1Password CLI
-This skill uses 1Password CLI to securely retrieve JIRA API tokens. You must:
+### 1. JIRA API Token
 
-1. **Install 1Password CLI**: https://developer.1password.com/docs/cli/get-started/
-2. **Sign in**: Run `op signin` to authenticate
-3. **Create a JIRA API token** in your JIRA account settings
-4. **Store in 1Password**: Save your JIRA API token and email in a 1Password item
+Create a JIRA API token from your Atlassian account:
+1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
+2. Click "Create API token"
+3. Give it a label and copy the token
 
-### 2. Configuration
+### 2. Authentication
 
-This skill now uses the official `jira` Python package as a thin wrapper around the Jira Cloud API.
-
-Copy the example configuration file and customize it:
+Set environment variables (recommended):
 
 ```bash
-cd .claude/skills/jira/scripts
+export JIRA_API_TOKEN="your-api-token"
+export JIRA_EMAIL="your@email.com"
+```
+
+Add these to your shell profile (`~/.zshrc` or `~/.bashrc`) for persistence.
+
+### 3. Configuration (Optional)
+
+For custom JIRA instance URLs or default project settings, create a config file:
+
+```bash
+cd ~/github_moz/agent-skills/skills/jira/scripts
 cp config.toml.example config.toml
 ```
 
-Edit `config.toml` to match your setup:
-- `onepassword.item_name`: Your 1Password item name (default: "JiraMozillaToken")
-- `onepassword.vault`: Your 1Password vault (default: "Mozilla")
-- `jira.base_url`: Your JIRA instance URL
-- `jira.default_project`: Your default project key
-
-**Note**: `config.toml` is gitignored to keep your settings private.
+Edit `config.toml`:
+- `jira.base_url`: Your JIRA instance URL (default: mozilla-hub.atlassian.net)
+- `jira.default_project`: Default project key (default: RELOPS)
 
 ## Usage
 
-Run the JIRA script from the `scripts` directory where `pyproject.toml` is located. Always use `uv sync && uv run` to ensure dependencies are installed (this installs the official `jira` client):
+Run the JIRA script from the `scripts` directory. Use `uv sync && uv run` to ensure dependencies are installed:
 
 ```bash
-cd .claude/skills/jira/scripts && uv sync && uv run extract_jira.py [options]
-```
-
-Or if already in the scripts directory:
-```bash
-uv sync && uv run extract_jira.py [options]
+cd ~/github_moz/agent-skills/skills/jira/scripts && uv sync && uv run extract_jira.py [options]
 ```
 
 Reference examples.md for examples.
@@ -68,37 +67,31 @@ Each story includes:
 
 ## Authentication
 
-The script supports two authentication methods:
+The script checks for credentials in this order:
 
-### Option 1: Environment Variables (Bypass 1Password)
-
-Set these environment variables to skip 1Password authentication:
+### Option 1: Environment Variables (Recommended)
 
 ```bash
 export JIRA_API_TOKEN="your-api-token"
 export JIRA_EMAIL="your@email.com"
 ```
 
-This is useful when:
-- You want to avoid repeated 1Password authentication prompts
-- Running in CI/CD pipelines
-- You prefer to manage credentials via your shell profile
+### Option 2: 1Password CLI (Optional Fallback)
 
-### Option 2: 1Password CLI (Default)
-
-If environment variables are not set, the script falls back to 1Password CLI. Configuration is set in `config.toml`:
-- `onepassword.item_name`: The 1Password item containing your JIRA credentials
-- `onepassword.vault`: The vault where the item is stored
-- `onepassword.credential_field`: Field name for API token (default: `credential`)
-- `onepassword.username_field`: Field name for email (default: `username`)
-
-See the Prerequisites section above for 1Password setup instructions.
+If environment variables are not set, the script falls back to 1Password CLI. Requires:
+1. 1Password CLI installed (`brew install 1password-cli`)
+2. Signed in (`op signin`)
+3. Configuration in `config.toml`:
+   - `onepassword.item_name`: Item containing credentials
+   - `onepassword.vault`: Vault name
+   - `onepassword.credential_field`: Field for API token (default: `credential`)
+   - `onepassword.username_field`: Field for email (default: `username`)
 
 ## Examples
 
 First, change to the scripts directory and sync dependencies:
 ```bash
-cd .claude/skills/jira/scripts && uv sync
+cd ~/github_moz/agent-skills/skills/jira/scripts && uv sync
 ```
 
 Then run commands with `uv run extract_jira.py`. When the user asks to:
