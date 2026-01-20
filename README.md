@@ -12,6 +12,14 @@ This repository provides modular skills that enable AI agents to interact with M
 - **treeherder** - Query Treeherder CI job results using `treeherder-client`
 - **os-integrations** - Run Firefox mach try with alpha worker pool overrides
 - **jira** - Create and modify Mozilla JIRA stories
+- **taskcluster** - Query Taskcluster task status, logs, artifacts, and task groups
+- **writing-skills** - Write and maintain Agent Skills with best practices
+
+## Subagents
+
+- **agents/coder** - Code implementation specialist
+- **agents/explorer** - Fast codebase discovery
+- **agents/helper** - Planning, research, and explanation support
 
 ## Usage
 
@@ -28,19 +36,41 @@ Claude will invoke the appropriate skill and handle all the technical details (d
 
 ### For Installation / Manual Use
 
-Symlink skills to your agent's skill directory:
+#### Claude Code
+
+Symlink skills to your Claude Code skills directory and agents to your agents directory:
 
 ```bash
-ln -s ~/github_moz/agent-skills/skills/lando ~/.claude/skills/lando
-ln -s ~/github_moz/agent-skills/skills/treeherder ~/.claude/skills/treeherder
-ln -s ~/github_moz/agent-skills/skills/os-integrations ~/.claude/skills/os-integrations
-ln -s ~/github_moz/agent-skills/skills/jira ~/.claude/skills/jira
+AGENT_SKILLS_ROOT="/path/to/agent-skills"
+
+ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.claude/skills/lando
+ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
+ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
+ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
+ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
+ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills
+
+ln -s "$AGENT_SKILLS_ROOT/agents/coder.md" ~/.claude/agents/coder.md
+ln -s "$AGENT_SKILLS_ROOT/agents/explorer.md" ~/.claude/agents/explorer.md
+ln -s "$AGENT_SKILLS_ROOT/agents/helper.md" ~/.claude/agents/helper.md
 ```
+
+See `.claude-plugin/INSTALL.md` for the full Claude Code checklist.
+
+#### Codex
+
+Add this repo's `skills/` directory to your Codex skills search path. See `.codex/INSTALL.md` for a checklist.
+
+#### OpenCode
+
+Add this repo's `skills/` directory to your OpenCode skills search path. See `.opencode/INSTALL.md` for a checklist.
 
 Each skill contains:
 - `SKILL.md` - Full documentation and examples for Claude's reference
 - `references/examples.md` - Command-line examples for manual execution
 - `scripts/` - The actual implementation scripts
+
+`uv.lock` files are tracked intentionally for reproducible Python dependencies. Run `uv sync` in each skill's `scripts/` directory after updates.
 
 ## Design Principles
 

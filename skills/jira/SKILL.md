@@ -27,10 +27,10 @@ Add these to your shell profile (`~/.zshrc` or `~/.bashrc`) for persistence.
 
 ### 3. Configuration (Optional)
 
-For custom JIRA instance URLs or default project settings, create a config file:
+For custom JIRA instance URLs or default project settings, create a config file from the skill directory:
 
 ```bash
-cd ~/github_moz/agent-skills/skills/jira/scripts
+cd scripts
 cp config.toml.example config.toml
 ```
 
@@ -43,10 +43,10 @@ Edit `config.toml`:
 Run the JIRA script from the `scripts` directory. Use `uv sync && uv run` to ensure dependencies are installed:
 
 ```bash
-cd ~/github_moz/agent-skills/skills/jira/scripts && uv sync && uv run extract_jira.py [options]
+cd scripts && uv sync && uv run extract_jira.py [options]
 ```
 
-Reference examples.md for examples.
+Reference `references/examples.md` for examples.
 
 ## Output
 
@@ -91,7 +91,7 @@ If environment variables are not set, the script falls back to 1Password CLI. Re
 
 First, change to the scripts directory and sync dependencies:
 ```bash
-cd ~/github_moz/agent-skills/skills/jira/scripts && uv sync
+cd scripts && uv sync
 ```
 
 Then run commands with `uv run extract_jira.py`. When the user asks to:

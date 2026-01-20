@@ -13,36 +13,38 @@ Interact with Mozilla Taskcluster CI using the official `taskcluster` CLI.
 
 ## Usage
 
+Run from the skill directory:
+
 ```bash
 # Query task status
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status <TASK_ID>
+uv run scripts/tc.py status <TASK_ID>
 
 # Get task logs
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py log <TASK_ID>
+uv run scripts/tc.py log <TASK_ID>
 
 # List task artifacts
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py artifacts <TASK_ID>
+uv run scripts/tc.py artifacts <TASK_ID>
 
 # Get full task definition
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py definition <TASK_ID>
+uv run scripts/tc.py definition <TASK_ID>
 
 # Retrigger a task (new task ID, updated timestamps)
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py retrigger <TASK_ID>
+uv run scripts/tc.py retrigger <TASK_ID>
 
 # Rerun a task (same task ID)
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py rerun <TASK_ID>
+uv run scripts/tc.py rerun <TASK_ID>
 
 # Cancel a task
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py cancel <TASK_ID>
+uv run scripts/tc.py cancel <TASK_ID>
 
 # List tasks in a group
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py group-list <TASK_GROUP_ID>
+uv run scripts/tc.py group-list <TASK_GROUP_ID>
 
 # Get task group status
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py group-status <TASK_GROUP_ID>
+uv run scripts/tc.py group-status <TASK_GROUP_ID>
 
 # Extract task ID from Taskcluster URL
-uv run ~/github_moz/agent-skills/skills/taskcluster/scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+uv run scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
 ```
 
 ## Prerequisites
@@ -85,7 +87,7 @@ taskcluster signin
 Store credentials in 1Password and configure in `config.toml`:
 
 ```bash
-cd ~/github_moz/agent-skills/skills/taskcluster/scripts
+cd scripts
 cp config.toml.example config.toml
 ```
 
@@ -114,10 +116,10 @@ https://treeherder.mozilla.org/jobs?repo=try&revision=ed901414ea5ec1e188547898b3
 
 ```bash
 # Retrigger creates a new task with updated timestamps
-uv run tc.py retrigger <TASK_ID>
+uv run scripts/tc.py retrigger <TASK_ID>
 
 # Rerun attempts to rerun the same task
-uv run tc.py rerun <TASK_ID>
+uv run scripts/tc.py rerun <TASK_ID>
 ```
 
 ## URL Support
@@ -126,8 +128,8 @@ The skill automatically extracts task IDs from Taskcluster URLs:
 
 ```bash
 # Both of these work identically:
-uv run tc.py status fuCPrKG2T62-4YH1tWYa7Q
-uv run tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+uv run scripts/tc.py status fuCPrKG2T62-4YH1tWYa7Q
+uv run scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
 ```
 
 Supported URL formats:
@@ -141,10 +143,10 @@ All commands return JSON output that can be piped to `jq` for processing:
 
 ```bash
 # Get only failed tasks from a group
-uv run tc.py group-list <GROUP_ID> | jq '.tasks[] | select(.status.state == "failed")'
+uv run scripts/tc.py group-list <GROUP_ID> | jq '.tasks[] | select(.status.state == "failed")'
 
 # List artifact names
-uv run tc.py artifacts <TASK_ID> | jq '.artifacts[].name'
+uv run scripts/tc.py artifacts <TASK_ID> | jq '.artifacts[].name'
 ```
 
 ## Related Skills
