@@ -52,6 +52,7 @@ presets:
 
   win11-source:
     description: "Source image testing"
+    worker_type: "win11-64-24h2-source"
     query: ""
     flags:
       - "--full"
@@ -62,6 +63,7 @@ presets:
 
   b-win2022:
     description: "Build worker testing"
+    worker_type: "b-win2022"
     query: ""
     flags:
       - "--all-tasks"
@@ -72,6 +74,7 @@ presets:
 
   win11-arm64:
     description: "ARM64 architecture testing"
+    worker_type: "win11-a64-24h2"
     query: ""
     flags:
       - "--all-tasks"
@@ -86,6 +89,7 @@ presets:
 # Each preset defines a standardized testing configuration with the following fields:
 #
 # - description: Human-readable description of the preset's purpose
+# - worker_type: (Optional) Worker type for auto-discovery of tasks via --discover flag
 # - query: Task selection query (empty string if no filtering required)
 # - flags: List of command-line flags to pass to mach try
 # - worker_overrides: List of worker pool mappings in format "old-worker=pool/new-worker"

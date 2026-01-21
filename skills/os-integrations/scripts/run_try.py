@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml"]
+# dependencies = ["pyyaml", "httpx"]
 # ///
 """
 Construct and execute mach try commands for OS integration testing.
@@ -15,6 +15,7 @@ Usage:
     uv run run_try.py win11-hw --rebuild 5
     uv run run_try.py win10-2009 --dry-run
     uv run run_try.py win11-amd --env MOZ_LOG=sync:5 --push
+    uv run run_try.py b-win2022 --discover --dry-run
 """
 
 import argparse
@@ -26,6 +27,8 @@ import sys
 from pathlib import Path
 
 import yaml
+
+from discover_tasks import fetch_task_graph, filter_by_worker_type
 
 
 FIREFOX_DIR = Path.home() / "firefox"
@@ -216,6 +219,7 @@ def display_summary(
     preset_config: dict,
     cmd: list[str],
     parsed_output: dict | None = None,
+    discovered_labels: list[str] | None = None,
 ) -> None:
     """Display a summary of the command and results."""
     print("\n" + "=" * 60)
@@ -229,6 +233,14 @@ def display_summary(
         print("\nWorker Overrides:")
         for override in worker_overrides:
             print(f"  - {override}")
+
+    # Discovered tasks summary
+    if discovered_labels:
+        print(f"\nDiscovered Tasks ({len(discovered_labels)} total):")
+        for label in discovered_labels[:5]:  # Show first 5 in summary
+            print(f"  - {label}")
+        if len(discovered_labels) > 5:
+            print(f"  ... and {len(discovered_labels) - 5} more")
 
     if parsed_output:
         print("\nResults:")
@@ -295,6 +307,17 @@ Examples:
         action="store_true",
         help="Print command without executing",
     )
+    parser.add_argument(
+        "--discover",
+        action="store_true",
+        help="Auto-discover tasks for presets with worker_type defined",
+    )
+    parser.add_argument(
+        "--branch",
+        default="mozilla-central",
+        metavar="BRANCH",
+        help="Branch to fetch task graph from for discovery (default: mozilla-central)",
+    )
 
     args = parser.parse_args()
 
@@ -312,6 +335,38 @@ Examples:
         print(f"Available presets: {', '.join(presets.keys())}", file=sys.stderr)
         return 1
 
+    # Handle task discovery
+    discovered_labels: list[str] = []
+    discovered_query: str | None = None
+
+    if args.discover:
+        worker_type = preset_config.get("worker_type")
+        if not worker_type:
+            print(
+                f"Error: Preset '{args.preset}' does not have a worker_type defined.\n"
+                f"Add 'worker_type: <type>' to the preset in presets.yml to enable discovery.",
+                file=sys.stderr,
+            )
+            return 1
+
+        print(f"Discovering tasks for worker type '{worker_type}'...")
+        task_graph = fetch_task_graph(branch=args.branch)
+        if task_graph is None:
+            print("Error: Failed to fetch task graph", file=sys.stderr)
+            return 1
+
+        discovered_labels = filter_by_worker_type(task_graph, worker_type)
+        if not discovered_labels:
+            print(f"Warning: No tasks found for worker type '{worker_type}'", file=sys.stderr)
+        else:
+            print(f"Found {len(discovered_labels)} task(s)\n")
+            # Build query from discovered labels
+            pattern = "|".join(discovered_labels)
+            discovered_query = f"-xq '{pattern}'"
+
+    # Determine final query: explicit override > discovered > preset default
+    final_query = args.query if args.query else discovered_query
+
     # Build command
     cmd = build_command(
         preset_name=args.preset,
@@ -319,7 +374,7 @@ Examples:
         no_os_integration=args.no_os_integration,
         rebuild=args.rebuild,
         env_vars=args.env_vars,
-        query_override=args.query,
+        query_override=final_query,
         push=args.push,
     )
 
@@ -328,9 +383,18 @@ Examples:
     print(f"\nCommand: {cmd_str}")
     print(f"Directory: {FIREFOX_DIR}\n")
 
+    # Show discovered tasks if any
+    if discovered_labels:
+        print(f"Discovered {len(discovered_labels)} task(s):")
+        for label in discovered_labels[:10]:  # Show first 10
+            print(f"  - {label}")
+        if len(discovered_labels) > 10:
+            print(f"  ... and {len(discovered_labels) - 10} more")
+        print()
+
     if args.dry_run:
         print("[DRY RUN] Command not executed")
-        display_summary(args.preset, preset_config, cmd)
+        display_summary(args.preset, preset_config, cmd, discovered_labels=discovered_labels)
         return 0
 
     # Run preflight checks
@@ -358,7 +422,7 @@ Examples:
 
         returncode = process.wait()
         parsed_output = parse_output("".join(output_lines))
-        display_summary(args.preset, preset_config, cmd, parsed_output)
+        display_summary(args.preset, preset_config, cmd, parsed_output, discovered_labels)
 
         return returncode
 
