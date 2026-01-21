@@ -31,7 +31,7 @@ Note: Read-only operations (search, get) work without authentication but may not
 Run from the `scripts` directory:
 
 ```bash
-cd scripts && uv sync && uv run bz.py <command> [options]
+cd scripts && uv run bz.py <command> [options]
 ```
 
 ## Commands

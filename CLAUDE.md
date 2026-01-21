@@ -115,10 +115,10 @@ Skills are designed to be executed from their script directories using `uv`:
 
 ```bash
 # Bugzilla skill - search, create, update bugs
-cd skills/bugzilla/scripts && uv sync && uv run bz.py search --quicksearch "crash"
+cd skills/bugzilla/scripts && uv run bz.py search --quicksearch "crash"
 
-# JIRA skill - requires uv sync first for dependencies
-cd skills/jira/scripts && uv sync && uv run extract_jira.py [options]
+# JIRA skill
+cd skills/jira/scripts && uv run extract_jira.py [options]
 
 # Treeherder skill - direct execution with uv run
 uv run skills/treeherder/scripts/query.py --revision <hash> --repo try
@@ -168,7 +168,7 @@ description: >
 - For one-off CLI tools: `uvx --from package-name command`
 - For custom scripts with dependencies:
   1. Create `pyproject.toml` with dependencies
-  2. Execute with `uv sync && uv run script.py`
+  2. Execute with `uv run script.py` (uv automatically syncs dependencies)
 - Never commit `.venv/` or `uv.lock` files
 
 ### Configuration Management
@@ -185,7 +185,7 @@ description: >
 - Auth: Set `BUGZILLA_API_KEY` env var (generate at https://bugzilla.mozilla.org/userprefs.cgi?tab=apikey)
 - Read-only operations work without authentication
 - Supports search, get, create, update, comment, and attachment operations
-- Run with: `cd skills/bugzilla/scripts && uv sync && uv run bz.py <command>`
+- Run with: `cd skills/bugzilla/scripts && uv run bz.py <command>`
 
 ### JIRA Skill
 - Uses official `jira` Python package (v3.10.0+)

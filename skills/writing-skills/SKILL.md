@@ -32,7 +32,7 @@ Use this skill when you need to create or update skills in this repository, incl
 
 - Commands should assume the skill root; prefer `scripts/...` paths.
 - Provide `.example` configs and keep real configs out of git.
-- `uv.lock` is tracked intentionally; run `uv sync` after dependency changes.
+- `uv.lock` is tracked intentionally for reproducible builds.
 - Keep examples runnable and realistic.
 
 ## Checklist

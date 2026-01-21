@@ -40,10 +40,10 @@ Edit `config.toml`:
 
 ## Usage
 
-Run the JIRA script from the `scripts` directory. Use `uv sync && uv run` to ensure dependencies are installed:
+Run the JIRA script from the `scripts` directory:
 
 ```bash
-cd scripts && uv sync && uv run extract_jira.py [options]
+cd scripts && uv run extract_jira.py [options]
 ```
 
 Reference `references/examples.md` for examples.
@@ -89,12 +89,7 @@ If environment variables are not set, the script falls back to 1Password CLI. Re
 
 ## Examples
 
-First, change to the scripts directory and sync dependencies:
-```bash
-cd scripts && uv sync
-```
-
-Then run commands with `uv run extract_jira.py`. When the user asks to:
+Run commands with `uv run extract_jira.py` from the scripts directory. When the user asks to:
 - "extract my JIRA stories" → Run with `--my-issues`
 - "show my sprint stories" or "my current sprint stories" → Run with `--current-sprint --my-issues --summary`
 - "current sprint" or "all sprint stories" → Run with `--current-sprint --summary`

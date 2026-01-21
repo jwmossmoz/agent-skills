@@ -74,7 +74,7 @@ Each skill contains:
 - `references/examples.md` - Command-line examples for manual execution
 - `scripts/` - The actual implementation scripts
 
-`uv.lock` files are tracked intentionally for reproducible Python dependencies. Run `uv sync` in each skill's `scripts/` directory after updates.
+`uv.lock` files are tracked intentionally for reproducible Python dependencies.
 
 ## Design Principles
 
