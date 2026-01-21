@@ -84,12 +84,68 @@ def get_current_branch(directory: Path) -> str | None:
         return None
 
 
-def preflight_check() -> bool:
-    """Verify prerequisites before running mach try."""
+def create_temp_branch(preset_name: str) -> str | None:
+    """Create a temporary branch for try push and return its name."""
+    import time
+    timestamp = int(time.time())
+    branch_name = f"try-{preset_name}-{timestamp}"
+
+    try:
+        subprocess.run(
+            ["git", "checkout", "-b", branch_name],
+            capture_output=True,
+            check=True,
+            cwd=FIREFOX_DIR,
+        )
+        return branch_name
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating temporary branch: {e.stderr.decode()}", file=sys.stderr)
+        return None
+
+
+def switch_branch(branch_name: str) -> bool:
+    """Switch to the specified branch."""
+    try:
+        subprocess.run(
+            ["git", "checkout", branch_name],
+            capture_output=True,
+            check=True,
+            cwd=FIREFOX_DIR,
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error switching to branch {branch_name}: {e.stderr.decode()}", file=sys.stderr)
+        return False
+
+
+def delete_branch(branch_name: str) -> bool:
+    """Delete the specified branch."""
+    try:
+        subprocess.run(
+            ["git", "branch", "-D", branch_name],
+            capture_output=True,
+            check=True,
+            cwd=FIREFOX_DIR,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def preflight_check(preset_name: str) -> tuple[bool, str | None, str | None]:
+    """
+    Verify prerequisites before running mach try.
+
+    Returns:
+        Tuple of (success, original_branch, temp_branch)
+        - success: Whether preflight passed
+        - original_branch: The branch we were on (if we created a temp branch)
+        - temp_branch: The temp branch name (if we created one)
+    """
     # Check Firefox directory exists
     if not FIREFOX_DIR.exists():
         print(f"Error: Firefox directory not found: {FIREFOX_DIR}", file=sys.stderr)
-        return False
+        return False, None, None
 
     # Check if it's a git repository
     if not (FIREFOX_DIR / ".git").exists():
@@ -100,29 +156,36 @@ def preflight_check() -> bool:
                 f"Error: {FIREFOX_DIR} does not appear to be a git repository",
                 file=sys.stderr,
             )
-            return False
+            return False, None, None
 
     # Check current branch
     branch = get_current_branch(FIREFOX_DIR)
     if branch is None:
         print("Error: Could not determine current git branch", file=sys.stderr)
-        return False
+        return False, None, None
+
+    original_branch = None
+    temp_branch = None
 
     if branch in PROTECTED_BRANCHES:
-        print(
-            f"Error: Cannot run mach try from protected branch '{branch}'.\n"
-            f"Please switch to a feature branch first.",
-            file=sys.stderr,
-        )
-        return False
+        print(f"On protected branch '{branch}', creating temporary branch for try push...")
+        original_branch = branch
+        temp_branch = create_temp_branch(preset_name)
+        if temp_branch is None:
+            return False, None, None
+        print(f"Created temporary branch: {temp_branch}\n")
 
     # Check mach exists
     mach_path = FIREFOX_DIR / "mach"
     if not mach_path.exists():
         print(f"Error: mach script not found at {mach_path}", file=sys.stderr)
-        return False
+        # Clean up temp branch if we created one
+        if temp_branch and original_branch:
+            switch_branch(original_branch)
+            delete_branch(temp_branch)
+        return False, None, None
 
-    return True
+    return True, original_branch, temp_branch
 
 
 def build_command(
@@ -167,9 +230,11 @@ def build_command(
         for env_var in env_vars:
             cmd.extend(["--env", env_var])
 
-    # Add push flag
-    if push:
-        cmd.append("--push-to-vcs")
+    # Handle push behavior:
+    # - With --push: use default Lando push (no flag needed)
+    # - Without --push: add --no-push to prevent pushing
+    if not push:
+        cmd.append("--no-push")
 
     return cmd
 
@@ -361,8 +426,8 @@ Examples:
         else:
             print(f"Found {len(discovered_labels)} task(s)\n")
             # Build query from discovered labels
-            pattern = "|".join(discovered_labels)
-            discovered_query = f"-xq '{pattern}'"
+            # Use multiple -q flags for mach try fuzzy union behavior
+            discovered_query = " ".join(f"-q '{label}'" for label in discovered_labels)
 
     # Determine final query: explicit override > discovered > preset default
     final_query = args.query if args.query else discovered_query
@@ -397,13 +462,15 @@ Examples:
         display_summary(args.preset, preset_config, cmd, discovered_labels=discovered_labels)
         return 0
 
-    # Run preflight checks
-    if not preflight_check():
+    # Run preflight checks (may create temp branch if on protected branch)
+    success, original_branch, temp_branch = preflight_check(args.preset)
+    if not success:
         return 1
 
     # Execute command
     print("Executing mach try...\n")
     process = None
+    returncode = 1
     try:
         process = subprocess.Popen(
             cmd,
@@ -424,19 +491,26 @@ Examples:
         parsed_output = parse_output("".join(output_lines))
         display_summary(args.preset, preset_config, cmd, parsed_output, discovered_labels)
 
-        return returncode
-
     except FileNotFoundError:
         print("Error: Could not execute mach command", file=sys.stderr)
-        return 1
+        returncode = 1
     except KeyboardInterrupt:
         if process and process.poll() is None:
             process.terminate()
         print("\nOperation cancelled by user")
-        return 130
-    except Exception as e:
-        print(f"Error executing command: {e}", file=sys.stderr)
-        return 1
+        returncode = 130
+    finally:
+        # Clean up: switch back to original branch and delete temp branch
+        if original_branch and temp_branch:
+            print(f"\nCleaning up: switching back to '{original_branch}'...")
+            if switch_branch(original_branch):
+                delete_branch(temp_branch)
+                print(f"Deleted temporary branch '{temp_branch}'")
+            else:
+                print(f"Warning: Could not switch back to '{original_branch}'", file=sys.stderr)
+                print(f"You may need to manually delete branch '{temp_branch}'", file=sys.stderr)
+
+    return returncode
 
 
 if __name__ == "__main__":

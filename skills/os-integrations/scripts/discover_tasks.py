@@ -116,9 +116,9 @@ def format_output(labels: list[str], output_format: str) -> str:
     if output_format == "query":
         if not labels:
             return ""
-        # Create OR pattern for mach try fuzzy: -xq 'task1|task2|...'
-        pattern = "|".join(labels)
-        return f"-xq '{pattern}'"
+        # Create multiple -q flags for mach try fuzzy union behavior
+        # Each -q flag selects matching tasks, multiple -q flags union the results
+        return " ".join(f"-q '{label}'" for label in labels)
 
     # Default: labels format (one per line)
     return "\n".join(labels)
