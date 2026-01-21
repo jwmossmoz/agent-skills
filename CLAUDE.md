@@ -31,6 +31,7 @@ These Firefox conventions apply when debugging CI issues or testing worker confi
 ```
 agent-skills/
 ├── skills/           # Individual skill implementations
+│   ├── bugzilla/    # Mozilla Bugzilla interaction
 │   ├── jira/        # Mozilla JIRA integration
 │   ├── lando/       # Lando landing job status
 │   ├── treeherder/  # Treeherder CI query tool
@@ -113,6 +114,9 @@ You can also request them explicitly: "Have the coder implement..." or "Ask the 
 Skills are designed to be executed from their script directories using `uv`:
 
 ```bash
+# Bugzilla skill - search, create, update bugs
+cd skills/bugzilla/scripts && uv sync && uv run bz.py search --quicksearch "crash"
+
 # JIRA skill - requires uv sync first for dependencies
 cd skills/jira/scripts && uv sync && uv run extract_jira.py [options]
 
@@ -175,6 +179,13 @@ description: >
 - 1Password CLI is an optional fallback for local development
 
 ## Skill-Specific Details
+
+### Bugzilla Skill
+- Uses `requests` library to interact with BMO REST API
+- Auth: Set `BUGZILLA_API_KEY` env var (generate at https://bugzilla.mozilla.org/userprefs.cgi?tab=apikey)
+- Read-only operations work without authentication
+- Supports search, get, create, update, comment, and attachment operations
+- Run with: `cd skills/bugzilla/scripts && uv sync && uv run bz.py <command>`
 
 ### JIRA Skill
 - Uses official `jira` Python package (v3.10.0+)

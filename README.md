@@ -8,6 +8,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 ## Skills
 
+- **bugzilla** - Search, create, and update bugs on Mozilla Bugzilla (bugzilla.mozilla.org)
 - **lando** - Check Lando landing job status using `lando-cli`
 - **treeherder** - Query Treeherder CI job results using `treeherder-client`
 - **os-integrations** - Run Firefox mach try with alpha worker pool overrides
@@ -31,6 +32,8 @@ Once skills are installed, simply ask Claude naturally:
 - "Check the treeherder status for my push"
 - "Run os-integration tests on Windows 11"
 - "Create a JIRA story for fixing the login bug"
+- "Search bugzilla for crashes in Firefox"
+- "File a bug for the startup regression"
 
 Claude will invoke the appropriate skill and handle all the technical details (directory navigation, command execution, etc.) for you.
 
@@ -43,6 +46,7 @@ Symlink skills to your Claude Code skills directory and agents to your agents di
 ```bash
 AGENT_SKILLS_ROOT="/path/to/agent-skills"
 
+ln -s "$AGENT_SKILLS_ROOT/skills/bugzilla" ~/.claude/skills/bugzilla
 ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.claude/skills/lando
 ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
