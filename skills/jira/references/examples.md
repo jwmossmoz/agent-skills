@@ -126,6 +126,18 @@ uv run extract_jira.py --modify RELOPS-123 --set-status "Done" --dry-run
 
 ## Link Issues
 
+### Link Types
+
+Use `--link-type` with `--link-issue`:
+- `Relates` (default) - General relationship
+- `Blocks` - Dependency blocking another issue
+- `Issue split` - Work split from another issue
+- `Duplicate` - Duplicate issues
+- `Cloners` - Clone relationship
+- `Escalate` - Escalation relationship
+
+Run `uv run extract_jira.py --help | grep -A20 "link-type"` for the complete list.
+
 ### Create a Link
 ```bash
 uv run extract_jira.py --modify RELOPS-123 --link-issue RELOPS-456
