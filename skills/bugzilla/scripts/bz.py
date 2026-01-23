@@ -7,7 +7,7 @@ Supports searching, viewing, creating, updating bugs, and adding comments/attach
 Usage:
     # Search bugs
     uv run bz.py search --product Firefox --component "Developer Tools"
-    uv run bz.py search --assignee user@example.com --status OPEN
+    uv run bz.py search --assignee user@example.com --status NEW
     uv run bz.py search --quicksearch "crash startup"
 
     # Get bug details
@@ -33,7 +33,7 @@ import base64
 import json
 import os
 import sys
-from datetime import datetime
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -56,23 +56,46 @@ def make_request(
     data: dict | None = None,
     api_key: str | None = None,
 ) -> dict:
-    """Make a request to the Bugzilla REST API."""
+    """Make a request to the Bugzilla REST API with retry logic."""
     url = f"{REST_BASE}/{endpoint}"
     headers = {}
 
     if api_key:
         headers["X-BUGZILLA-API-KEY"] = api_key
 
-    if method == "GET":
-        response = requests.get(url, params=params, headers=headers)
-    elif method == "POST":
-        headers["Content-Type"] = "application/json"
-        response = requests.post(url, params=params, json=data, headers=headers)
-    elif method == "PUT":
-        headers["Content-Type"] = "application/json"
-        response = requests.put(url, params=params, json=data, headers=headers)
-    else:
-        raise ValueError(f"Unsupported HTTP method: {method}")
+    max_retries = 3
+    retry_delays = [1, 2, 4]  # Exponential backoff: 1s, 2s, 4s
+
+    for attempt in range(max_retries):
+        try:
+            if method == "GET":
+                response = requests.get(url, params=params, headers=headers, timeout=30)
+            elif method == "POST":
+                headers["Content-Type"] = "application/json"
+                response = requests.post(url, params=params, json=data, headers=headers, timeout=30)
+            elif method == "PUT":
+                headers["Content-Type"] = "application/json"
+                response = requests.put(url, params=params, json=data, headers=headers, timeout=30)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+
+            # Retry on 5xx errors
+            if response.status_code >= 500 and attempt < max_retries - 1:
+                time.sleep(retry_delays[attempt])
+                continue
+
+            break
+        except requests.exceptions.ConnectionError:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delays[attempt])
+                continue
+            raise
+        except requests.exceptions.Timeout:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delays[attempt])
+                continue
+            print("Error: Request timed out", file=sys.stderr)
+            sys.exit(1)
 
     if response.status_code >= 400:
         try:
@@ -213,7 +236,9 @@ def cmd_search(args) -> None:
         if args.component:
             params["component"] = args.component
         if args.status:
-            params["status"] = args.status
+            # Support comma-separated status values
+            statuses = [s.strip() for s in args.status.split(",")]
+            params["status"] = statuses if len(statuses) > 1 else statuses[0]
         if args.resolution:
             params["resolution"] = args.resolution
         if args.assignee:
@@ -245,6 +270,25 @@ def cmd_search(args) -> None:
         print("No bugs found matching criteria")
         return
 
+    # Handle output to file
+    if args.output:
+        output_path = Path(args.output)
+        with open(output_path, "w") as f:
+            if args.format == "json":
+                f.write(json.dumps(bugs, indent=2))
+            else:
+                for bug in bugs:
+                    bug_id = bug.get("id")
+                    summary = bug.get("summary", "No summary")
+                    status = bug.get("status", "Unknown")
+                    resolution = bug.get("resolution", "")
+                    status_str = f"{status} {resolution}".strip()
+                    f.write(f"Bug {bug_id}: {summary}\n")
+                    f.write(f"  Status: {status_str}\n")
+                    f.write(f"  URL: {BUGZILLA_URL}/show_bug.cgi?id={bug_id}\n\n")
+        print(f"Found {len(bugs)} bug(s), saved to {args.output}")
+        return
+
     print(f"Found {len(bugs)} bug(s):\n")
 
     if args.format == "json":
@@ -269,7 +313,15 @@ def cmd_create(args) -> None:
         "version": args.version,
     }
 
-    if args.description:
+    # Handle description from file or inline
+    if args.description_file:
+        desc_path = Path(args.description_file)
+        if not desc_path.exists():
+            print(f"Error: Description file not found: {desc_path}", file=sys.stderr)
+            sys.exit(1)
+        with open(desc_path, "r") as f:
+            data["description"] = f.read()
+    elif args.description:
         data["description"] = args.description
     if args.severity:
         data["severity"] = args.severity
@@ -321,22 +373,34 @@ def cmd_update(args) -> None:
         data["severity"] = args.severity
     if args.summary:
         data["summary"] = args.summary
-    if args.add_cc:
-        data["cc"] = {"add": args.add_cc.split(",")}
-    if args.remove_cc:
-        data["cc"] = {"remove": args.remove_cc.split(",")}
-    if args.add_keywords:
-        data["keywords"] = {"add": args.add_keywords.split(",")}
-    if args.remove_keywords:
-        data["keywords"] = {"remove": args.remove_keywords.split(",")}
-    if args.add_blocks:
-        data["blocks"] = {"add": [int(b) for b in args.add_blocks.split(",")]}
-    if args.remove_blocks:
-        data["blocks"] = {"remove": [int(b) for b in args.remove_blocks.split(",")]}
-    if args.add_depends_on:
-        data["depends_on"] = {"add": [int(d) for d in args.add_depends_on.split(",")]}
-    if args.remove_depends_on:
-        data["depends_on"] = {"remove": [int(d) for d in args.remove_depends_on.split(",")]}
+    # Handle CC updates - merge add and remove into single dict
+    if args.add_cc or args.remove_cc:
+        data["cc"] = {}
+        if args.add_cc:
+            data["cc"]["add"] = args.add_cc.split(",")
+        if args.remove_cc:
+            data["cc"]["remove"] = args.remove_cc.split(",")
+    # Handle keywords updates - merge add and remove into single dict
+    if args.add_keywords or args.remove_keywords:
+        data["keywords"] = {}
+        if args.add_keywords:
+            data["keywords"]["add"] = args.add_keywords.split(",")
+        if args.remove_keywords:
+            data["keywords"]["remove"] = args.remove_keywords.split(",")
+    # Handle blocks updates - merge add and remove into single dict
+    if args.add_blocks or args.remove_blocks:
+        data["blocks"] = {}
+        if args.add_blocks:
+            data["blocks"]["add"] = [int(b) for b in args.add_blocks.split(",")]
+        if args.remove_blocks:
+            data["blocks"]["remove"] = [int(b) for b in args.remove_blocks.split(",")]
+    # Handle depends_on updates - merge add and remove into single dict
+    if args.add_depends_on or args.remove_depends_on:
+        data["depends_on"] = {}
+        if args.add_depends_on:
+            data["depends_on"]["add"] = [int(d) for d in args.add_depends_on.split(",")]
+        if args.remove_depends_on:
+            data["depends_on"]["remove"] = [int(d) for d in args.remove_depends_on.split(",")]
     if args.whiteboard:
         data["whiteboard"] = args.whiteboard
 
@@ -373,8 +437,23 @@ def cmd_comment(args) -> None:
         sys.exit(1)
 
     bug_id = args.bug_id
+
+    # Handle text from file or inline
+    if args.text_file:
+        text_path = Path(args.text_file)
+        if not text_path.exists():
+            print(f"Error: Text file not found: {text_path}", file=sys.stderr)
+            sys.exit(1)
+        with open(text_path, "r") as f:
+            comment_text = f.read()
+    elif args.text:
+        comment_text = args.text
+    else:
+        print("Error: Must provide comment text or --text-file", file=sys.stderr)
+        sys.exit(1)
+
     data = {
-        "comment": args.text,
+        "comment": comment_text,
     }
 
     if args.private:
@@ -382,7 +461,7 @@ def cmd_comment(args) -> None:
 
     if args.dry_run:
         print(f"Would add comment to bug {bug_id}:")
-        print(f"  Text: {args.text[:100]}{'...' if len(args.text) > 100 else ''}")
+        print(f"  Text: {comment_text[:100]}{'...' if len(comment_text) > 100 else ''}")
         print(f"  Private: {args.private}")
         return
 
@@ -434,6 +513,54 @@ def cmd_attachment(args) -> None:
         print(f"Created attachment {attachment_ids[0]} on bug {bug_id}")
 
 
+def cmd_needinfo(args) -> None:
+    """Request or clear needinfo flag on a bug."""
+    api_key = get_api_key()
+    if not api_key:
+        print("Error: BUGZILLA_API_KEY environment variable required for needinfo", file=sys.stderr)
+        sys.exit(1)
+
+    bug_id = args.bug_id
+
+    if args.request and args.clear:
+        print("Error: Cannot use both --request and --clear", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.request and not args.clear:
+        print("Error: Must specify either --request or --clear", file=sys.stderr)
+        sys.exit(1)
+
+    if args.request:
+        data = {
+            "flags": [
+                {
+                    "name": "needinfo",
+                    "status": "?",
+                    "requestee": args.request,
+                }
+            ]
+        }
+        action = f"Requested needinfo from {args.request}"
+    else:
+        data = {
+            "flags": [
+                {
+                    "name": "needinfo",
+                    "status": "X",
+                }
+            ]
+        }
+        action = "Cleared needinfo"
+
+    if args.dry_run:
+        print(f"Would update bug {bug_id}:")
+        print(f"  {action}")
+        return
+
+    make_request("PUT", f"bug/{bug_id}", data=data, api_key=api_key)
+    print(f"Bug {bug_id}: {action}")
+
+
 def cmd_products(args) -> None:
     """List available products or get product details."""
     api_key = get_api_key()
@@ -453,16 +580,12 @@ def cmd_products(args) -> None:
             if args.verbose:
                 print(f"    Description: {comp.get('description', 'No description')[:80]}")
     else:
-        result = make_request("GET", "product_accessible", api_key=api_key)
-        product_ids = result.get("ids", [])
-        if product_ids:
-            # Fetch product names
-            params = {"ids": ",".join(map(str, product_ids))}
-            products_result = make_request("GET", "product", params=params, api_key=api_key)
-            products = products_result.get("products", [])
-            print(f"Accessible products ({len(products)}):\n")
-            for product in sorted(products, key=lambda p: p.get("name", "")):
-                print(f"  {product.get('name')}")
+        # Use single API call with type=accessible to get full product info
+        result = make_request("GET", "product", params={"type": "accessible"}, api_key=api_key)
+        products = result.get("products", [])
+        print(f"Accessible products ({len(products)}):\n")
+        for product in sorted(products, key=lambda p: p.get("name", "")):
+            print(f"  {product.get('name')}")
 
 
 def main():
@@ -487,7 +610,7 @@ def main():
     search_parser.add_argument("-q", "--quicksearch", help="Quick search text")
     search_parser.add_argument("-p", "--product", help="Product name")
     search_parser.add_argument("-c", "--component", help="Component name")
-    search_parser.add_argument("-s", "--status", help="Bug status (NEW, ASSIGNED, RESOLVED, etc.)")
+    search_parser.add_argument("-s", "--status", help="Bug status (NEW, ASSIGNED, RESOLVED, etc.) - comma-separated for multiple")
     search_parser.add_argument("-r", "--resolution", help="Resolution (FIXED, INVALID, WONTFIX, etc.)")
     search_parser.add_argument("-a", "--assignee", help="Assigned to (email)")
     search_parser.add_argument("--reporter", help="Reporter (email)")
@@ -501,6 +624,7 @@ def main():
     search_parser.add_argument("-l", "--limit", type=int, default=20, help="Max results (default: 20)")
     search_parser.add_argument("-v", "--verbose", action="store_true", help="Show all fields")
     search_parser.add_argument("-f", "--format", choices=["text", "json"], default="text", help="Output format")
+    search_parser.add_argument("-o", "--output", help="Save results to file")
 
     # create
     create_parser = subparsers.add_parser("create", help="Create a new bug")
@@ -509,6 +633,7 @@ def main():
     create_parser.add_argument("-s", "--summary", required=True, help="Bug summary/title")
     create_parser.add_argument("-V", "--version", required=True, help="Product version")
     create_parser.add_argument("-d", "--description", help="Bug description")
+    create_parser.add_argument("--description-file", help="Read description from file")
     create_parser.add_argument("--severity", help="Severity")
     create_parser.add_argument("--priority", help="Priority")
     create_parser.add_argument("-a", "--assignee", help="Assign to (email)")
@@ -544,7 +669,8 @@ def main():
     # comment
     comment_parser = subparsers.add_parser("comment", help="Add a comment to a bug")
     comment_parser.add_argument("bug_id", help="Bug ID")
-    comment_parser.add_argument("text", help="Comment text")
+    comment_parser.add_argument("text", nargs="?", help="Comment text")
+    comment_parser.add_argument("--text-file", help="Read comment text from file")
     comment_parser.add_argument("--private", action="store_true", help="Make comment private")
     comment_parser.add_argument("--dry-run", action="store_true", help="Show what would be added")
 
@@ -557,6 +683,13 @@ def main():
     attach_parser.add_argument("-c", "--comment", help="Comment for attachment")
     attach_parser.add_argument("--is-patch", action="store_true", help="Mark as patch")
     attach_parser.add_argument("--dry-run", action="store_true", help="Show what would be attached")
+
+    # needinfo
+    needinfo_parser = subparsers.add_parser("needinfo", help="Request or clear needinfo flag")
+    needinfo_parser.add_argument("bug_id", help="Bug ID")
+    needinfo_parser.add_argument("--request", help="Request needinfo from user (email)")
+    needinfo_parser.add_argument("--clear", action="store_true", help="Clear needinfo flag")
+    needinfo_parser.add_argument("--dry-run", action="store_true", help="Show what would be done")
 
     # products
     products_parser = subparsers.add_parser("products", help="List products or get product details")
@@ -577,6 +710,7 @@ def main():
         "update": cmd_update,
         "comment": cmd_comment,
         "attachment": cmd_attachment,
+        "needinfo": cmd_needinfo,
         "products": cmd_products,
     }
 
