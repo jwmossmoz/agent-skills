@@ -32,6 +32,20 @@ cd scripts && uv run extract_jira.py [options]
 | Link issues | `--modify RELOPS-123 --link-issue RELOPS-456` |
 | Output to stdout | `--stdout --quiet` |
 
+## Markdown Formatting
+
+Use **standard Markdown** for descriptions and comments. The tool automatically converts Markdown to Atlassian Document Format (ADF).
+
+**DO NOT** use old Jira wiki markup syntax like `[text|url]` - it will not render correctly.
+
+| Element | Correct (Markdown) | Wrong (Wiki Markup) |
+|---------|-------------------|---------------------|
+| Links | `[text](https://url)` | `[text\|https://url]` |
+| Bold | `**text**` | `*text*` |
+| Lists | `- item` or `1. item` | `* item` or `# item` |
+| Code | `` `code` `` or ``` ```code``` ``` | `{code}code{code}` |
+| Headings | `## Heading` | `h2. Heading` |
+
 ## Resources
 
 - **Full examples**: [references/examples.md](references/examples.md)
