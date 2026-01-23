@@ -773,6 +773,27 @@ def modify_issue(
     return True, "; ".join(messages) if messages else "No changes made"
 
 
+# Available link types in Mozilla JIRA (mozilla-hub.atlassian.net)
+MOZILLA_JIRA_LINK_TYPES = [
+    "Action item",
+    "Blocks",
+    "Cloners",
+    "Discovery - Connected",
+    "Duplicate",
+    "Escalate",
+    "Fulfills",
+    "Issue split",
+    "Polaris datapoint issue link",
+    "Polaris issue link",
+    "Polaris merge work item link",
+    "Post-Incident Reviews",
+    "Problem/Incident",
+    "Relates",
+    "Resolve",
+    "Work item split",
+]
+
+
 def link_issues(
     client: JIRA,
     inward_issue: str,
@@ -785,7 +806,8 @@ def link_issues(
     Args:
         inward_issue: The source issue key (e.g., RELOPS-123)
         outward_issue: The target issue key to link to (e.g., RELOPS-456)
-        link_type: The type of link (e.g., "Relates", "Blocks", "Clones", "Duplicate")
+        link_type: The type of link. See MOZILLA_JIRA_LINK_TYPES for available options.
+            Common types: "Relates", "Blocks", "Issue split", "Duplicate", "Cloners"
 
     Returns (success, message) tuple.
     """
@@ -1449,33 +1471,35 @@ Examples:
 
     # Modify operations
     modify_group = parser.add_argument_group(
-        "modify options", "Options for modifying issues"
+        "modify options", "Options for modifying issues. Use --modify with issue key(s) and one or more actions."
     )
     modify_group.add_argument(
         "--modify",
         "-m",
         type=str,
-        help="Issue key(s) to modify (comma-separated, e.g., RELOPS-123 or RELOPS-123,RELOPS-124)",
+        help="Issue key(s) to modify. Single: RELOPS-123. Multiple: RELOPS-123,RELOPS-124 (comma-separated, no spaces)",
     )
     modify_group.add_argument(
         "--set-status",
         type=str,
-        help="Set the status (e.g., 'Backlog', 'In Progress', 'Done')",
+        help="Transition issue to a new status. Common values: 'To Do', 'In Progress', 'Done', 'Backlog'. "
+        "Available transitions depend on the issue's current status and workflow.",
     )
     modify_group.add_argument(
         "--remove-sprint",
         action="store_true",
-        help="Remove issue(s) from their current sprint",
+        help="Remove issue(s) from their current sprint (moves to backlog)",
     )
     modify_group.add_argument(
         "--set-sprint",
         type=str,
-        help="Move issue(s) to a specific sprint by name",
+        help="Move issue(s) to a sprint by exact name (e.g., 'RelOps 28'). "
+        "Use --current-sprint query to find active sprint names.",
     )
     modify_group.add_argument(
         "--set-epic",
         type=str,
-        help="Set the epic link (e.g., RELOPS-456)",
+        help="Link issue(s) to an epic by key (e.g., RELOPS-2019). Use --epics to list available epics.",
     )
     modify_group.add_argument(
         "--remove-epic",
@@ -1485,53 +1509,61 @@ Examples:
     modify_group.add_argument(
         "--set-fix-versions",
         type=str,
-        help="Set fix versions (comma-separated, e.g., '2026 Q1')",
+        help="Set fix versions (comma-separated). Example: '2026 Q1' or '2026 Q1,2026 Q2'",
     )
     modify_group.add_argument(
         "--set-summary",
         type=str,
-        help="Set the issue summary/title",
+        help="Update the issue title/summary text",
     )
     modify_group.add_argument(
         "--set-description",
         type=str,
-        help="Set the issue description",
+        help="Update the issue description. Supports Markdown formatting (headings, lists, code blocks, links, bold, italic).",
     )
     modify_group.add_argument(
         "--set-reporter",
         type=str,
-        help="Set the reporter (email, display name, 'me', or account ID)",
+        help="Change the reporter. Values: 'me' (current user), email (jdoe@mozilla.com), "
+        "display name ('John Doe'), or Atlassian account ID",
     )
     modify_group.add_argument(
         "--set-assignee",
         type=str,
-        help="Set the assignee (email, display name, 'me', or account ID)",
+        help="Change the assignee. Values: 'me' (current user), email (jdoe@mozilla.com), "
+        "display name ('John Doe'), or Atlassian account ID",
     )
     modify_group.add_argument(
         "--add-comment",
         type=str,
-        help="Add a comment to the issue",
+        help="Add a comment to the issue. Supports Markdown formatting.",
     )
     modify_group.add_argument(
         "--link-issue",
         type=str,
-        help="Link to another issue (e.g., RELOPS-456)",
+        help="Create a link to another issue (e.g., RELOPS-456). Use with --link-type to specify relationship.",
     )
     modify_group.add_argument(
         "--link-type",
         type=str,
         default="Relates",
-        help="Type of link: Relates (default), Blocks, Clones, Duplicate",
+        help="Type of link (default: Relates). Available types: "
+        "Action item, Blocks, Cloners, Discovery - Connected, Duplicate, "
+        "Escalate, Fulfills, Issue split, Polaris datapoint issue link, "
+        "Polaris issue link, Polaris merge work item link, Post-Incident Reviews, "
+        "Problem/Incident, Relates, Resolve, Work item split",
     )
     modify_group.add_argument(
         "--unlink-issue",
         type=str,
-        help="Remove link to another issue (e.g., RELOPS-456)",
+        help="Remove an existing link to another issue (e.g., RELOPS-456). "
+        "Removes any link type between the issues.",
     )
     modify_group.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show what would be changed without making changes",
+        help="Preview mode: show what changes would be made without actually applying them. "
+        "Use to verify commands before execution.",
     )
 
     args = parser.parse_args()

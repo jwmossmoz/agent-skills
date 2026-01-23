@@ -123,3 +123,52 @@ uv run extract_jira.py --modify RELOPS-123 --add-comment "Completed the implemen
 ```bash
 uv run extract_jira.py --modify RELOPS-123 --set-status "Done" --dry-run
 ```
+
+## Link Issues
+
+### Create a Link
+```bash
+uv run extract_jira.py --modify RELOPS-123 --link-issue RELOPS-456
+uv run extract_jira.py --modify RELOPS-123 --link-issue RELOPS-456 --link-type "Issue split"
+uv run extract_jira.py --modify RELOPS-123 --link-issue RELOPS-456 --link-type "Blocks"
+```
+
+### Remove a Link
+```bash
+uv run extract_jira.py --modify RELOPS-123 --unlink-issue RELOPS-456
+```
+
+### Link Multiple Issues to Same Target
+```bash
+uv run extract_jira.py --modify RELOPS-123,RELOPS-124 --link-issue RELOPS-100 --link-type "Issue split"
+```
+
+## Create Stories
+
+### Basic Create
+```bash
+uv run extract_jira.py --create --create-summary "New feature"
+```
+
+### Create with All Options
+```bash
+uv run extract_jira.py --create \
+  --create-summary "Implement new feature" \
+  --description "## Background\nDetails here." \
+  --epic-create RELOPS-2019 \
+  --sprint-create "RelOps 28" \
+  --assignee-create me \
+  --fix-versions-create "2026 Q1"
+```
+
+## Help
+
+### View All Options
+```bash
+uv run extract_jira.py --help
+```
+
+### Search for Specific Option
+```bash
+uv run extract_jira.py --help | grep -A5 "link-type"
+```
