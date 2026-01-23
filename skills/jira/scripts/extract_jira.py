@@ -81,8 +81,12 @@ OP_ITEM_NAME = CONFIG["onepassword"]["item_name"]
 OP_VAULT = CONFIG["onepassword"]["vault"]
 OP_CREDENTIAL_FIELD = CONFIG["onepassword"].get("credential_field", "credential")
 OP_USERNAME_FIELD = CONFIG["onepassword"].get("username_field", "username")
-DEFAULT_PROJECT = CONFIG["jira"]["default_project"]
-DEFAULT_OUTPUT_DIR = Path(CONFIG["output"]["output_dir"]).expanduser()
+DEFAULT_PROJECT = os.environ.get(
+    "JIRA_DEFAULT_PROJECT", CONFIG["jira"]["default_project"]
+)
+DEFAULT_OUTPUT_DIR = Path(
+    os.environ.get("JIRA_OUTPUT_DIR", CONFIG["output"]["output_dir"])
+).expanduser()
 
 
 def build_jira_client(email: str, token: str) -> JIRA:
@@ -1019,14 +1023,15 @@ def build_jql_query(args) -> str:
     return jql
 
 
-def fetch_all_stories(client: JIRA, jql: str) -> list[dict]:
+def fetch_all_stories(client: JIRA, jql: str, *, quiet: bool = False) -> list[dict]:
     """Fetch JIRA stories with pagination."""
     all_issues = []
     max_results = 100
     start_at = 0
 
-    print(f"Fetching stories from {JIRA_BASE_URL}...")
-    print(f"JQL: {jql}\n")
+    if not quiet:
+        print(f"Fetching stories from {JIRA_BASE_URL}...")
+        print(f"JQL: {jql}\n")
 
     while True:
         try:
@@ -1045,12 +1050,13 @@ def fetch_all_stories(client: JIRA, jql: str) -> list[dict]:
 
         all_issues.extend([issue.raw for issue in issues])
 
-        fetched = len(all_issues)
-        total = getattr(issues, "total", None)
-        if total:
-            print(f"  Fetched {fetched}/{total} stories...")
-        else:
-            print(f"  Fetched {fetched} stories...")
+        if not quiet:
+            fetched = len(all_issues)
+            total = getattr(issues, "total", None)
+            if total:
+                print(f"  Fetched {fetched}/{total} stories...")
+            else:
+                print(f"  Fetched {fetched} stories...")
 
         start_at += len(issues)
         if total is not None and start_at >= total:
@@ -1058,7 +1064,8 @@ def fetch_all_stories(client: JIRA, jql: str) -> list[dict]:
         if len(issues) < max_results:
             break
 
-    print(f"Total stories fetched: {len(all_issues)}")
+    if not quiet:
+        print(f"Total stories fetched: {len(all_issues)}")
     return all_issues
 
 
@@ -1167,8 +1174,15 @@ def extract_description(description: dict | None) -> str | None:
         return None
 
 
-def save_to_json(data: list[dict], output_path: Path, jql: str) -> None:
-    """Save extracted data to JSON file."""
+def save_to_json(
+    data: list[dict],
+    output_path: Path,
+    jql: str,
+    *,
+    to_stdout: bool = False,
+    quiet: bool = False,
+) -> None:
+    """Save extracted data to JSON file or stdout."""
     output = {
         "extracted_at": datetime.now().isoformat(),
         "source": JIRA_BASE_URL,
@@ -1177,10 +1191,13 @@ def save_to_json(data: list[dict], output_path: Path, jql: str) -> None:
         "stories": data,
     }
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, ensure_ascii=False)
-
-    print(f"Saved {len(data)} stories to {output_path}")
+    if to_stdout:
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, indent=2, ensure_ascii=False)
+        if not quiet:
+            print(f"Saved {len(data)} stories to {output_path}")
 
 
 def print_summary(stories: list[dict]) -> None:
@@ -1257,6 +1274,16 @@ Examples:
         "--summary",
         action="store_true",
         help="Print summary statistics after extraction",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress status messages (only output errors and final result)",
+    )
+    parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Output JSON to stdout instead of saving to file (useful for piping)",
     )
 
     # Authentication
@@ -1818,31 +1845,33 @@ Examples:
         print("\nDone!")
         return
 
-    # Ensure output directory exists
+    # Ensure output directory exists (unless outputting to stdout)
     output_dir = Path(args.output_dir).expanduser()
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Build full output path
     output_path = output_dir / args.output
-    print(f"Output directory: {output_dir}")
+
+    if not args.stdout:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if not args.quiet:
+            print(f"Output directory: {output_dir}")
 
     # Build JQL query
     jql = build_jql_query(args)
 
     # Fetch all stories
-    raw_issues = fetch_all_stories(client, jql)
+    raw_issues = fetch_all_stories(client, jql, quiet=args.quiet)
 
     # Extract essential data
     stories = extract_essential_data(raw_issues)
 
-    # Save to JSON
-    save_to_json(stories, output_path, jql)
+    # Save to JSON or output to stdout
+    save_to_json(stories, output_path, jql, to_stdout=args.stdout, quiet=args.quiet)
 
-    # Print summary if requested
-    if args.summary:
+    # Print summary if requested (skip if outputting to stdout)
+    if args.summary and not args.stdout:
         print_summary(stories)
 
-    print("\nDone!")
+    if not args.quiet and not args.stdout:
+        print("\nDone!")
 
 
 if __name__ == "__main__":

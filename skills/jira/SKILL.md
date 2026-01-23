@@ -23,7 +23,11 @@ Set environment variables:
 ```bash
 export JIRA_API_TOKEN="your-api-token"  # From https://id.atlassian.com/manage-profile/security/api-tokens
 export JIRA_EMAIL="your@email.com"
+export JIRA_OUTPUT_DIR="~/moz_artifacts"   # Optional: output directory
+export JIRA_DEFAULT_PROJECT="RELOPS"       # Optional: default project
 ```
+
+Precedence: CLI args > env vars > config.toml > defaults
 
 ## Common Operations
 
@@ -67,3 +71,9 @@ Run `uv run extract_jira.py --help` and search for `--link-type` for the complet
 ## Output
 
 Stories are saved to `~/moz_artifacts/jira_stories.json` by default.
+
+```bash
+uv run extract_jira.py --stdout           # Output JSON to stdout (for piping)
+uv run extract_jira.py --quiet            # Suppress status messages
+uv run extract_jira.py --output-dir /tmp  # Custom output directory
+```
