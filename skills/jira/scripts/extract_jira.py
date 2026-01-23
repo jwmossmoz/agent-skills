@@ -1028,6 +1028,7 @@ def fetch_all_stories(client: JIRA, jql: str, *, quiet: bool = False) -> list[di
     all_issues = []
     max_results = 100
     start_at = 0
+    total = None
 
     if not quiet:
         print(f"Fetching stories from {JIRA_BASE_URL}...")
@@ -1049,10 +1050,10 @@ def fetch_all_stories(client: JIRA, jql: str, *, quiet: bool = False) -> list[di
             break
 
         all_issues.extend([issue.raw for issue in issues])
+        total = getattr(issues, "total", None)
 
         if not quiet:
             fetched = len(all_issues)
-            total = getattr(issues, "total", None)
             if total:
                 print(f"  Fetched {fetched}/{total} stories...")
             else:
@@ -1600,10 +1601,12 @@ Examples:
     env_email = os.environ.get("JIRA_EMAIL")
 
     if env_token:
-        print("Using API token from JIRA_API_TOKEN environment variable")
+        if not args.quiet:
+            print("Using API token from JIRA_API_TOKEN environment variable")
         token = env_token
     else:
-        print("Retrieving API token from 1Password...")
+        if not args.quiet:
+            print("Retrieving API token from 1Password...")
         token = get_token_from_1password()
 
     # Get email from args, env var, or 1Password (in that order)
@@ -1611,7 +1614,8 @@ Examples:
     if email:
         pass  # Use provided --email arg
     elif env_email:
-        print("Using email from JIRA_EMAIL environment variable")
+        if not args.quiet:
+            print("Using email from JIRA_EMAIL environment variable")
         email = env_email
     else:
         email = get_email_from_1password()
@@ -1627,7 +1631,8 @@ Examples:
 
     # Type narrowing: email is guaranteed to be str after the check above
     assert email is not None
-    print(f"Using email: {email}")
+    if not args.quiet:
+        print(f"Using email: {email}")
 
     client = build_jira_client(email, token)
 
