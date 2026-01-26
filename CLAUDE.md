@@ -136,17 +136,9 @@ Each skill should be tested manually by running the scripts with appropriate par
 
 ### Creating New Skills
 
-1. Create a new directory under `skills/<skill-name>/`
-2. Add `SKILL.md` with the frontmatter metadata:
-   ```yaml
-   ---
-   name: skill-name
-   description: What the skill does and when to use it
-   ---
-   ```
-3. Create `scripts/` directory for implementation
-4. Add `references/` directory for examples and documentation
-5. Use `uv` for Python dependency management (create `pyproject.toml` if needed)
+Use the built-in `/skill-creator` skill in Claude Code to create new skills. This guides you through the process interactively and ensures proper structure and metadata.
+
+When creating scripts, always use `uv` for Python execution (never run Python directly).
 
 ## Important Patterns
 
