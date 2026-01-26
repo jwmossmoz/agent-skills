@@ -29,6 +29,8 @@ cd scripts && uv run extract_jira.py [options]
 | Query specific issue | `--jql "key = RELOPS-123"` |
 | Create issue | `--create --create-summary "Title"` |
 | Modify issue | `--modify RELOPS-123 --set-status "In Progress"` |
+| Append description | `--modify RELOPS-123 --append-description "New notes"` |
+| Edit comment | `--modify RELOPS-123 --edit-comment 1242534 --comment-body "Updated content"` |
 | Link issues | `--modify RELOPS-123 --link-issue RELOPS-456` |
 | Output to stdout | `--stdout --quiet` |
 
