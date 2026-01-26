@@ -31,6 +31,10 @@ Usage:
     uv run extract_jira.py --modify RELOPS-123 --set-epic RELOPS-456
     uv run extract_jira.py --modify RELOPS-123 --remove-epic
     uv run extract_jira.py --modify RELOPS-123,RELOPS-124 --set-status "Backlog" --remove-sprint
+    uv run extract_jira.py --modify RELOPS-123 --append-description "New notes"
+    uv run extract_jira.py --modify RELOPS-123 --edit-comment 1242534 --comment-body "Updated content"
+    uv run extract_jira.py --modify RELOPS-123 --append-comment 1242534 --comment-body "Additional content"
+    uv run extract_jira.py --jql "key = RELOPS-123" --list-comments
 """
 
 import argparse
@@ -269,6 +273,40 @@ def markdown_to_adf(text: str) -> dict[str, Any]:
             content.append({"type": "paragraph", "content": _parse_inline(para_text)})
 
     return {"type": "doc", "version": 1, "content": content}
+
+
+def normalize_adf_doc(data: Any) -> dict[str, Any]:
+    """Normalize a Jira ADF document payload."""
+    if not data:
+        return {"type": "doc", "version": 1, "content": []}
+    if isinstance(data, dict) and data.get("type") == "doc":
+        return data
+    if isinstance(data, str):
+        return markdown_to_adf(data)
+    return {"type": "doc", "version": 1, "content": []}
+
+
+def merge_adf_docs(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
+    """Merge two ADF docs into a single document."""
+    first_content = first.get("content") or []
+    second_content = second.get("content") or []
+    return {"type": "doc", "version": 1, "content": first_content + second_content}
+
+
+def append_markdown_to_adf(
+    existing: Any, new_markdown: str, separator_markdown: str | None = None
+) -> dict[str, Any]:
+    """Append Markdown content to an existing ADF doc, optionally with a separator."""
+    existing_doc = normalize_adf_doc(existing)
+    new_doc = markdown_to_adf(new_markdown)
+    if not existing_doc.get("content"):
+        return new_doc
+    if not new_doc.get("content"):
+        return existing_doc
+    if separator_markdown:
+        separator_doc = markdown_to_adf(separator_markdown)
+        return merge_adf_docs(merge_adf_docs(existing_doc, separator_doc), new_doc)
+    return merge_adf_docs(existing_doc, new_doc)
 
 
 def _is_special_line(line: str) -> bool:
@@ -652,6 +690,7 @@ def modify_issue(
     set_fix_versions: list[str] | None = None,
     set_summary: str | None = None,
     set_description: str | None = None,
+    append_description: str | None = None,
     set_reporter: str | None = None,
     set_assignee: str | None = None,
 ) -> tuple[bool, str]:
@@ -731,6 +770,19 @@ def modify_issue(
     if set_description:
         update_payload["fields"]["description"] = markdown_to_adf(set_description)
         messages.append("Updated description")
+    elif append_description:
+        try:
+            issue = client.issue(issue_key, fields="description")
+        except JIRAError as exc:
+            return False, f"Failed to fetch {issue_key} description: {exc}"
+
+        updated_description = append_markdown_to_adf(
+            getattr(issue.fields, "description", None),
+            append_description,
+            separator_markdown="\n\n---\n\n",
+        )
+        update_payload["fields"]["description"] = updated_description
+        messages.append("Appended to description")
 
     # Handle reporter change
     if set_reporter:
@@ -885,6 +937,109 @@ def add_comment(
         return False, f"Failed to add comment to {issue_key}: {exc}"
 
     return True, "Added comment"
+
+
+def fetch_comment(
+    client: JIRA, issue_key: str, comment_id: str
+) -> tuple[bool, dict[str, Any] | None, str]:
+    """Fetch a specific comment by ID."""
+    try:
+        comment = client.comment(issue_key, comment_id)
+        raw = getattr(comment, "raw", None)
+        if isinstance(raw, dict):
+            return True, raw, "Fetched comment"
+    except JIRAError:
+        pass
+    except Exception:
+        pass
+
+    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue_key}/comment/{comment_id}"
+    try:
+        response = client._session.get(url)
+    except Exception as exc:
+        return False, None, f"Failed to fetch comment {comment_id}: {exc}"
+
+    if response.status_code >= 400:
+        return (
+            False,
+            None,
+            f"Failed to fetch comment {comment_id}: {response.status_code} {response.text}",
+        )
+
+    try:
+        return True, response.json(), "Fetched comment"
+    except ValueError as exc:
+        return False, None, f"Failed to parse comment {comment_id} response: {exc}"
+
+
+def update_comment(
+    client: JIRA, issue_key: str, comment_id: str, new_body: dict[str, Any]
+) -> tuple[bool, str]:
+    """Update an existing comment by ID."""
+    try:
+        comment = client.comment(issue_key, comment_id)
+        comment.update(body=new_body)
+        return True, f"Updated comment {comment_id}"
+    except JIRAError:
+        pass
+    except Exception:
+        pass
+
+    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue_key}/comment/{comment_id}"
+    payload = {"body": new_body}
+    try:
+        response = client._session.put(url, json=payload)
+    except Exception as exc:
+        return False, f"Failed to update comment {comment_id}: {exc}"
+
+    if response.status_code >= 400:
+        return (
+            False,
+            f"Failed to update comment {comment_id}: {response.status_code} {response.text}",
+        )
+
+    return True, f"Updated comment {comment_id}"
+
+
+def list_comments(
+    client: JIRA, issue_key: str, *, max_results: int = 100
+) -> tuple[bool, list[dict[str, Any]] | None, str]:
+    """List comments for an issue."""
+    try:
+        comments = client.comments(issue_key)
+        normalized: list[dict[str, Any]] = []
+        for comment in comments:
+            raw = getattr(comment, "raw", None)
+            if isinstance(raw, dict):
+                normalized.append(raw)
+        if normalized:
+            return True, normalized, f"Found {len(normalized)} comment(s)"
+    except JIRAError:
+        pass
+    except Exception:
+        pass
+
+    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue_key}/comment"
+    params = {"maxResults": max_results}
+    try:
+        response = client._session.get(url, params=params)
+    except Exception as exc:
+        return False, None, f"Failed to list comments for {issue_key}: {exc}"
+
+    if response.status_code >= 400:
+        return (
+            False,
+            None,
+            f"Failed to list comments for {issue_key}: {response.status_code} {response.text}",
+        )
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        return False, None, f"Failed to parse comments for {issue_key}: {exc}"
+
+    comments = data.get("comments", [])
+    return True, comments, f"Found {len(comments)} comment(s)"
 
 
 def transition_issue(
@@ -1286,6 +1441,11 @@ Examples:
         action="store_true",
         help="Output JSON to stdout instead of saving to file (useful for piping)",
     )
+    parser.add_argument(
+        "--list-comments",
+        action="store_true",
+        help="List comment IDs for issues returned by the query or specified via --modify",
+    )
 
     # Authentication
     parser.add_argument(
@@ -1550,6 +1710,11 @@ Examples:
         help="Update the issue description. Supports Markdown formatting (headings, lists, code blocks, links, bold, italic).",
     )
     modify_group.add_argument(
+        "--append-description",
+        type=str,
+        help="Append to the issue description (preserves existing content). Supports Markdown formatting.",
+    )
+    modify_group.add_argument(
         "--set-reporter",
         type=str,
         help="Change the reporter. Values: 'me' (current user), email (jdoe@mozilla.com), "
@@ -1565,6 +1730,21 @@ Examples:
         "--add-comment",
         type=str,
         help="Add a comment to the issue. Supports Markdown formatting.",
+    )
+    modify_group.add_argument(
+        "--edit-comment",
+        type=str,
+        help="Edit an existing comment by ID. Requires --comment-body.",
+    )
+    modify_group.add_argument(
+        "--append-comment",
+        type=str,
+        help="Append to an existing comment by ID. Requires --comment-body.",
+    )
+    modify_group.add_argument(
+        "--comment-body",
+        type=str,
+        help="Body text for --edit-comment or --append-comment. Supports Markdown formatting.",
     )
     modify_group.add_argument(
         "--link-issue",
@@ -1725,15 +1905,47 @@ Examples:
                 args.set_fix_versions,
                 args.set_summary,
                 args.set_description,
+                args.append_description,
                 args.set_reporter,
                 args.set_assignee,
                 args.add_comment,
+                args.edit_comment,
+                args.append_comment,
                 args.link_issue,
                 args.unlink_issue,
+                args.list_comments,
             ]
         ):
             print(
-                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --set-reporter, --set-assignee, --add-comment, --link-issue, --unlink-issue",
+                "Error: --modify requires at least one of: --set-status, --remove-sprint, --set-sprint, --set-epic, --remove-epic, --set-fix-versions, --set-summary, --set-description, --append-description, --set-reporter, --set-assignee, --add-comment, --edit-comment, --append-comment, --link-issue, --unlink-issue, --list-comments",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if args.set_description and args.append_description:
+            print(
+                "Error: --set-description and --append-description cannot be used together",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if args.edit_comment and args.append_comment:
+            print(
+                "Error: --edit-comment and --append-comment cannot be used together",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if (args.edit_comment or args.append_comment) and not args.comment_body:
+            print(
+                "Error: --comment-body is required with --edit-comment or --append-comment",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if (args.edit_comment or args.append_comment) and len(issue_keys) != 1:
+            print(
+                "Error: --edit-comment and --append-comment require exactly one issue key",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -1768,16 +1980,24 @@ Examples:
                     changes.append(f"set summary to '{args.set_summary}'")
                 if args.set_description:
                     changes.append("update description")
+                if args.append_description:
+                    changes.append("append to description")
                 if args.set_reporter:
                     changes.append(f"set reporter to '{args.set_reporter}'")
                 if args.set_assignee:
                     changes.append(f"set assignee to '{args.set_assignee}'")
                 if args.add_comment:
                     changes.append("add comment")
+                if args.edit_comment:
+                    changes.append(f"edit comment {args.edit_comment}")
+                if args.append_comment:
+                    changes.append(f"append comment {args.append_comment}")
                 if args.link_issue:
                     changes.append(f"link to {args.link_issue} ({args.link_type})")
                 if args.unlink_issue:
                     changes.append(f"unlink from {args.unlink_issue}")
+                if args.list_comments:
+                    changes.append("list comments")
                 print(f"  {issue_key}: Would {', '.join(changes)}")
             else:
                 messages = []
@@ -1793,6 +2013,7 @@ Examples:
                         fix_versions,
                         args.set_summary,
                         args.set_description,
+                        args.append_description,
                         args.set_reporter,
                         args.set_assignee,
                     ]
@@ -1808,6 +2029,7 @@ Examples:
                         set_fix_versions=fix_versions,
                         set_summary=args.set_summary,
                         set_description=args.set_description,
+                        append_description=args.append_description,
                         set_reporter=args.set_reporter,
                         set_assignee=args.set_assignee,
                     )
@@ -1824,6 +2046,52 @@ Examples:
                         comment_text=args.add_comment,
                     )
                     messages.append(message)
+
+                if args.edit_comment:
+                    success, comment, message = fetch_comment(
+                        client=client,
+                        issue_key=issue_key,
+                        comment_id=args.edit_comment,
+                    )
+                    if not success or not comment:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
+                    new_body = markdown_to_adf(args.comment_body)
+                    success, message = update_comment(
+                        client=client,
+                        issue_key=issue_key,
+                        comment_id=args.edit_comment,
+                        new_body=new_body,
+                    )
+                    messages.append(message)
+                    if not success:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
+
+                if args.append_comment:
+                    success, comment, message = fetch_comment(
+                        client=client,
+                        issue_key=issue_key,
+                        comment_id=args.append_comment,
+                    )
+                    if not success or not comment:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
+                    updated_body = append_markdown_to_adf(
+                        comment.get("body"),
+                        args.comment_body,
+                        separator_markdown="\n\n---\n\n",
+                    )
+                    success, message = update_comment(
+                        client=client,
+                        issue_key=issue_key,
+                        comment_id=args.append_comment,
+                        new_body=updated_body,
+                    )
+                    messages.append(message)
+                    if not success:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
 
                 # Handle issue linking
                 if args.link_issue:
@@ -1843,6 +2111,28 @@ Examples:
                         target_issue=args.unlink_issue,
                     )
                     messages.append(message)
+
+                if args.list_comments:
+                    success, comments, message = list_comments(
+                        client=client, issue_key=issue_key
+                    )
+                    if not success or comments is None:
+                        print(f"  ✗ {issue_key}: {message}")
+                        continue
+                    print(f"\n{issue_key} comments ({len(comments)}):")
+                    for comment in comments:
+                        comment_id = comment.get("id")
+                        author = get_nested(comment, "author", "displayName") or "Unknown"
+                        created = comment.get("created") or "Unknown"
+                        updated = comment.get("updated") or "Unknown"
+                        body_text = extract_description(comment.get("body")) or ""
+                        body_snippet = (body_text[:120] + "...") if len(body_text) > 120 else body_text
+                        print(
+                            f"- {comment_id} | {author} | created: {created} | updated: {updated}"
+                        )
+                        if body_snippet:
+                            print(f"  {body_snippet}")
+                    messages.append("Listed comments")
 
                 status_icon = "✓" if success else "✗"
                 print(f"  {status_icon} {issue_key}: {'; '.join(messages)}")
@@ -1867,6 +2157,32 @@ Examples:
 
     # Extract essential data
     stories = extract_essential_data(raw_issues)
+
+    if args.list_comments:
+        for story in stories:
+            issue_key = story.get("key")
+            if not issue_key:
+                continue
+            success, comments, message = list_comments(
+                client=client, issue_key=issue_key
+            )
+            if not success or comments is None:
+                print(f"  ✗ {issue_key}: {message}")
+                continue
+            print(f"\n{issue_key} comments ({len(comments)}):")
+            for comment in comments:
+                comment_id = comment.get("id")
+                author = get_nested(comment, "author", "displayName") or "Unknown"
+                created = comment.get("created") or "Unknown"
+                updated = comment.get("updated") or "Unknown"
+                body_text = extract_description(comment.get("body")) or ""
+                body_snippet = (body_text[:120] + "...") if len(body_text) > 120 else body_text
+                print(
+                    f"- {comment_id} | {author} | created: {created} | updated: {updated}"
+                )
+                if body_snippet:
+                    print(f"  {body_snippet}")
+        return
 
     # Save to JSON or output to stdout
     save_to_json(stories, output_path, jql, to_stdout=args.stdout, quiet=args.quiet)
