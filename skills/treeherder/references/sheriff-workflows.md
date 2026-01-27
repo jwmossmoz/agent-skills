@@ -1,16 +1,16 @@
 # Sheriff Workflows with Treeherder
 
-This document describes common sheriff workflows and how to accomplish them using the lumberjackth CLI.
+This document describes common sheriff workflows and how to accomplish them using the lumberjackth CLI via `uvx`.
 
 ## Quick Reference
 
 | Task | Command |
 |------|---------|
-| List recent pushes | `lj pushes autoland -n 10` |
-| Get jobs for a push | `lj jobs autoland --push-id <id>` |
-| Filter failed jobs | `lj jobs autoland --push-id <id> --result testfailed` |
-| Get job details with logs | `lj job autoland "<guid>" --logs` |
-| Performance alerts | `lj perf-alerts -r autoland` |
+| List recent pushes | `uvx --from lumberjackth lj pushes autoland -n 10` |
+| Get jobs for a push | `uvx --from lumberjackth lj jobs autoland --push-id <id>` |
+| Filter failed jobs | `uvx --from lumberjackth lj jobs autoland --push-id <id> --result testfailed` |
+| Get job details with logs | `uvx --from lumberjackth lj job autoland "<guid>" --logs` |
+| Performance alerts | `uvx --from lumberjackth lj perf-alerts -r autoland` |
 
 ## Workflow 1: Monitoring Tree Health
 
@@ -18,10 +18,10 @@ This document describes common sheriff workflows and how to accomplish them usin
 
 ```bash
 # List last 10 pushes on autoland
-lj pushes autoland -n 10
+uvx --from lumberjackth lj pushes autoland -n 10
 
 # Filter by author
-lj pushes autoland -a user@mozilla.com
+uvx --from lumberjackth lj pushes autoland -a user@mozilla.com
 ```
 
 Output shows push ID, revision, author, and commit count:
@@ -38,13 +38,13 @@ Output shows push ID, revision, author, and commit count:
 
 ```bash
 # All jobs for a push
-lj jobs autoland --push-id 1815584
+uvx --from lumberjackth lj jobs autoland --push-id 1815584
 
 # Failed jobs only
-lj jobs autoland --push-id 1815584 --result testfailed
+uvx --from lumberjackth lj jobs autoland --push-id 1815584 --result testfailed
 
 # Tier 1 jobs (sheriff-managed)
-lj jobs autoland --push-id 1815584 --tier 1
+uvx --from lumberjackth lj jobs autoland --push-id 1815584 --tier 1
 ```
 
 ## Workflow 2: Investigating Failed Jobs
@@ -53,17 +53,17 @@ lj jobs autoland --push-id 1815584 --tier 1
 
 ```bash
 # Get all failed jobs for a push
-lj jobs autoland --push-id 1815584 --result testfailed
+uvx --from lumberjackth lj jobs autoland --push-id 1815584 --result testfailed
 
-# Or filter by platform
-lj --json jobs autoland --push-id 1815584 --result testfailed | jq '.[] | select(.platform | contains("linux"))'
+# Or filter by platform using JSON output and jq
+uvx --from lumberjackth lj --json jobs autoland --push-id 1815584 --result testfailed | jq '.[] | select(.platform | contains("linux"))'
 ```
 
 ### Step 2: Get job details and logs
 
 ```bash
 # Get detailed info for a specific job
-lj job autoland "abc123def/0" --logs
+uvx --from lumberjackth lj job autoland "abc123def/0" --logs
 ```
 
 Output includes:
@@ -89,23 +89,23 @@ The job output includes direct Taskcluster links:
 
 ```bash
 # Only failed tests
-lj jobs autoland --push-id 12345 --result testfailed
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --result testfailed
 
 # Only build failures
-lj jobs autoland --push-id 12345 --result busted
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --result busted
 
 # Running jobs
-lj jobs autoland --push-id 12345 --state running
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --state running
 ```
 
 ### Filter by tier
 
 ```bash
 # Tier 1 jobs only (sheriff-managed, require backout on failure)
-lj jobs autoland --push-id 12345 --tier 1
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --tier 1
 
 # Tier 2 jobs (shown by default, bugs filed but no auto-backout)
-lj jobs autoland --push-id 12345 --tier 2
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --tier 2
 ```
 
 ## Workflow 4: Performance Alerts
@@ -114,19 +114,19 @@ lj jobs autoland --push-id 12345 --tier 2
 
 ```bash
 # Recent alerts
-lj perf-alerts -n 10
+uvx --from lumberjackth lj perf-alerts -n 10
 
 # Filter by repository
-lj perf-alerts -r autoland -n 10
+uvx --from lumberjackth lj perf-alerts -r autoland -n 10
 
 # Filter by framework (1=talos, 10=raptor, 13=browsertime)
-lj perf-alerts -f 1 -n 10
+uvx --from lumberjackth lj perf-alerts -f 1 -n 10
 ```
 
 ### List performance frameworks
 
 ```bash
-lj perf-frameworks
+uvx --from lumberjackth lj perf-frameworks
 ```
 
 Common frameworks:
@@ -141,13 +141,13 @@ All commands support `--json` for machine-readable output:
 
 ```bash
 # Get pushes as JSON
-lj --json pushes autoland -n 5
+uvx --from lumberjackth lj --json pushes autoland -n 5
 
 # Get failed jobs as JSON and filter with jq
-lj --json jobs autoland --push-id 12345 --result testfailed | jq '.[].job_type_name'
+uvx --from lumberjackth lj --json jobs autoland --push-id 12345 --result testfailed | jq '.[].job_type_name'
 
 # Get job details as JSON
-lj --json job autoland "abc123/0" --logs
+uvx --from lumberjackth lj --json job autoland "abc123/0" --logs
 ```
 
 ## Job Tiers Reference
@@ -172,9 +172,14 @@ lj --json job autoland "abc123/0" --logs
 
 ## Python API for Advanced Workflows
 
-For workflows not covered by the CLI, use the Python API:
+For workflows not covered by the CLI, use the Python API with PEP 723 inline metadata:
 
 ```python
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["lumberjackth"]
+# ///
 from lumberjackth import TreeherderClient
 
 client = TreeherderClient()
@@ -188,6 +193,8 @@ for job in unclassified:
     if job.task_id:
         print(f"  Task: https://firefox-ci-tc.services.mozilla.com/tasks/{job.task_id}")
 ```
+
+Save as `script.py` and run with `uv run script.py`.
 
 ## External Resources
 
