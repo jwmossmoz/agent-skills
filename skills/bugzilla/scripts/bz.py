@@ -154,12 +154,20 @@ def cmd_get(args) -> None:
                 for i, comment in enumerate(comments):
                     author = comment.get("creator", "Unknown")
                     time = comment.get("creation_time", "")
-                    text = comment.get("text", "")[:200]
-                    if len(comment.get("text", "")) > 200:
-                        text += "..."
-                    print(f"    [{i}] {author} ({time}):")
-                    for line in text.split("\n")[:5]:
-                        print(f"        {line}")
+                    full_text = comment.get("text", "")
+                    if args.verbose:
+                        # Show full comment in verbose mode
+                        print(f"    [{i}] {author} ({time}):")
+                        for line in full_text.split("\n"):
+                            print(f"        {line}")
+                    else:
+                        # Truncated view
+                        text = full_text[:200]
+                        if len(full_text) > 200:
+                            text += "..."
+                        print(f"    [{i}] {author} ({time}):")
+                        for line in text.split("\n")[:5]:
+                            print(f"        {line}")
 
         if args.include_history:
             history_result = make_request(
