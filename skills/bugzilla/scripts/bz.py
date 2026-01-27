@@ -561,6 +561,127 @@ def cmd_needinfo(args) -> None:
     print(f"Bug {bug_id}: {action}")
 
 
+def cmd_create_image_regression(args) -> None:
+    """Create a bug for a confirmed image regression with pre-filled fields."""
+    api_key = get_api_key()
+    if not api_key:
+        print("Error: BUGZILLA_API_KEY environment variable required for creating bugs", file=sys.stderr)
+        sys.exit(1)
+
+    # Build summary
+    summary = f"[{args.worker_pool}] Image {args.image_version} causes test failures"
+    if args.custom_summary:
+        summary = args.custom_summary
+
+    # Build description
+    description_parts = [
+        f"## Image Regression Report",
+        f"",
+        f"**Worker Pool**: `{args.worker_pool}`",
+        f"**Image Version**: {args.image_version}",
+    ]
+
+    if args.windows_build:
+        description_parts.append(f"**Windows Build**: {args.windows_build}")
+
+    if args.production_version:
+        description_parts.append(f"**Production Image Version**: {args.production_version}")
+
+    description_parts.extend([
+        f"",
+        f"## Failing Tests",
+        f"",
+    ])
+
+    if args.failing_tests:
+        for test in args.failing_tests.split(","):
+            description_parts.append(f"- `{test.strip()}`")
+    else:
+        description_parts.append("- (Add failing tests here)")
+
+    description_parts.extend([
+        f"",
+        f"## Investigation",
+        f"",
+    ])
+
+    if args.investigation_doc:
+        doc_path = Path(args.investigation_doc)
+        if doc_path.exists():
+            description_parts.append(f"See investigation document: {doc_path.name}")
+            description_parts.append(f"")
+            # Read first 50 lines of investigation doc for summary
+            with open(doc_path, "r") as f:
+                lines = f.readlines()[:50]
+                description_parts.append("### Summary from Investigation")
+                description_parts.append("```")
+                description_parts.extend([line.rstrip() for line in lines])
+                if len(lines) == 50:
+                    description_parts.append("... (truncated)")
+                description_parts.append("```")
+        else:
+            description_parts.append(f"Investigation document: {args.investigation_doc} (file not found)")
+    else:
+        description_parts.append("(Add investigation details here)")
+
+    if args.task_group:
+        description_parts.extend([
+            f"",
+            f"## Task Group",
+            f"",
+            f"https://firefox-ci-tc.services.mozilla.com/tasks/groups/{args.task_group}",
+        ])
+
+    if args.treeherder_url:
+        description_parts.extend([
+            f"",
+            f"## Treeherder",
+            f"",
+            f"{args.treeherder_url}",
+        ])
+
+    description = "\n".join(description_parts)
+
+    # Determine product/component
+    # Infrastructure & Release Engineering :: General is typical for image issues
+    product = args.product or "Infrastructure & Release Engineering"
+    component = args.component or "General"
+
+    data = {
+        "product": product,
+        "component": component,
+        "summary": summary,
+        "version": "unspecified",
+        "description": description,
+        "severity": args.severity or "S3",
+        "priority": args.priority or "P3",
+    }
+
+    if args.keywords:
+        data["keywords"] = args.keywords.split(",")
+    else:
+        data["keywords"] = ["regression"]
+
+    if args.blocks:
+        data["blocks"] = [int(b) for b in args.blocks.split(",")]
+
+    if args.see_also:
+        data["see_also"] = args.see_also.split(",")
+
+    if args.dry_run:
+        print("Would create image regression bug with:")
+        print(json.dumps(data, indent=2))
+        print("\nDescription preview:")
+        print("-" * 40)
+        print(description)
+        return
+
+    result = make_request("POST", "bug", data=data, api_key=api_key)
+    bug_id = result.get("id")
+    print(f"Created bug {bug_id}")
+    print(f"URL: {BUGZILLA_URL}/show_bug.cgi?id={bug_id}")
+
+
 def cmd_products(args) -> None:
     """List available products or get product details."""
     api_key = get_api_key()
@@ -696,6 +817,83 @@ def main():
     products_parser.add_argument("product", nargs="?", help="Product name to get details for")
     products_parser.add_argument("-v", "--verbose", action="store_true", help="Show component descriptions")
 
+    # create-image-regression
+    regress_parser = subparsers.add_parser(
+        "create-image-regression",
+        help="Create a bug for a confirmed image regression",
+    )
+    regress_parser.add_argument(
+        "--image-version",
+        required=True,
+        help="Image version that caused the regression (e.g., 1.0.9)",
+    )
+    regress_parser.add_argument(
+        "--worker-pool",
+        required=True,
+        help="Worker pool (e.g., gecko-t/win11-64-24h2-alpha)",
+    )
+    regress_parser.add_argument(
+        "--windows-build",
+        help="Windows build number (e.g., 26100.7171)",
+    )
+    regress_parser.add_argument(
+        "--production-version",
+        help="Production image version for comparison",
+    )
+    regress_parser.add_argument(
+        "--failing-tests",
+        help="Comma-separated list of failing tests",
+    )
+    regress_parser.add_argument(
+        "--investigation-doc",
+        help="Path to investigation markdown document",
+    )
+    regress_parser.add_argument(
+        "--task-group",
+        help="Taskcluster task group ID",
+    )
+    regress_parser.add_argument(
+        "--treeherder-url",
+        help="Treeherder URL for the failing push",
+    )
+    regress_parser.add_argument(
+        "--custom-summary",
+        help="Custom bug summary (overrides default)",
+    )
+    regress_parser.add_argument(
+        "-p", "--product",
+        help="Product (default: Infrastructure & Release Engineering)",
+    )
+    regress_parser.add_argument(
+        "-c", "--component",
+        help="Component (default: General)",
+    )
+    regress_parser.add_argument(
+        "--severity",
+        help="Severity (default: S3)",
+    )
+    regress_parser.add_argument(
+        "--priority",
+        help="Priority (default: P3)",
+    )
+    regress_parser.add_argument(
+        "-k", "--keywords",
+        help="Keywords (default: regression)",
+    )
+    regress_parser.add_argument(
+        "--blocks",
+        help="Bug IDs this blocks (comma-separated)",
+    )
+    regress_parser.add_argument(
+        "--see-also",
+        help="See also URLs (comma-separated)",
+    )
+    regress_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be created",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -712,6 +910,7 @@ def main():
         "attachment": cmd_attachment,
         "needinfo": cmd_needinfo,
         "products": cmd_products,
+        "create-image-regression": cmd_create_image_regression,
     }
 
     commands[args.command](args)
