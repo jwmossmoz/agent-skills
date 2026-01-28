@@ -16,6 +16,10 @@ Usage:
     uv run run_try.py win10-2009 --dry-run
     uv run run_try.py win11-amd --env MOZ_LOG=sync:5 --push
     uv run run_try.py b-win2022 --discover --dry-run
+
+    # Filter to specific test types:
+    uv run run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
+    uv run run_try.py win11-24h2 -t mochitest-devtools-chrome --dry-run
 """
 
 import argparse
@@ -195,17 +199,36 @@ def build_command(
     rebuild: int | None = None,
     env_vars: list[str] | None = None,
     query_override: str | None = None,
+    tests: list[str] | None = None,
     push: bool = False,
 ) -> list[str]:
     """Build the mach try command from preset configuration."""
     cmd = ["./mach", "try", "fuzzy"]
 
-    # Add query if present
-    query = query_override if query_override else preset_config.get("query", "")
-    if query:
-        # Split query string (e.g., "-xq 'test-windows11-64'" -> ["-xq", "test-windows11-64"])
-        query_parts = shlex.split(query)
-        cmd.extend(query_parts)
+    # Determine the platform query
+    platform_query = query_override if query_override else preset_config.get("query", "")
+
+    # If tests are specified, build an intersection query:
+    # -xq "platform" -q "'test1 | 'test2 | 'test3"
+    if tests:
+        if platform_query:
+            # Split platform query to handle "-xq 'foo'" style
+            platform_parts = shlex.split(platform_query)
+            # Check if it already has -x flag
+            has_intersection = any(p.startswith("-x") for p in platform_parts)
+            if has_intersection:
+                cmd.extend(platform_parts)
+            else:
+                # Add -x for intersection and the platform query
+                cmd.append("-xq")
+                cmd.append(platform_parts[-1] if platform_parts else "")
+        # Build OR query for test types using exact match syntax
+        test_query = " | ".join(f"'{t}" for t in tests)
+        cmd.extend(["-q", test_query])
+    elif platform_query:
+        # No tests filter, just use the platform query as-is
+        platform_parts = shlex.split(platform_query)
+        cmd.extend(platform_parts)
 
     # Add flags from preset
     flags = preset_config.get("flags", [])
@@ -330,6 +353,10 @@ Examples:
   %(prog)s win11-hw --rebuild 5    Run hardware tests with 5 rebuilds
   %(prog)s win10-2009 --dry-run    Preview command without executing
   %(prog)s win11-amd --push        Run AMD tests and push to try
+
+  # Filter to specific test types:
+  %(prog)s win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
+  %(prog)s win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
         """,
     )
 
@@ -363,9 +390,17 @@ Examples:
         help="Override the preset's query filter",
     )
     parser.add_argument(
+        "-t",
+        "--tests",
+        action="append",
+        metavar="TEST_TYPE",
+        help="Filter to specific test types (can be repeated). "
+        "Examples: mochitest-browser-chrome, xpcshell, mochitest-devtools-chrome",
+    )
+    parser.add_argument(
         "--push",
         action="store_true",
-        help="Add --push-to-vcs flag to push immediately",
+        help="Push to try via Lando",
     )
     parser.add_argument(
         "--dry-run",
@@ -440,6 +475,7 @@ Examples:
         rebuild=args.rebuild,
         env_vars=args.env_vars,
         query_override=final_query,
+        tests=args.tests,
         push=args.push,
     )
 

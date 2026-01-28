@@ -20,9 +20,25 @@ uv run scripts/run_try.py win11-24h2 --dry-run
 # Push to try server
 uv run scripts/run_try.py win11-24h2 --push
 
-# Override query
-uv run scripts/run_try.py win11-24h2 -q "-xq 'mochitest-chrome'" --push
+# Filter to specific test types (recommended)
+uv run scripts/run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
+uv run scripts/run_try.py win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
+
+# Override query (advanced)
+uv run scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
 ```
+
+## Common Test Types
+
+Use `-t` to filter to specific test suites:
+
+- `xpcshell` - XPCShell tests
+- `mochitest-browser-chrome` - Browser chrome mochitests
+- `mochitest-chrome-1proc` - Chrome mochitests (single process)
+- `mochitest-devtools-chrome` - DevTools mochitests
+- `mochitest-plain` - Plain mochitests
+- `reftest` - Reference tests
+- `crashtest` - Crash tests
 
 ## Available Presets
 
