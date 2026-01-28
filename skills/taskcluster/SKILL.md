@@ -45,6 +45,23 @@ uv run scripts/tc.py group-status <TASK_GROUP_ID>
 
 # Extract task ID from Taskcluster URL
 uv run scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+
+# --- In-Tree Actions (require authentication) ---
+
+# List available actions for a task
+uv run scripts/tc.py action-list <TASK_ID>
+
+# Confirm failures - re-run failing tests to determine if intermittent
+uv run scripts/tc.py confirm-failures <TASK_ID>
+
+# Backfill - run test on previous pushes to find regression range
+uv run scripts/tc.py backfill <TASK_ID>
+
+# Retrigger multiple times (default 5)
+uv run scripts/tc.py retrigger-multiple <TASK_ID> --times 10
+
+# Trigger any action by name
+uv run scripts/tc.py action <TASK_ID> <ACTION_NAME> --input '{"key": "value"}'
 ```
 
 ## Prerequisites
@@ -122,6 +139,44 @@ uv run scripts/tc.py retrigger <TASK_ID>
 uv run scripts/tc.py rerun <TASK_ID>
 ```
 
+### In-Tree Actions (Confirm Failures, Backfill)
+
+In-tree actions are defined in the Firefox taskgraph and triggered via Taskcluster hooks.
+These are the API equivalent of actions available in Treeherder's "Custom Action" menu.
+
+**Required scopes**: `hooks:trigger-hook:project-gecko/in-tree-action-*`
+
+```bash
+# List available actions for a failed task
+uv run scripts/tc.py action-list <TASK_ID>
+
+# Confirm failures - re-runs failing tests to determine if intermittent or regression
+# This is what Treeherder does when you: Select task > "..." > Custom Action > confirm-failures
+uv run scripts/tc.py confirm-failures <TASK_ID>
+
+# Backfill - runs the test on previous pushes to find when a regression started
+uv run scripts/tc.py backfill <TASK_ID>
+
+# Retrigger multiple times - useful for stress-testing intermittent failures
+uv run scripts/tc.py retrigger-multiple <TASK_ID> --times 10
+
+# Trigger any action by name with custom input
+uv run scripts/tc.py action <TASK_ID> retrigger-custom --input '{"path": "test.js"}'
+```
+
+**Common use case**: Investigating image rollout failures
+
+```bash
+# 1. Find failed tasks using treeherder skill
+uvx --from lumberjackth lj failures 2012615 -t autoland -p windows11-64-24h2 -n 5
+
+# 2. Confirm if failures are intermittent or real regressions
+uv run scripts/tc.py confirm-failures <TASK_ID>
+
+# 3. If regression, backfill to find the culprit push
+uv run scripts/tc.py backfill <TASK_ID>
+```
+
 ## URL Support
 
 The skill automatically extracts task IDs from Taskcluster URLs:
@@ -155,9 +210,16 @@ uv run scripts/tc.py artifacts <TASK_ID> | jq '.artifacts[].name'
 - **lando**: Check landing job status
 - **os-integrations**: Run Firefox mach try commands
 
+## References
+
+- `references/actions.md` - Detailed guide to in-tree actions (confirm-failures, backfill, etc.)
+- `references/examples.md` - Common usage patterns and workflows
+- `references/integration.md` - Integration with other Mozilla tools
+
 ## Documentation
 
 - **Taskcluster Docs**: https://docs.taskcluster.net/
 - **Taskcluster CLI**: https://github.com/taskcluster/taskcluster/tree/main/clients/client-shell
 - **Firefox CI**: https://firefox-ci-tc.services.mozilla.com/
 - **Community Taskcluster**: https://community-tc.services.mozilla.com/
+- **Actions Spec**: https://docs.taskcluster.net/docs/manual/using/actions/spec
