@@ -30,6 +30,7 @@ Run `uv run bz.py --help` or `uv run bz.py <command> --help` for full options.
 | `needinfo` | Request or clear needinfo flags |
 | `products` | List products and components |
 | `whoami` | Verify authentication |
+| `create-image-regression` | File a bug for a confirmed image regression |
 
 ## Quick Examples
 
@@ -48,6 +49,43 @@ uv run bz.py needinfo 1234567 --request user@mozilla.com
 # Create
 uv run bz.py create --product Firefox --component General --summary "Title" --version unspecified
 ```
+
+## Image Regression Template
+
+Create a pre-filled bug for confirmed image regressions:
+
+```bash
+# Basic usage
+uv run bz.py create-image-regression \
+  --image-version 1.0.9 \
+  --worker-pool gecko-t/win11-64-24h2-alpha
+
+# Full example with investigation details
+uv run bz.py create-image-regression \
+  --image-version 1.0.9 \
+  --worker-pool gecko-t/win11-64-24h2-alpha \
+  --windows-build 26100.7171 \
+  --production-version 1.0.8 \
+  --failing-tests "test_keycodes.xhtml,mochitest-browser-media" \
+  --investigation-doc ~/moz_artifacts/win11-24h2-image-1.0.9-failure-investigation.md \
+  --task-group U0vOaaW-T-i5nN79edugYA
+
+# Dry run to preview
+uv run bz.py create-image-regression \
+  --image-version 1.0.9 \
+  --worker-pool gecko-t/win11-64-24h2-alpha \
+  --dry-run
+```
+
+### Default Fields
+
+| Field | Default Value |
+|-------|---------------|
+| Product | Infrastructure & Release Engineering |
+| Component | General |
+| Severity | S3 |
+| Priority | P3 |
+| Keywords | regression |
 
 ## References
 
