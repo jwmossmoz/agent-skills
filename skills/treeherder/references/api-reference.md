@@ -169,6 +169,43 @@ Returns classification notes for a job:
 ]
 ```
 
+### Failures By Bug Endpoint
+
+#### Failures By Bug
+```
+GET /api/failuresbybug/
+```
+
+Query parameters:
+- `bug` - Bugzilla bug ID (required)
+- `startday` - Start date in YYYY-MM-DD format (required)
+- `endday` - End date in YYYY-MM-DD format (required)
+- `tree` - Repository filter ("all", "autoland", "mozilla-central", etc.)
+
+Returns list of test failures associated with a bug across repositories:
+```json
+[
+  {
+    "push_time": "2026-01-28 14:44:08",
+    "platform": "windows11-64-24h2",
+    "revision": "abc123def...",
+    "test_suite": "opt-mochitest-browser-chrome-1",
+    "tree": "autoland",
+    "build_type": "asan",
+    "job_id": 545896732,
+    "bug_id": 2012615,
+    "machine_name": "vm-test",
+    "lines": ["TEST-UNEXPECTED-FAIL | test.js | Test timed out"],
+    "task_id": "abc123def"
+  }
+]
+```
+
+This endpoint is useful for:
+- Investigating intermittent test failures
+- Tracking failures across multiple repositories
+- Image rollout regression analysis
+
 ### Reference Data Endpoints
 
 #### Repositories
@@ -245,10 +282,10 @@ Status values:
 
 ## Python Client
 
-The `treeherder-client` library provides a Python interface:
+The `lumberjackth` library provides a modern Python interface:
 
 ```python
-from thclient import TreeherderClient
+from lumberjackth import TreeherderClient
 
 client = TreeherderClient()
 
@@ -261,8 +298,18 @@ jobs = client.get_jobs('autoland', push_id=1816157)
 # Get repositories
 repos = client.get_repositories()
 
-# Get failure classifications
-classifications = client.get_failure_classifications()
+# Get failures by bug (new in 1.1.0)
+failures = client.get_failures_by_bug(2012615, tree="autoland")
+
+# Get text log errors (new in 1.1.0)
+errors = client.get_text_log_errors("autoland", job_id=545896732)
+
+# Get bug suggestions (new in 1.1.0)
+suggestions = client.get_bug_suggestions("autoland", job_id=545896732)
+
+# Async support
+async with TreeherderClient() as client:
+    repos = await client.get_repositories_async()
 ```
 
 ## Rate Limiting
@@ -272,5 +319,5 @@ The API has rate limiting. For bulk operations, add delays between requests.
 ## External Documentation
 
 - [Treeherder ReadTheDocs](https://treeherder.readthedocs.io/)
-- [treeherder-client on PyPI](https://pypi.org/project/treeherder-client/)
+- [lumberjackth on PyPI](https://pypi.org/project/lumberjackth/)
 - [Treeherder Source Code](https://github.com/mozilla/treeherder)

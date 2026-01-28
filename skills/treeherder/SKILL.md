@@ -25,6 +25,12 @@ uvx --from lumberjackth lj jobs autoland --push-id 12345
 # Get details for a specific job
 uvx --from lumberjackth lj job autoland "abc123def/0" --logs
 
+# Query test failures by bug ID (useful for investigating intermittents)
+uvx --from lumberjackth lj failures 2012615 -t autoland -p windows11-64-24h2
+
+# Show errors and bug suggestions for a failed job
+uvx --from lumberjackth lj errors autoland 545896732
+
 # Output as JSON
 uvx --from lumberjackth lj --json pushes mozilla-central -n 5
 ```
@@ -65,6 +71,47 @@ uvx --from lumberjackth lj jobs autoland -n 50                     # Limit to 50
 uvx --from lumberjackth lj job autoland "abc123def/0"              # Basic job details
 uvx --from lumberjackth lj job autoland "abc123def/0" --logs       # Include log URLs
 uvx --from lumberjackth lj --json job autoland "abc123def/0"       # JSON output
+```
+
+### perf-alerts - List performance alert summaries
+
+```bash
+uvx --from lumberjackth lj perf-alerts                             # Recent alerts
+uvx --from lumberjackth lj perf-alerts -r autoland                 # Filter by repository
+uvx --from lumberjackth lj perf-alerts -f 1                        # Filter by framework (1=talos)
+uvx --from lumberjackth lj perf-alerts -n 20                       # Limit results
+```
+
+### failures - Query test failures by bug ID
+
+Query failures across repositories by Bugzilla bug ID. Useful for investigating intermittent failures or tracking image rollout regressions.
+
+```bash
+uvx --from lumberjackth lj failures 2012615                        # All failures for bug in last 7 days
+uvx --from lumberjackth lj failures 2012615 -t autoland            # Filter by repository
+uvx --from lumberjackth lj failures 2012615 -p windows11-64-24h2   # Filter by platform
+uvx --from lumberjackth lj failures 2012615 -b asan                # Filter by build type
+uvx --from lumberjackth lj failures 2012615 -s 2026-01-26 -e 2026-01-28  # Date range
+uvx --from lumberjackth lj failures 2012615 -n 10                  # Limit results
+uvx --from lumberjackth lj --json failures 2012615                 # JSON output
+```
+
+Options:
+- `-t, --tree`: Repository filter (all, autoland, mozilla-central, etc.)
+- `-p, --platform`: Filter by platform (e.g., windows11-64-24h2, linux)
+- `-b, --build-type`: Filter by build type (e.g., asan, debug, opt)
+- `-s, --startday`: Start date (YYYY-MM-DD), defaults to 7 days ago
+- `-e, --endday`: End date (YYYY-MM-DD), defaults to today
+- `-n, --count`: Limit number of results
+
+### errors - Show error lines and bug suggestions for a job
+
+Display parsed error lines and suggested bugs for a failed job.
+
+```bash
+uvx --from lumberjackth lj errors autoland 545896732               # Show errors + suggestions
+uvx --from lumberjackth lj errors autoland 545896732 --no-suggestions  # Just errors
+uvx --from lumberjackth lj --json errors autoland 545896732        # JSON output
 ```
 
 ### perf-alerts - List performance alert summaries
