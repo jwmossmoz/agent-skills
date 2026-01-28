@@ -39,7 +39,50 @@ uv run investigate.py sbom gecko-t/win11-64-24h2
 
 # Get Windows build and GenericWorker version from Azure VM
 uv run investigate.py vm-info <VM_NAME> <RESOURCE_GROUP>
+
+# Generate sheriff-friendly markdown report
+uv run investigate.py sheriff-report <TASK_ID>
 ```
+
+## Sheriff Report
+
+Generate a markdown summary suitable for sharing with sheriffs:
+
+```bash
+uv run investigate.py sheriff-report Xcac5C8gRqiOT13YsVRX8A
+```
+
+### Example Output
+
+```markdown
+## Sheriff Triage Summary
+
+**Task**: `Xcac5C8gRqiOT13YsVRX8A`
+**Test**: `mochitest-chrome-1proc`
+**Status**: failed
+
+### Worker Pool Comparison
+
+| Property | Value |
+|----------|-------|
+| **Failing Pool** | `gecko-t/win11-64-24h2-alpha` |
+| **Failing Image Version** | 1.0.9 |
+| **Production Pool** | `gecko-t/win11-64-24h2` |
+| **Production Image Version** | 1.0.8 |
+| **Version Differs** | Yes |
+
+### Verdict: **IMAGE REGRESSION**
+
+Image version differs between alpha and production pools
+```
+
+### Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| **IMAGE REGRESSION** | Alpha has different image version than production |
+| **NEEDS INVESTIGATION** | Same image version - could be code or intermittent |
+| **PRODUCTION FAILURE** | Failure on production pool - likely code issue |
 
 ## Investigation Workflow
 
