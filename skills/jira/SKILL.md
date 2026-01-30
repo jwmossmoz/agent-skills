@@ -68,14 +68,7 @@ uv run extract_jira.py --create \
   --epic-create RELOPS-2019
 ```
 
-**Important**: Always use `/humanizer` on story descriptions before submitting. This removes AI-generated patterns like:
-- Promotional language ("vibrant", "groundbreaking", "seamless")
-- Vague attributions ("experts say", "industry reports")
-- Inflated significance ("pivotal moment", "testament to")
-- Copula avoidance ("serves as" instead of "is")
-- Filler phrases and excessive hedging
-
-The humanizer ensures descriptions are clear, direct, and professional.
+Use `/humanizer` to remove AI writing patterns from story descriptions before submitting.
 
 ## Resources
 
