@@ -16,6 +16,10 @@ Query Mozilla Treeherder for CI job results, pushes, and performance alerts usin
 # List jobs for a push
 uvx --from lumberjackth lj jobs autoland --push-id 12345
 
+# Watch jobs with auto-refresh (great for monitoring try pushes)
+uvx --from lumberjackth lj jobs try --push-id 12345 --watch
+uvx --from lumberjackth lj jobs try -r abc123 -w -i 60  # 60s refresh
+
 # Filter jobs by platform regex
 uvx --from lumberjackth lj jobs autoland --push-id 12345 -p "linux.*64"
 
@@ -50,8 +54,11 @@ uvx --from lumberjackth lj --json jobs autoland --push-id 12345
 **jobs command:**
 - `-p, --platform` - Platform regex (e.g., `"linux.*64"`)
 - `-f, --filter` - Job name regex (e.g., `"mochitest"`)
+- `-r, --revision` - Filter by revision
 - `--duration-min` - Minimum duration in seconds
 - `--result` - Filter by result (testfailed, success, etc.)
+- `-w, --watch` - Watch mode with auto-refresh
+- `-i, --interval` - Refresh interval in seconds (default: 30)
 
 **log command:**
 - `-p, --pattern` - Regex pattern to search

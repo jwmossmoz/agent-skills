@@ -62,6 +62,7 @@ List jobs for a project with powerful filtering.
 
 ```bash
 lj jobs autoland --push-id 12345           # Jobs for a push
+lj jobs try -r abc123                      # Jobs for a revision
 lj jobs try --guid "abc123/0"              # Filter by GUID
 lj jobs autoland --result testfailed       # Failed jobs only
 lj jobs autoland --state running           # Running jobs
@@ -70,10 +71,16 @@ lj jobs autoland -p "linux.*64"            # Filter by platform regex
 lj jobs autoland -f "mochitest"            # Filter by job name regex
 lj jobs autoland --duration-min 60         # Jobs running 60+ seconds
 lj jobs autoland -n 50                     # Limit to 50 jobs
+
+# Watch mode - auto-refresh job status
+lj jobs try --push-id 12345 --watch        # Watch jobs, refresh every 30s
+lj jobs try -r abc123 -w -i 60             # Watch with 60s refresh interval
+lj jobs autoland --push-id 12345 --result testfailed --watch  # Watch failures
 ```
 
 **Options:**
 - `--push-id` - Filter by push ID
+- `-r, --revision` - Filter by revision (alternative to --push-id)
 - `--guid` - Filter by job GUID
 - `--result` - Filter by result (success, testfailed, busted, etc.)
 - `--state` - Filter by state (pending, running, completed)
@@ -82,6 +89,8 @@ lj jobs autoland -n 50                     # Limit to 50 jobs
 - `-f, --filter` - Filter by job name (regex pattern)
 - `--duration-min` - Filter to jobs with duration >= N seconds
 - `-n, --count` - Number of jobs (default: 20, or all when --push-id specified)
+- `-w, --watch` - Watch for job updates (refreshes periodically)
+- `-i, --interval` - Refresh interval in seconds when using --watch (default: 30)
 
 ---
 
