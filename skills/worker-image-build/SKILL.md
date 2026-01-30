@@ -112,6 +112,10 @@ gh run view <RUN_ID> --repo mozilla-platform-ops/worker-images --log
 - `-64-`: x64 architecture
 - `tester`/`builder`: Pool role
 
+## More Examples
+
+See [references/examples.md](references/examples.md) for additional command examples.
+
 ## Repository
 
 https://github.com/mozilla-platform-ops/worker-images
