@@ -48,6 +48,35 @@ Use **standard Markdown** for descriptions and comments. The tool automatically 
 | Code | `` `code` `` or ``` ```code``` ``` | `{code}code{code}` |
 | Headings | `## Heading` | `h2. Heading` |
 
+## Creating Stories
+
+When creating JIRA stories, follow this workflow:
+
+1. **Draft the story** - Create the summary and description based on requirements
+2. **Humanize the description** - Use `/humanizer` to remove AI writing patterns from the description text
+3. **Submit the story** - Use the humanized description with `--create`
+
+### Example Workflow
+
+```bash
+# 1. Draft description (you do this in memory)
+# 2. Run humanizer on the description
+# 3. Create story with humanized description
+uv run extract_jira.py --create \
+  --create-summary "Implement new feature" \
+  --description "The feature adds capability to process tasks. It handles edge cases and provides error handling." \
+  --epic-create RELOPS-2019
+```
+
+**Important**: Always use `/humanizer` on story descriptions before submitting. This removes AI-generated patterns like:
+- Promotional language ("vibrant", "groundbreaking", "seamless")
+- Vague attributions ("experts say", "industry reports")
+- Inflated significance ("pivotal moment", "testament to")
+- Copula avoidance ("serves as" instead of "is")
+- Filler phrases and excessive hedging
+
+The humanizer ensures descriptions are clear, direct, and professional.
+
 ## Resources
 
 - **Full examples**: [references/examples.md](references/examples.md)
