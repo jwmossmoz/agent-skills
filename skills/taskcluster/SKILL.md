@@ -28,7 +28,7 @@ uv run scripts/tc.py artifacts <TASK_ID>
 # Get full task definition
 uv run scripts/tc.py definition <TASK_ID>
 
-# Retrigger a task (new task ID, updated timestamps)
+# Retrigger a task (uses in-tree action API for proper dependency handling)
 uv run scripts/tc.py retrigger <TASK_ID>
 
 # Rerun a task (same task ID)
@@ -132,12 +132,17 @@ https://treeherder.mozilla.org/jobs?repo=try&revision=ed901414ea5ec1e188547898b3
 ### Retriggering Failed Tasks
 
 ```bash
-# Retrigger creates a new task with updated timestamps
+# Retrigger uses the in-tree action API for proper task graph handling
+# This preserves dependencies and works correctly for Firefox CI tasks
 uv run scripts/tc.py retrigger <TASK_ID>
 
-# Rerun attempts to rerun the same task
+# Rerun attempts to rerun the same task (same task ID)
 uv run scripts/tc.py rerun <TASK_ID>
 ```
+
+Note: The `retrigger` command uses the in-tree action API rather than the raw
+`taskcluster task retrigger` CLI command, which clears dependencies and breaks
+tasks that depend on upstream artifacts (like signing tasks needing build outputs).
 
 ### In-Tree Actions (Confirm Failures, Backfill)
 

@@ -299,10 +299,16 @@ def cmd_definition(task_id: str) -> int:
 
 
 def cmd_retrigger(task_id: str) -> int:
-    """Retrigger a task (new task ID)"""
-    task_id = extract_task_id(task_id)
-    print(f"# Retriggering Task: {task_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["task", "retrigger", task_id])
+    """
+    Retrigger a task using the in-tree action API.
+
+    This uses the Firefox taskgraph's retrigger hook, which properly
+    recreates the task within the task graph context with correct dependencies.
+
+    Note: The raw `taskcluster task retrigger` command clears dependencies,
+    which breaks Firefox CI tasks that depend on upstream artifacts.
+    """
+    return trigger_action(task_id, "retrigger")
 
 
 def cmd_rerun(task_id: str) -> int:
