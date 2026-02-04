@@ -43,6 +43,8 @@ import subprocess
 import sys
 import os
 import tomllib
+import urllib.request
+import urllib.error
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -553,6 +555,37 @@ def find_user_account_id(client: JIRA, query: str) -> str | None:
     return getattr(users[0], "accountId", None)
 
 
+def fetch_description_adf(email: str, token: str, issue_key: str) -> dict[str, Any] | None:
+    """
+    Fetch the description of an issue in ADF format using REST API v3.
+
+    The jira-python library converts ADF to wiki markup, so we need to
+    call the REST API directly to get the raw ADF document for appending.
+    """
+    import base64
+
+    auth = base64.b64encode(f"{email}:{token}".encode()).decode()
+    url = f"{JIRA_BASE_URL}/rest/api/3/issue/{issue_key}?fields=description"
+
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Basic {auth}",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode())
+            desc = data.get("fields", {}).get("description")
+            if isinstance(desc, dict) and desc.get("type") == "doc":
+                return desc
+            return None
+    except urllib.error.URLError:
+        return None
+
+
 def create_issue(
     client: JIRA,
     project_key: str,
@@ -693,6 +726,9 @@ def modify_issue(
     append_description: str | None = None,
     set_reporter: str | None = None,
     set_assignee: str | None = None,
+    *,
+    email: str | None = None,
+    token: str | None = None,
 ) -> tuple[bool, str]:
     """
     Modify a JIRA issue.
@@ -771,13 +807,22 @@ def modify_issue(
         update_payload["fields"]["description"] = markdown_to_adf(set_description)
         messages.append("Updated description")
     elif append_description:
-        try:
-            issue = client.issue(issue_key, fields="description")
-        except JIRAError as exc:
-            return False, f"Failed to fetch {issue_key} description: {exc}"
+        # Fetch existing description in ADF format via REST API
+        # (jira-python library converts ADF to wiki markup, so we call REST directly)
+        existing_adf = None
+        if email and token:
+            existing_adf = fetch_description_adf(email, token, issue_key)
+
+        if existing_adf is None:
+            # Fallback: try via library (may not work correctly for append)
+            try:
+                issue = client.issue(issue_key, fields="description")
+                existing_adf = getattr(issue.fields, "description", None)
+            except JIRAError as exc:
+                return False, f"Failed to fetch {issue_key} description: {exc}"
 
         updated_description = append_markdown_to_adf(
-            getattr(issue.fields, "description", None),
+            existing_adf,
             append_description,
             separator_markdown="\n\n---\n\n",
         )
@@ -2032,6 +2077,8 @@ Examples:
                         append_description=args.append_description,
                         set_reporter=args.set_reporter,
                         set_assignee=args.set_assignee,
+                        email=email,
+                        token=token,
                     )
                     messages.append(message)
                     if not success:
