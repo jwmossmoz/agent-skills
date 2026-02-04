@@ -8,11 +8,10 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) to fetch telemetry data.
 Redash is the front-end to BigQuery telemetry data. This script handles
 authentication, job polling, and result retrieval.
 
-API key can be provided via:
-  1. REDASH_API_KEY environment variable
-  2. 1Password item "Sql Telemetry Mozilla API" (fallback)
+Requires REDASH_API_KEY environment variable.
 
 Usage:
+    export REDASH_API_KEY="your-api-key"
     uv run query_redash.py --query windows_10_build_distribution
     uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/data.json
 """
@@ -20,7 +19,6 @@ Usage:
 import argparse
 import json
 import os
-import subprocess
 import sys
 import time
 import urllib.request
@@ -31,34 +29,12 @@ DATA_SOURCE_ID = 63  # Telemetry (BigQuery)
 
 
 def get_api_key() -> str:
-    """Retrieve API key from environment variable or 1Password."""
-    # Check environment variable first
+    """Retrieve API key from REDASH_API_KEY environment variable."""
     api_key = os.environ.get("REDASH_API_KEY")
-    if api_key:
-        return api_key
-
-    # Fall back to 1Password
-    try:
-        for field in ["credential", "password"]:
-            result = subprocess.run(
-                ["op", "item", "get", "Sql Telemetry Mozilla API", "--fields", f"label={field}", "--reveal"],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
-                output = result.stdout.strip()
-                # Handle multi-line output format (Label:/Value:/Reference:)
-                if "\n" in output:
-                    for line in output.split("\n"):
-                        if line.strip().startswith("Value:"):
-                            return line.split("Value:", 1)[1].strip()
-                return output
-
-        print("Could not find API key. Set REDASH_API_KEY env var or configure 1Password.", file=sys.stderr)
+    if not api_key:
+        print("Error: REDASH_API_KEY environment variable not set", file=sys.stderr)
         sys.exit(1)
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"Error: Set REDASH_API_KEY env var (1Password fallback failed: {e})", file=sys.stderr)
-        sys.exit(1)
+    return api_key
 
 
 def run_query(api_key: str, sql: str, max_wait: int = 300) -> dict:
@@ -258,7 +234,6 @@ Available pre-defined queries:
         parser.print_help()
         return
 
-    print("Retrieving API key from 1Password...", file=sys.stderr)
     api_key = get_api_key()
 
     if args.query_id:

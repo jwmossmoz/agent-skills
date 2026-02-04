@@ -4,16 +4,12 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 
 ## Prerequisites
 
-1. **API Key** - Provide via one of:
-   - `REDASH_API_KEY` environment variable (recommended)
-   - 1Password item `Sql Telemetry Mozilla API` (fallback)
-
+1. **API Key** - Set `REDASH_API_KEY` environment variable
 2. **uv** - For running the script (uses only standard library, no dependencies)
 
 ## Quick Start
 
 ```bash
-# Set API key (or use 1Password fallback)
 export REDASH_API_KEY="your-api-key-here"
 
 cd skills/redash/scripts
