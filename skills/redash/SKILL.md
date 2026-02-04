@@ -12,21 +12,14 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 
 ## Prerequisites
 
-1. **1Password CLI** - API key is retrieved automatically from 1Password
-   - Item name: `Sql Telemetry Mozilla API`
-   - Ensure you're signed in: `op signin`
-
-2. **uv** - For running the script (uses only standard library, no dependencies)
+- `REDASH_API_KEY` environment variable set
+- `uv` for running the script
 
 ## Quick Start
 
 ```bash
 cd skills/redash/scripts
-
-# Get Windows build distribution summary
 uv run query_redash.py --query windows_10_build_distribution
-
-# Save detailed aggregate data to file
 uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
 ```
 
