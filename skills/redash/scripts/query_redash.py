@@ -8,7 +8,9 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) to fetch telemetry data.
 Redash is the front-end to BigQuery telemetry data. This script handles
 authentication, job polling, and result retrieval.
 
-API key is retrieved from 1Password: "Sql Telemetry Mozilla API"
+API key can be provided via:
+  1. REDASH_API_KEY environment variable
+  2. 1Password item "Sql Telemetry Mozilla API" (fallback)
 
 Usage:
     uv run query_redash.py --query windows_10_build_distribution
@@ -17,6 +19,7 @@ Usage:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -28,9 +31,14 @@ DATA_SOURCE_ID = 63  # Telemetry (BigQuery)
 
 
 def get_api_key() -> str:
-    """Retrieve API key from 1Password."""
+    """Retrieve API key from environment variable or 1Password."""
+    # Check environment variable first
+    api_key = os.environ.get("REDASH_API_KEY")
+    if api_key:
+        return api_key
+
+    # Fall back to 1Password
     try:
-        # Try credential field first, then password
         for field in ["credential", "password"]:
             result = subprocess.run(
                 ["op", "item", "get", "Sql Telemetry Mozilla API", "--fields", f"label={field}", "--reveal"],
@@ -46,10 +54,10 @@ def get_api_key() -> str:
                             return line.split("Value:", 1)[1].strip()
                 return output
 
-        print("Could not find API key in 1Password item", file=sys.stderr)
+        print("Could not find API key. Set REDASH_API_KEY env var or configure 1Password.", file=sys.stderr)
         sys.exit(1)
-    except subprocess.CalledProcessError as e:
-        print(f"Error retrieving API key from 1Password: {e.stderr}", file=sys.stderr)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"Error: Set REDASH_API_KEY env var (1Password fallback failed: {e})", file=sys.stderr)
         sys.exit(1)
 
 
