@@ -62,6 +62,7 @@ export TASKCLUSTER_ACCESS_TOKEN=your-access-token
 - See [SKILL.md](SKILL.md) for complete usage documentation
 - See [references/examples.md](references/examples.md) for real-world usage patterns
 - See [references/integration.md](references/integration.md) for Mozilla CI integration details
+- See [references/worker-pools.md](references/worker-pools.md) for worker pool management and bulk operations
 
 ## Related Skills
 

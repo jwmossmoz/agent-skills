@@ -4,7 +4,8 @@ description: >
   Interact with Mozilla Taskcluster CI using the taskcluster CLI.
   Query task status, view logs, download artifacts, retrigger tasks, and manage task groups.
   Use when working with CI tasks from firefox-ci-tc.services.mozilla.com or debugging worker pool issues.
-  Triggers on "taskcluster", "task status", "task log", "artifacts", "retrigger", "task group".
+  For worker pool operations (list workers, terminate workers, bulk task cancellation), use native taskcluster api commands (see references/worker-pools.md).
+  Triggers on "taskcluster", "task status", "task log", "artifacts", "retrigger", "task group", "worker pool".
 ---
 
 # Taskcluster
@@ -218,6 +219,7 @@ uv run ~/.claude/skills/taskcluster/scripts/tc.py artifacts <TASK_ID> | jq '.art
 - `references/actions.md` - Detailed guide to in-tree actions (confirm-failures, backfill, etc.)
 - `references/examples.md` - Common usage patterns and workflows
 - `references/integration.md` - Integration with other Mozilla tools
+- `references/worker-pools.md` - Worker pool management, bulk operations, and emergency shutdown procedures
 
 ## Documentation
 
