@@ -15,17 +15,17 @@ Run Firefox `mach try` commands with pre-configured worker pool overrides for te
 
 ```bash
 # Run with preset (dry-run to preview)
-uv run scripts/run_try.py win11-24h2 --dry-run
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --dry-run
 
 # Push to try server
-uv run scripts/run_try.py win11-24h2 --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --push
 
 # Filter to specific test types (recommended)
-uv run scripts/run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
-uv run scripts/run_try.py win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
 
 # Override query (advanced)
-uv run scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
 ```
 
 ## Quick Validation (Skip Firefox Build)
@@ -34,13 +34,13 @@ Use `--use-existing-tasks` to reuse builds from the latest mozilla-central decis
 
 ```bash
 # Quick validation - reuse existing Firefox builds
-uv run scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
 
 # Use a specific decision task
-uv run scripts/run_try.py win11-24h2 --task-id ABC123 -t mochitest-browser-chrome --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --task-id ABC123 -t mochitest-browser-chrome --push
 
 # Force fresh build (overrides --use-existing-tasks)
-uv run scripts/run_try.py win11-24h2 --fresh-build --push
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-build --push
 ```
 
 ## Watching Test Results
@@ -49,13 +49,13 @@ Use `--watch` to automatically monitor test results with lumberjackth after push
 
 ```bash
 # Push and watch all test results
-uv run scripts/run_try.py win11-24h2 -t xpcshell --watch
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --watch
 
 # Watch with filter (regex)
-uv run scripts/run_try.py win11-24h2 --watch --watch-filter "xpcshell|mochitest"
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch --watch-filter "xpcshell|mochitest"
 
 # Combine with existing tasks for fast iteration
-uv run scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --watch
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --watch
 ```
 
 ## Common Test Types
@@ -91,7 +91,7 @@ Use `-t` to filter to specific test suites:
 - **Presets Configuration**: See `references/presets.yml`
 - **Linux Worker Overrides**: See `references/linux-worker-overrides.md`
 - **Pushing to Try**: See `references/pushing-to-try.md`
-- **Script Help**: Run `uv run scripts/run_try.py --help`
+- **Script Help**: Run `uv run ~/.claude/skills/os-integrations/scripts/run_try.py --help`
 
 ## Official Documentation
 
