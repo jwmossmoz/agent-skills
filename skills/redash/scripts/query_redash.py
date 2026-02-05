@@ -3,17 +3,18 @@
 # requires-python = ">=3.10"
 # ///
 """
-Query Mozilla's Redash (sql.telemetry.mozilla.org) to fetch telemetry data.
+Wrapper around Mozilla's Redash API (sql.telemetry.mozilla.org).
 
-Redash is the front-end to BigQuery telemetry data. This script handles
-authentication, job polling, and result retrieval.
+Handles authentication, job polling, and result retrieval for BigQuery
+telemetry data via Redash.
 
 Requires REDASH_API_KEY environment variable.
 
 Usage:
     export REDASH_API_KEY="your-api-key"
-    uv run query_redash.py --query windows_10_build_distribution
-    uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/data.json
+    uv run query_redash.py --sql "SELECT * FROM telemetry.main LIMIT 10"
+    uv run query_redash.py --query-id 65967
+    uv run query_redash.py --sql "SELECT 1" --output ~/moz_artifacts/data.json
 """
 
 import argparse
@@ -127,80 +128,32 @@ def get_existing_query_results(api_key: str, query_id: int) -> dict:
         return json.loads(resp.read().decode())
 
 
-# Pre-defined queries for Windows build distribution
-QUERIES = {
-    "windows_10_build_distribution": """
-        SELECT build_group, SUM(count) as observations
-        FROM `moz-fx-data-shared-prod.telemetry.windows_10_build_distribution`
-        GROUP BY 1
-        ORDER BY 1
-    """,
-    "windows_10_aggregate": """
-        SELECT *
-        FROM `moz-fx-data-shared-prod.telemetry.windows_10_aggregate`
-    """,
-    "windows_10_patch_adoption": """
-        SELECT build_number, numeric_windows_ubr, label, frequency
-        FROM `moz-fx-data-shared-prod.telemetry.windows_10_patch_adoption`
-        ORDER BY build_number, numeric_windows_ubr
-    """,
-    "list_windows_tables": """
-        SELECT table_name, table_type
-        FROM `moz-fx-data-shared-prod.telemetry.INFORMATION_SCHEMA.TABLES`
-        WHERE LOWER(table_name) LIKE '%windows%' OR LOWER(table_name) LIKE '%build%'
-        ORDER BY table_name
-    """,
-}
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Query Mozilla Redash for telemetry data",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run a pre-defined query
-  %(prog)s --query windows_10_build_distribution
-
-  # Run a pre-defined query and save to file
-  %(prog)s --query windows_10_aggregate --output ~/data/aggregate.json
-
   # Run custom SQL
   %(prog)s --sql "SELECT * FROM telemetry.main LIMIT 10"
 
   # Fetch cached results from an existing Redash query
   %(prog)s --query-id 65967
 
-  # List available pre-defined queries
-  %(prog)s --list-queries
-
-Available pre-defined queries:
-  - windows_10_build_distribution: Aggregated counts by Windows build group
-  - windows_10_aggregate: Detailed breakdown with UBR and Firefox version
-  - windows_10_patch_adoption: Patch-level adoption by build number
-  - list_windows_tables: List all Windows-related tables in telemetry
+  # Run SQL and save to file
+  %(prog)s --sql "SELECT 1" --output ~/data/result.json
         """,
     )
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "--query", "-q",
-        choices=list(QUERIES.keys()),
-        help="Run a pre-defined query",
-    )
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--sql",
-        help="Run custom SQL query",
+        help="SQL query to execute against BigQuery via Redash",
     )
     group.add_argument(
         "--query-id",
         type=int,
         help="Fetch cached results from existing Redash query ID",
-    )
-    group.add_argument(
-        "--list-queries",
-        action="store_true",
-        help="List available pre-defined queries",
     )
 
     parser.add_argument(
@@ -222,27 +175,14 @@ Available pre-defined queries:
 
     args = parser.parse_args()
 
-    if args.list_queries:
-        print("Available pre-defined queries:\n")
-        for name, sql in QUERIES.items():
-            print(f"  {name}")
-            print(f"    {sql.strip()[:80]}...")
-            print()
-        return
-
-    if not any([args.query, args.sql, args.query_id]):
-        parser.print_help()
-        return
-
     api_key = get_api_key()
 
     if args.query_id:
         print(f"Fetching cached results for query {args.query_id}...", file=sys.stderr)
         result = get_existing_query_results(api_key, args.query_id)
     else:
-        sql = args.sql if args.sql else QUERIES[args.query]
         print(f"Executing query...", file=sys.stderr)
-        result = run_query(api_key, sql)
+        result = run_query(api_key, args.sql)
 
     rows = result["query_result"]["data"]["rows"]
     columns = [c["name"] for c in result["query_result"]["data"]["columns"]]
