@@ -10,6 +10,9 @@ description: >
 
 Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is the front-end to BigQuery telemetry data.
 
+## Knowledge References
+@references/README.md
+
 ## Prerequisites
 
 - `REDASH_API_KEY` environment variable set
@@ -18,10 +21,24 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 ## Quick Start
 
 ```bash
-uv run skills/redash/scripts/query_redash.py --query windows_10_build_distribution
-uv run skills/redash/scripts/query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
+# Run custom SQL
+uv run scripts/query_redash.py --sql "SELECT * FROM telemetry.main LIMIT 10"
+
+# Fetch cached results from an existing Redash query
+uv run scripts/query_redash.py --query-id 65967
+
+# Save results to file
+uv run scripts/query_redash.py --sql "SELECT 1" --output ~/moz_artifacts/data.json
 ```
 
 ## Usage
 
-See [references/README.md](references/README.md) for full documentation.
+Either `--sql` or `--query-id` is required.
+
+| Flag | Description |
+|------|-------------|
+| `--sql` | SQL query to execute against BigQuery via Redash |
+| `--query-id` | Fetch cached results from an existing Redash query ID |
+| `--output`, `-o` | Save results to JSON file |
+| `--format`, `-f` | Output format: `json`, `csv`, `table` (default: `table`) |
+| `--limit` | Limit number of rows displayed |
