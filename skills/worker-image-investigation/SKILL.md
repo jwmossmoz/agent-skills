@@ -22,23 +22,21 @@ Investigate Taskcluster task failures by comparing worker images, extracting SBO
 ## Usage
 
 ```bash
-cd /Users/jwmoss/github_moz/agent-skills/skills/worker-image-investigation/scripts
-
 # Investigate a failing task - get worker pool, image version, status
-uv run investigate.py investigate <TASK_ID>
-uv run investigate.py investigate https://firefox-ci-tc.services.mozilla.com/tasks/<TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py investigate <TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py investigate https://firefox-ci-tc.services.mozilla.com/tasks/<TASK_ID>
 
 # Compare two tasks (e.g., passing vs failing on same revision)
-uv run investigate.py compare <PASSING_TASK_ID> <FAILING_TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py compare <PASSING_TASK_ID> <FAILING_TASK_ID>
 
 # List running workers in a pool (for Azure VM access)
-uv run investigate.py workers gecko-t/win11-64-24h2
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py workers gecko-t/win11-64-24h2
 
 # Get SBOM/image info for a worker pool
-uv run investigate.py sbom gecko-t/win11-64-24h2
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py sbom gecko-t/win11-64-24h2
 
 # Get Windows build and GenericWorker version from Azure VM
-uv run investigate.py vm-info <VM_NAME> <RESOURCE_GROUP>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py vm-info <VM_NAME> <RESOURCE_GROUP>
 ```
 
 ## Investigation Workflow
@@ -47,7 +45,7 @@ uv run investigate.py vm-info <VM_NAME> <RESOURCE_GROUP>
 
 ```bash
 # Get task info including worker pool and image
-uv run investigate.py investigate <FAILING_TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py investigate <FAILING_TASK_ID>
 ```
 
 Output includes: taskId, taskLabel, workerPool, workerId, images (version), status.
@@ -61,7 +59,7 @@ Use Treeherder to find a passing run of the same test on the same revision or a 
 ### 3. Compare Tasks
 
 ```bash
-uv run investigate.py compare <PASSING_TASK_ID> <FAILING_TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py compare <PASSING_TASK_ID> <FAILING_TASK_ID>
 ```
 
 Look for differences in image versions (e.g., 1.0.8 vs 1.0.9).
@@ -70,10 +68,10 @@ Look for differences in image versions (e.g., 1.0.8 vs 1.0.9).
 
 ```bash
 # Find running workers
-uv run investigate.py workers gecko-t/win11-64-24h2
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py workers gecko-t/win11-64-24h2
 
 # Get VM details - extract VM name from workerId (e.g., vm-xyz...)
-uv run investigate.py vm-info vm-xyz RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py vm-info vm-xyz RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION
 ```
 
 ### 5. Direct Azure VM Commands
@@ -120,7 +118,7 @@ az vm run-command invoke --resource-group RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTI
 For CI tasks on fxci-config PRs:
 
 ```bash
-uv run investigate.py --root-url https://stage.taskcluster.nonprod.cloudops.mozgcp.net \
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py --root-url https://stage.taskcluster.nonprod.cloudops.mozgcp.net \
   investigate <TASK_ID>
 ```
 
@@ -129,8 +127,8 @@ uv run investigate.py --root-url https://stage.taskcluster.nonprod.cloudops.mozg
 All commands return JSON for easy parsing with `jq`:
 
 ```bash
-uv run investigate.py investigate <TASK_ID> | jq '.images[0].version'
-uv run investigate.py workers gecko-t/win11-64-24h2 | jq '.workers[0].workerId'
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py investigate <TASK_ID> | jq '.images[0].version'
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py workers gecko-t/win11-64-24h2 | jq '.workers[0].workerId'
 ```
 
 ## Related Skills

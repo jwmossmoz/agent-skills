@@ -18,9 +18,8 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 ## Quick Start
 
 ```bash
-cd skills/redash/scripts
-uv run query_redash.py --query windows_10_build_distribution
-uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
+uv run ~/.claude/skills/redash/scripts/query_redash.py --query windows_10_build_distribution
+uv run ~/.claude/skills/redash/scripts/query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
 ```
 
 ## Usage

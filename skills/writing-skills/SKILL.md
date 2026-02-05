@@ -30,7 +30,7 @@ Use this skill when you need to create or update skills in this repository, incl
 
 ## Documentation Conventions (This Repo)
 
-- Commands should assume the skill root; prefer `scripts/...` paths.
+- Commands should use full paths: `uv run ~/.claude/skills/<skill-name>/scripts/<script>.py`
 - Provide `.example` configs and keep real configs out of git.
 - `uv.lock` is tracked intentionally for reproducible builds.
 - Keep examples runnable and realistic.

@@ -111,23 +111,26 @@ You can also request them explicitly: "Have the coder implement..." or "Ask the 
 
 ### Running Skills
 
-Skills are designed to be executed from their script directories using `uv`:
+Skills are executed using `uv run` with the full path to the script:
 
 ```bash
 # Bugzilla skill - search, create, update bugs
-cd skills/bugzilla/scripts && uv run bz.py search --quicksearch "crash"
+uv run ~/.claude/skills/bugzilla/scripts/bz.py search --quicksearch "crash"
 
 # JIRA skill
-cd skills/jira/scripts && uv run extract_jira.py [options]
+uv run ~/.claude/skills/jira/scripts/extract_jira.py [options]
 
-# Treeherder skill - direct execution with uv run
-uv run skills/treeherder/scripts/query.py --revision <hash> --repo try
+# Treeherder skill - uses uvx for zero-install execution
+uvx --from lumberjackth lj jobs autoland --push-id 12345
 
 # Lando skill - uses uvx for zero-install execution
 uvx --from lando-cli lando check-job <job_id>
 
+# Taskcluster skill
+uv run ~/.claude/skills/taskcluster/scripts/tc.py status <TASK_ID>
+
 # OS Integrations - requires Firefox repo at ~/firefox for mach try
-cd skills/os-integrations/scripts && uv run run_try.py win11-24h2 --dry-run
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --dry-run
 ```
 
 ### Testing Skills
@@ -177,7 +180,7 @@ description: >
 - Auth: Set `BUGZILLA_API_KEY` env var (generate at https://bugzilla.mozilla.org/userprefs.cgi?tab=apikey)
 - Read-only operations work without authentication
 - Supports search, get, create, update, comment, and attachment operations
-- Run with: `cd skills/bugzilla/scripts && uv run bz.py <command>`
+- Run with: `uv run ~/.claude/skills/bugzilla/scripts/bz.py <command>`
 
 ### JIRA Skill
 - Uses official `jira` Python package (v3.10.0+)
@@ -210,7 +213,7 @@ description: >
 - Retrigger, rerun, and cancel tasks
 - Manage task groups (list, status, cancel)
 - Accepts task IDs or full Taskcluster URLs
-- Run with: `uv run skills/taskcluster/scripts/tc.py <command>`
+- Run with: `uv run ~/.claude/skills/taskcluster/scripts/tc.py <command>`
 
 ## Working with Firefox Repository
 

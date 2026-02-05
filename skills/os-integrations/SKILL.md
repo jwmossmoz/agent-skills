@@ -58,6 +58,21 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch --
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --watch
 ```
 
+## Watching Lando Job Status
+
+Use `--watch-lando` to poll the Lando landing job status until it lands or fails:
+
+```bash
+# Push and watch Lando job (polls every 90 seconds by default)
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --watch-lando
+
+# Custom polling interval (in seconds)
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-lando --lando-interval 60
+
+# Combine with test watching (Lando check runs first, then test watching)
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-lando --watch
+```
+
 ## Common Test Types
 
 Use `-t` to filter to specific test suites:

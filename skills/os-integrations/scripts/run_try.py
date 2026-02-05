@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml", "httpx", "taskcluster"]
+# dependencies = ["pyyaml", "httpx", "taskcluster", "requests"]
 # ///
 """
 Construct and execute mach try commands for OS integration testing.
@@ -36,8 +36,10 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
+import requests
 import taskcluster
 import yaml
 
@@ -62,6 +64,12 @@ PROTECTED_BRANCHES = ["main", "master", "central"]
 
 # Taskcluster root URL for Firefox CI
 TASKCLUSTER_ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
+
+# Lando API URL
+LANDO_API_URL = "https://lando.services.mozilla.com/api/v1"
+
+# Default interval for checking Lando job status (in seconds)
+DEFAULT_LANDO_CHECK_INTERVAL = 90
 
 
 def get_latest_central_decision_task() -> str | None:
@@ -90,6 +98,65 @@ def extract_push_id_from_output(output: str) -> str | None:
         return match.group(1)
 
     return None
+
+
+def extract_lando_job_id_from_output(output: str) -> str | None:
+    """Extract Lando job ID from mach try output."""
+    # Look for patterns like "Lando job ID: 12345" or "landing_jobs/12345"
+    patterns = [
+        r"[Ll]ando\s+job\s+(?:ID|id)?[:\s]+(\d+)",
+        r"landing_jobs/(\d+)",
+        r"Job\s+ID[:\s]+(\d+)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, output)
+        if match:
+            return match.group(1)
+    return None
+
+
+def check_lando_job_status(job_id: str) -> dict | None:
+    """Check the status of a Lando landing job."""
+    url = f"{LANDO_API_URL}/landing_jobs/{job_id}"
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error checking Lando job status: {e}", file=sys.stderr)
+        return None
+
+
+def poll_lando_job(job_id: str, interval: int = DEFAULT_LANDO_CHECK_INTERVAL) -> str | None:
+    """Poll Lando job status until it reaches a terminal state."""
+    terminal_statuses = {"landed", "failed"}
+    print(f"\nPolling Lando job {job_id} every {interval} seconds...")
+    print(f"API: {LANDO_API_URL}/landing_jobs/{job_id}\n")
+
+    while True:
+        job_data = check_lando_job_status(job_id)
+        if job_data is None:
+            print("Warning: Could not fetch job status, retrying...")
+            time.sleep(interval)
+            continue
+
+        status = job_data.get("status", "unknown")
+        updated_at = job_data.get("updated_at", "")
+        print(f"[{time.strftime('%H:%M:%S')}] Status: {status}", end="")
+        if updated_at:
+            print(f" (updated: {updated_at})", end="")
+        print()
+
+        if status in terminal_statuses:
+            if status == "landed":
+                commit_id = job_data.get("landed_commit_id", "")
+                print(f"\nLanded successfully! Commit: {commit_id}")
+            elif status == "failed":
+                error = job_data.get("error", "Unknown error")
+                print(f"\nLanding failed: {error}", file=sys.stderr)
+            return status
+
+        time.sleep(interval)
 
 
 def run_lumberjackth_watch(push_id: str, filter_regex: str | None = None) -> None:
@@ -511,6 +578,18 @@ Examples:
         help="Regex filter for lumberjackth watch (e.g., 'xpcshell|mochitest')",
     )
     parser.add_argument(
+        "--watch-lando",
+        action="store_true",
+        help="Poll Lando job status until landed or failed (implies --push)",
+    )
+    parser.add_argument(
+        "--lando-interval",
+        type=int,
+        default=DEFAULT_LANDO_CHECK_INTERVAL,
+        metavar="SECONDS",
+        help=f"Interval between Lando status checks (default: {DEFAULT_LANDO_CHECK_INTERVAL}s)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print command without executing",
@@ -529,8 +608,8 @@ Examples:
 
     args = parser.parse_args()
 
-    # --watch implies --push
-    if args.watch:
+    # --watch and --watch-lando imply --push
+    if args.watch or args.watch_lando:
         args.push = True
 
     # --fresh-build overrides --use-existing-tasks
@@ -648,6 +727,15 @@ Examples:
         full_output = "".join(output_lines)
         parsed_output = parse_output(full_output)
         display_summary(args.preset, preset_config, cmd, parsed_output, discovered_labels)
+
+        # Handle --watch-lando: poll Lando job status until terminal state
+        if args.watch_lando and returncode == 0:
+            lando_job_id = extract_lando_job_id_from_output(full_output)
+            if lando_job_id:
+                poll_lando_job(lando_job_id, args.lando_interval)
+            else:
+                print("Warning: Could not extract Lando job ID from output", file=sys.stderr)
+                print("Check manually: curl -s 'https://lando.services.mozilla.com/api/v1/landing_jobs/<ID>' | jq")
 
         # Handle --watch: launch lumberjackth to monitor test results
         if args.watch and returncode == 0:

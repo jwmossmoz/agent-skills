@@ -19,7 +19,7 @@ Optional: `JIRA_OUTPUT_DIR`, `JIRA_DEFAULT_PROJECT`. Precedence: CLI args > env 
 ## Usage
 
 ```bash
-cd scripts && uv run extract_jira.py [options]
+uv run ~/.claude/skills/jira/scripts/extract_jira.py [options]
 ```
 
 | Operation | Command |
@@ -62,7 +62,7 @@ When creating JIRA stories, follow this workflow:
 # 1. Draft description (you do this in memory)
 # 2. Run humanizer on the description
 # 3. Create story with humanized description
-uv run extract_jira.py --create \
+uv run ~/.claude/skills/jira/scripts/extract_jira.py --create \
   --create-summary "Implement new feature" \
   --description "The feature adds capability to process tasks. It handles edge cases and provides error handling." \
   --epic-create RELOPS-2019
@@ -73,5 +73,5 @@ Use `/humanizer` to remove AI writing patterns from story descriptions before su
 ## Resources
 
 - **Full examples**: [references/examples.md](references/examples.md)
-- **All options**: `uv run extract_jira.py --help`
+- **All options**: `uv run ~/.claude/skills/jira/scripts/extract_jira.py --help`
 - **Output**: `~/moz_artifacts/jira_stories.json` (default)

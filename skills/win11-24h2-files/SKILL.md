@@ -29,22 +29,22 @@ Indexes: `file_name`, `kb_number`, `build`, `file_version`
 
 ```bash
 # Search for files
-uv run scripts/query.py search ntdll.dll
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py search ntdll.dll
 
 # Version history for specific file
-uv run scripts/query.py history ntdll.dll
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py history ntdll.dll
 
 # Compare two builds
-uv run scripts/query.py diff 26100.6584 26100.6899
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py diff 26100.6584 26100.6899
 
 # List all patches
-uv run scripts/query.py builds
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py builds
 
 # Database stats
-uv run scripts/query.py stats
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py stats
 
 # Custom SQL
-uv run scripts/query.py sql "SELECT DISTINCT file_version FROM files WHERE file_name='kernel32.dll' ORDER BY build"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py sql "SELECT DISTINCT file_version FROM files WHERE file_name='kernel32.dll' ORDER BY build"
 ```
 
 ## Commands
@@ -52,50 +52,50 @@ uv run scripts/query.py sql "SELECT DISTINCT file_version FROM files WHERE file_
 ### search
 Find files by name pattern (case-insensitive contains match by default).
 ```bash
-uv run scripts/query.py search kernel          # contains "kernel"
-uv run scripts/query.py search kernel32.dll --exact  # exact match
-uv run scripts/query.py search .sys --limit 100
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py search kernel          # contains "kernel"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py search kernel32.dll --exact  # exact match
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py search .sys --limit 100
 ```
 
 ### history
 Track how a file's version changed across all patches. Shows `*` marker when version changed.
 ```bash
-uv run scripts/query.py history ntdll.dll
-uv run scripts/query.py history tcpip.sys
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py history ntdll.dll
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py history tcpip.sys
 ```
 
 ### diff
 Compare file changes between two builds. Shows added, removed, and changed files.
 ```bash
-uv run scripts/query.py diff 26100.6584 26100.6899
-uv run scripts/query.py diff 26100.2894 26100.7705 --limit 20
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py diff 26100.6584 26100.6899
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py diff 26100.2894 26100.7705 --limit 20
 ```
 
 ### builds
 List all available patches with file counts.
 ```bash
-uv run scripts/query.py builds
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py builds
 ```
 
 ### sql
 Run arbitrary SQL queries for complex analysis.
 ```bash
-uv run scripts/query.py sql "SELECT file_name, COUNT(DISTINCT file_version) as versions FROM files GROUP BY file_name ORDER BY versions DESC LIMIT 20"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py sql "SELECT file_name, COUNT(DISTINCT file_version) as versions FROM files GROUP BY file_name ORDER BY versions DESC LIMIT 20"
 ```
 
 ## Common Queries
 
 Find files that changed most frequently:
 ```bash
-uv run scripts/query.py sql "SELECT file_name, COUNT(DISTINCT file_version) as ver_count FROM files GROUP BY file_name HAVING ver_count > 10 ORDER BY ver_count DESC LIMIT 30"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py sql "SELECT file_name, COUNT(DISTINCT file_version) as ver_count FROM files GROUP BY file_name HAVING ver_count > 10 ORDER BY ver_count DESC LIMIT 30"
 ```
 
 Find all kernel-mode drivers (.sys) in a specific build:
 ```bash
-uv run scripts/query.py sql "SELECT file_name, file_version FROM files WHERE build='26100.6584' AND file_name LIKE '%.sys' ORDER BY file_name"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py sql "SELECT file_name, file_version FROM files WHERE build='26100.6584' AND file_name LIKE '%.sys' ORDER BY file_name"
 ```
 
 Check if a specific file version exists:
 ```bash
-uv run scripts/query.py sql "SELECT kb_number, build, release_date FROM files WHERE file_name='ntoskrnl.exe' AND file_version='10.0.26100.6584'"
+uv run ~/.claude/skills/win11-24h2-files/scripts/query.py sql "SELECT kb_number, build, release_date FROM files WHERE file_name='ntoskrnl.exe' AND file_version='10.0.26100.6584'"
 ```

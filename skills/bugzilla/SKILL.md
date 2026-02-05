@@ -12,10 +12,10 @@ Read-only ops work without auth.
 ## Usage
 
 ```bash
-cd scripts && uv run bz.py <command> [options]
+uv run ~/.claude/skills/bugzilla/scripts/bz.py <command> [options]
 ```
 
-Run `uv run bz.py --help` or `uv run bz.py <command> --help` for full options.
+Run `uv run ~/.claude/skills/bugzilla/scripts/bz.py --help` for full options.
 
 ## Commands
 
@@ -35,18 +35,18 @@ Run `uv run bz.py --help` or `uv run bz.py <command> --help` for full options.
 
 ```bash
 # Search
-uv run bz.py search --quicksearch "crash" --limit 10
-uv run bz.py search --product Firefox --status NEW,ASSIGNED --priority P1
+uv run ~/.claude/skills/bugzilla/scripts/bz.py search --quicksearch "crash" --limit 10
+uv run ~/.claude/skills/bugzilla/scripts/bz.py search --product Firefox --status NEW,ASSIGNED --priority P1
 
 # View
-uv run bz.py get 1234567 -v --include-comments
+uv run ~/.claude/skills/bugzilla/scripts/bz.py get 1234567 -v --include-comments
 
 # Update
-uv run bz.py update 1234567 --status RESOLVED --resolution FIXED
-uv run bz.py needinfo 1234567 --request user@mozilla.com
+uv run ~/.claude/skills/bugzilla/scripts/bz.py update 1234567 --status RESOLVED --resolution FIXED
+uv run ~/.claude/skills/bugzilla/scripts/bz.py needinfo 1234567 --request user@mozilla.com
 
 # Create
-uv run bz.py create --product Firefox --component General --summary "Title" --version unspecified
+uv run ~/.claude/skills/bugzilla/scripts/bz.py create --product Firefox --component General --summary "Title" --version unspecified
 ```
 
 ## References
