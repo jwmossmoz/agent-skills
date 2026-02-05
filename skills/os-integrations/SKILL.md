@@ -28,6 +28,36 @@ uv run scripts/run_try.py win11-24h2 -t mochitest-devtools-chrome -t mochitest-c
 uv run scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
 ```
 
+## Quick Validation (Skip Firefox Build)
+
+Use `--use-existing-tasks` to reuse builds from the latest mozilla-central decision task, skipping the 45+ minute Firefox build:
+
+```bash
+# Quick validation - reuse existing Firefox builds
+uv run scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
+
+# Use a specific decision task
+uv run scripts/run_try.py win11-24h2 --task-id ABC123 -t mochitest-browser-chrome --push
+
+# Force fresh build (overrides --use-existing-tasks)
+uv run scripts/run_try.py win11-24h2 --fresh-build --push
+```
+
+## Watching Test Results
+
+Use `--watch` to automatically monitor test results with lumberjackth after pushing:
+
+```bash
+# Push and watch all test results
+uv run scripts/run_try.py win11-24h2 -t xpcshell --watch
+
+# Watch with filter (regex)
+uv run scripts/run_try.py win11-24h2 --watch --watch-filter "xpcshell|mochitest"
+
+# Combine with existing tasks for fast iteration
+uv run scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --watch
+```
+
 ## Common Test Types
 
 Use `-t` to filter to specific test suites:

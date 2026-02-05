@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml", "httpx"]
+# dependencies = ["pyyaml", "httpx", "taskcluster"]
 # ///
 """
 Construct and execute mach try commands for OS integration testing.
@@ -20,6 +20,14 @@ Usage:
     # Filter to specific test types:
     uv run run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
     uv run run_try.py win11-24h2 -t mochitest-devtools-chrome --dry-run
+
+    # Quick validation (skip Firefox build):
+    uv run run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
+    uv run run_try.py win11-24h2 --task-id ABC123 -t mochitest --push
+
+    # Watch test results:
+    uv run run_try.py win11-24h2 -t xpcshell --watch
+    uv run run_try.py win11-24h2 --use-existing-tasks --watch --watch-filter "xpcshell"
 """
 
 import argparse
@@ -30,6 +38,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import taskcluster
 import yaml
 
 from discover_tasks import fetch_task_graph, filter_by_worker_type
@@ -50,6 +59,55 @@ VALID_PRESETS = [
 ]
 
 PROTECTED_BRANCHES = ["main", "master", "central"]
+
+# Taskcluster root URL for Firefox CI
+TASKCLUSTER_ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
+
+
+def get_latest_central_decision_task() -> str | None:
+    """Get the latest mozilla-central decision task ID from Taskcluster index."""
+    try:
+        options = taskcluster.optionsFromEnvironment()
+        options.setdefault("rootUrl", TASKCLUSTER_ROOT_URL)
+        index = taskcluster.Index(options)
+        result = index.findTask("gecko.v2.mozilla-central.latest.taskgraph.decision")
+        return result.get("taskId")
+    except Exception as e:
+        print(f"Warning: Could not fetch latest decision task: {e}", file=sys.stderr)
+        return None
+
+
+def extract_push_id_from_output(output: str) -> str | None:
+    """Extract push ID from mach try output."""
+    # Look for patterns like "push-id/1234567" or "push-id: 1234567"
+    match = re.search(r"push-id[/=:]?\s*(\d+)", output, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    # Also try Treeherder URL pattern
+    match = re.search(r"treeherder\.mozilla\.org.*push-id[/=]?(\d+)", output)
+    if match:
+        return match.group(1)
+
+    return None
+
+
+def run_lumberjackth_watch(push_id: str, filter_regex: str | None = None) -> None:
+    """Run lumberjackth to watch test results."""
+    cmd = [
+        "uvx", "--from", "lumberjackth",
+        "lj", "jobs", "try",
+        "--push-id", push_id,
+        "--watch",
+    ]
+    if filter_regex:
+        cmd.extend(["-f", filter_regex])
+
+    print(f"\nWatching tests with lumberjackth...")
+    if filter_regex:
+        print(f"Filter: {filter_regex}")
+    print(f"Command: {' '.join(cmd)}\n")
+    subprocess.run(cmd)
 
 
 def load_presets() -> dict | None:
@@ -198,37 +256,60 @@ def build_command(
     no_os_integration: bool = False,
     rebuild: int | None = None,
     env_vars: list[str] | None = None,
-    query_override: str | None = None,
+    queries_override: list[str] | None = None,
     tests: list[str] | None = None,
     push: bool = False,
+    use_existing_tasks: bool = False,
+    task_id: str | None = None,
 ) -> list[str]:
     """Build the mach try command from preset configuration."""
     cmd = ["./mach", "try", "fuzzy"]
 
-    # Determine the platform query
-    platform_query = query_override if query_override else preset_config.get("query", "")
-
-    # If tests are specified, build an intersection query:
-    # -xq "platform" -q "'test1 | 'test2 | 'test3"
-    if tests:
-        if platform_query:
-            # Split platform query to handle "-xq 'foo'" style
-            platform_parts = shlex.split(platform_query)
-            # Check if it already has -x flag
-            has_intersection = any(p.startswith("-x") for p in platform_parts)
-            if has_intersection:
-                cmd.extend(platform_parts)
+    # Add existing tasks option to skip rebuilding Firefox
+    if use_existing_tasks:
+        if task_id:
+            cmd.extend(["--use-existing-tasks", f"task-id={task_id}"])
+        else:
+            latest_task = get_latest_central_decision_task()
+            if latest_task:
+                print(f"Using latest mozilla-central decision task: {latest_task}")
+                cmd.extend(["--use-existing-tasks", f"task-id={latest_task}"])
             else:
-                # Add -x for intersection and the platform query
-                cmd.append("-xq")
-                cmd.append(platform_parts[-1] if platform_parts else "")
-        # Build OR query for test types using exact match syntax
-        test_query = " | ".join(f"'{t}" for t in tests)
-        cmd.extend(["-q", test_query])
-    elif platform_query:
-        # No tests filter, just use the platform query as-is
-        platform_parts = shlex.split(platform_query)
-        cmd.extend(platform_parts)
+                print("Warning: Could not find latest decision task, will use most recent try push")
+                cmd.append("--use-existing-tasks")
+
+    # Handle query selection:
+    # 1. If queries_override provided, use those directly (multiple -q flags)
+    # 2. Otherwise use preset query with optional -t test filtering
+    if queries_override:
+        # Multiple explicit queries - add each as -q flag
+        for query in queries_override:
+            cmd.extend(["-q", query])
+    else:
+        # Use preset's default query
+        platform_query = preset_config.get("query", "")
+
+        # If tests are specified, build an intersection query:
+        # -xq "platform" -q "'test1 | 'test2 | 'test3"
+        if tests:
+            if platform_query:
+                # Split platform query to handle "-xq 'foo'" style
+                platform_parts = shlex.split(platform_query)
+                # Check if it already has -x flag
+                has_intersection = any(p.startswith("-x") for p in platform_parts)
+                if has_intersection:
+                    cmd.extend(platform_parts)
+                else:
+                    # Add -x for intersection and the platform query
+                    cmd.append("-xq")
+                    cmd.append(platform_parts[-1] if platform_parts else "")
+            # Build OR query for test types using exact match syntax
+            test_query = " | ".join(f"'{t}" for t in tests)
+            cmd.extend(["-q", test_query])
+        elif platform_query:
+            # No tests filter, just use the platform query as-is
+            platform_parts = shlex.split(platform_query)
+            cmd.extend(platform_parts)
 
     # Add flags from preset
     flags = preset_config.get("flags", [])
@@ -386,8 +467,10 @@ Examples:
     parser.add_argument(
         "-q",
         "--query",
+        action="append",
+        dest="queries",
         metavar="QUERY",
-        help="Override the preset's query filter",
+        help="Query filter (can be repeated). Overrides preset's default query.",
     )
     parser.add_argument(
         "-t",
@@ -401,6 +484,31 @@ Examples:
         "--push",
         action="store_true",
         help="Push to try via Lando",
+    )
+    parser.add_argument(
+        "--use-existing-tasks",
+        action="store_true",
+        help="Skip rebuilding Firefox by reusing builds from latest mozilla-central decision task",
+    )
+    parser.add_argument(
+        "--task-id",
+        metavar="TASK_ID",
+        help="Specific decision task ID to use with --use-existing-tasks",
+    )
+    parser.add_argument(
+        "--fresh-build",
+        action="store_true",
+        help="Force a fresh Firefox build (overrides --use-existing-tasks)",
+    )
+    parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Watch test results with lumberjackth after push (implies --push)",
+    )
+    parser.add_argument(
+        "--watch-filter",
+        metavar="REGEX",
+        help="Regex filter for lumberjackth watch (e.g., 'xpcshell|mochitest')",
     )
     parser.add_argument(
         "--dry-run",
@@ -421,6 +529,17 @@ Examples:
 
     args = parser.parse_args()
 
+    # --watch implies --push
+    if args.watch:
+        args.push = True
+
+    # --fresh-build overrides --use-existing-tasks
+    use_existing = args.use_existing_tasks and not args.fresh_build
+
+    # --task-id implies --use-existing-tasks
+    if args.task_id:
+        use_existing = True
+
     # Load presets
     presets = load_presets()
     if presets is None:
@@ -437,7 +556,6 @@ Examples:
 
     # Handle task discovery
     discovered_labels: list[str] = []
-    discovered_query: str | None = None
 
     if args.discover:
         worker_type = preset_config.get("worker_type")
@@ -460,12 +578,13 @@ Examples:
             print(f"Warning: No tasks found for worker type '{worker_type}'", file=sys.stderr)
         else:
             print(f"Found {len(discovered_labels)} task(s)\n")
-            # Build query from discovered labels
-            # Use multiple -q flags for mach try fuzzy union behavior
-            discovered_query = " ".join(f"-q '{label}'" for label in discovered_labels)
 
-    # Determine final query: explicit override > discovered > preset default
-    final_query = args.query if args.query else discovered_query
+    # Determine final queries: explicit override > discovered > preset default
+    final_queries = None
+    if args.queries:
+        final_queries = args.queries
+    elif discovered_labels:
+        final_queries = discovered_labels
 
     # Build command
     cmd = build_command(
@@ -474,9 +593,11 @@ Examples:
         no_os_integration=args.no_os_integration,
         rebuild=args.rebuild,
         env_vars=args.env_vars,
-        query_override=final_query,
+        queries_override=final_queries,
         tests=args.tests,
         push=args.push,
+        use_existing_tasks=use_existing,
+        task_id=args.task_id,
     )
 
     # Display command
@@ -524,8 +645,18 @@ Examples:
             output_lines.append(line)
 
         returncode = process.wait()
-        parsed_output = parse_output("".join(output_lines))
+        full_output = "".join(output_lines)
+        parsed_output = parse_output(full_output)
         display_summary(args.preset, preset_config, cmd, parsed_output, discovered_labels)
+
+        # Handle --watch: launch lumberjackth to monitor test results
+        if args.watch and returncode == 0:
+            push_id = extract_push_id_from_output(full_output)
+            if push_id:
+                run_lumberjackth_watch(push_id, args.watch_filter)
+            else:
+                print("Warning: Could not extract push ID from output", file=sys.stderr)
+                print("Run manually: uvx --from lumberjackth lj jobs try --push-id <ID> --watch")
 
     except FileNotFoundError:
         print("Error: Could not execute mach command", file=sys.stderr)
