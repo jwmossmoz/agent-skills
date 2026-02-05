@@ -28,18 +28,18 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t mochite
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
 ```
 
-## Quick Validation (Skip Firefox Build)
+## Build Behavior
 
-Use `--use-existing-tasks` to reuse builds from the latest mozilla-central decision task, skipping the 45+ minute Firefox build:
+By default, the script reuses builds from the latest mozilla-central decision task (skipping the 45+ minute Firefox build). Use `--fresh-build` to force a full build instead:
 
 ```bash
-# Quick validation - reuse existing Firefox builds
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
+# Default: reuses existing Firefox builds
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --push
 
 # Use a specific decision task
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --task-id ABC123 -t mochitest-browser-chrome --push
 
-# Force fresh build (overrides --use-existing-tasks)
+# Force a fresh Firefox build
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-build --push
 ```
 
@@ -54,8 +54,8 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshel
 # Watch with filter (regex)
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch --watch-filter "xpcshell|mochitest"
 
-# Combine with existing tasks for fast iteration
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --use-existing-tasks -t xpcshell --watch
+# Combine with fresh build and watch
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-build -t xpcshell --watch
 ```
 
 ## Watching Lando Job Status
@@ -75,10 +75,10 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-la
 
 ## Named Query Sets
 
-Use `--query-set` to run a predefined set of test queries. Query sets can bundle specific suites with their own settings (e.g., reusing builds, skipping os-integration):
+Use `--query-set` to run a predefined set of test queries. Query sets can bundle specific suites with their own settings (e.g., skipping os-integration):
 
 ```bash
-# Run targeted test suites (reuses builds, faster validation)
+# Run targeted test suites
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --push
 
 # Preview what a query set will run

@@ -21,17 +21,19 @@ Usage:
     uv run run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
     uv run run_try.py win11-24h2 -t mochitest-devtools-chrome --dry-run
 
-    # Quick validation (skip Firefox build):
-    uv run run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
+    # Use a specific decision task to reuse builds from:
     uv run run_try.py win11-24h2 --task-id ABC123 -t mochitest --push
 
-    # Named query sets (specific suites, reuses builds):
+    # Force a fresh Firefox build (instead of reusing existing tasks):
+    uv run run_try.py win11-24h2 --fresh-build --push
+
+    # Named query sets (specific suites):
     uv run run_try.py win11-24h2 --query-set targeted --push
     uv run run_try.py win11-24h2 --query-set targeted --watch
 
     # Watch test results:
     uv run run_try.py win11-24h2 -t xpcshell --watch
-    uv run run_try.py win11-24h2 --use-existing-tasks --watch --watch-filter "xpcshell"
+    uv run run_try.py win11-24h2 --watch --watch-filter "xpcshell"
 """
 
 import argparse
@@ -510,7 +512,10 @@ Examples:
   %(prog)s win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
   %(prog)s win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
 
-  # Named query sets (reuse builds, specific suites):
+  # Force a fresh Firefox build:
+  %(prog)s win11-24h2 --fresh-build --push
+
+  # Named query sets (specific suites):
   %(prog)s win11-24h2 --query-set targeted --push
   %(prog)s win11-24h2 --query-set targeted --watch
         """,
@@ -561,19 +566,14 @@ Examples:
         help="Push to try via Lando",
     )
     parser.add_argument(
-        "--use-existing-tasks",
-        action="store_true",
-        help="Skip rebuilding Firefox by reusing builds from latest mozilla-central decision task",
-    )
-    parser.add_argument(
         "--task-id",
         metavar="TASK_ID",
-        help="Specific decision task ID to use with --use-existing-tasks",
+        help="Specific decision task ID to reuse builds from (default: latest mozilla-central)",
     )
     parser.add_argument(
         "--fresh-build",
         action="store_true",
-        help="Force a fresh Firefox build (overrides --use-existing-tasks)",
+        help="Force a fresh Firefox build instead of reusing existing tasks",
     )
     parser.add_argument(
         "--watch",
@@ -627,15 +627,11 @@ Examples:
     if args.watch or args.watch_lando:
         args.push = True
 
-    # --query-set may imply --use-existing-tasks and --no-os-integration
+    # --query-set may imply --no-os-integration
     # (validated later after preset is loaded)
 
-    # --fresh-build overrides --use-existing-tasks
-    use_existing = args.use_existing_tasks and not args.fresh_build
-
-    # --task-id implies --use-existing-tasks
-    if args.task_id:
-        use_existing = True
+    # Default to reusing existing tasks; --fresh-build opts out
+    use_existing = not args.fresh_build
 
     # Load presets
     presets = load_presets()
@@ -706,8 +702,6 @@ Examples:
             print(f"  - {q}")
         print()
         # Apply query set settings
-        if qs.get("use_existing_tasks"):
-            use_existing = True
         if qs.get("skip_os_integration"):
             args.no_os_integration = True
         # Use query set watch filter if --watch and no explicit --watch-filter
