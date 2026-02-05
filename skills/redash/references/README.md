@@ -12,42 +12,38 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 ```bash
 export REDASH_API_KEY="your-api-key-here"
 
-cd skills/redash/scripts
-
 # Get Windows build distribution summary
-uv run query_redash.py --query windows_10_build_distribution
+uv run skills/redash/scripts/query_redash.py --query windows_10_build_distribution
 
 # Save detailed aggregate data to file
-uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
+uv run skills/redash/scripts/query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
 ```
 
 ## Usage
 
 ```bash
-cd skills/redash/scripts
-
 # List available pre-defined queries
-uv run query_redash.py --list-queries
+uv run skills/redash/scripts/query_redash.py --list-queries
 
 # Run a pre-defined query (table format)
-uv run query_redash.py --query windows_10_build_distribution
+uv run skills/redash/scripts/query_redash.py --query windows_10_build_distribution
 
 # Save results to file
-uv run query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
+uv run skills/redash/scripts/query_redash.py --query windows_10_aggregate --output ~/moz_artifacts/aggregate.json
 
 # Run custom SQL
-uv run query_redash.py --sql "SELECT * FROM \`moz-fx-data-shared-prod.telemetry.windows_10_build_distribution\` LIMIT 10"
+uv run skills/redash/scripts/query_redash.py --sql "SELECT * FROM \`moz-fx-data-shared-prod.telemetry.windows_10_build_distribution\` LIMIT 10"
 
 # Fetch cached results from existing Redash query by ID
 # (e.g., from https://sql.telemetry.mozilla.org/queries/65967)
-uv run query_redash.py --query-id 65967
+uv run skills/redash/scripts/query_redash.py --query-id 65967
 
 # Output as JSON or CSV
-uv run query_redash.py --query windows_10_build_distribution --format json
-uv run query_redash.py --query windows_10_build_distribution --format csv
+uv run skills/redash/scripts/query_redash.py --query windows_10_build_distribution --format json
+uv run skills/redash/scripts/query_redash.py --query windows_10_build_distribution --format csv
 
 # Limit displayed rows (still saves all to file)
-uv run query_redash.py --query windows_10_aggregate --limit 20
+uv run skills/redash/scripts/query_redash.py --query windows_10_aggregate --limit 20
 ```
 
 ## Pre-defined Queries
