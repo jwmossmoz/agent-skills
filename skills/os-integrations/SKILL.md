@@ -73,6 +73,23 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-la
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-lando --watch
 ```
 
+## Named Query Sets
+
+Use `--query-set` to run a predefined set of test queries. Query sets can bundle specific suites with their own settings (e.g., reusing builds, skipping os-integration):
+
+```bash
+# Run targeted test suites (reuses builds, faster validation)
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --push
+
+# Preview what a query set will run
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --dry-run
+
+# Watch results from a query set
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --watch
+```
+
+Query sets are defined per-preset in `references/presets.yml` under the `query_sets` key.
+
 ## Common Test Types
 
 Use `-t` to filter to specific test suites:

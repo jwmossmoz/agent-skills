@@ -25,6 +25,10 @@ Usage:
     uv run run_try.py win11-24h2 --use-existing-tasks -t xpcshell --push
     uv run run_try.py win11-24h2 --task-id ABC123 -t mochitest --push
 
+    # Named query sets (specific suites, reuses builds):
+    uv run run_try.py win11-24h2 --query-set targeted --push
+    uv run run_try.py win11-24h2 --query-set targeted --watch
+
     # Watch test results:
     uv run run_try.py win11-24h2 -t xpcshell --watch
     uv run run_try.py win11-24h2 --use-existing-tasks --watch --watch-filter "xpcshell"
@@ -505,6 +509,10 @@ Examples:
   # Filter to specific test types:
   %(prog)s win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
   %(prog)s win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
+
+  # Named query sets (reuse builds, specific suites):
+  %(prog)s win11-24h2 --query-set targeted --push
+  %(prog)s win11-24h2 --query-set targeted --watch
         """,
     )
 
@@ -595,6 +603,13 @@ Examples:
         help="Print command without executing",
     )
     parser.add_argument(
+        "--query-set",
+        metavar="NAME",
+        help="Use a named query set from the preset config (e.g., 'targeted'). "
+        "Query sets define specific test suites with their own settings for "
+        "use_existing_tasks, skip_os_integration, and watch_filter.",
+    )
+    parser.add_argument(
         "--discover",
         action="store_true",
         help="Auto-discover tasks for presets with worker_type defined",
@@ -611,6 +626,9 @@ Examples:
     # --watch and --watch-lando imply --push
     if args.watch or args.watch_lando:
         args.push = True
+
+    # --query-set may imply --use-existing-tasks and --no-os-integration
+    # (validated later after preset is loaded)
 
     # --fresh-build overrides --use-existing-tasks
     use_existing = args.use_existing_tasks and not args.fresh_build
@@ -658,10 +676,43 @@ Examples:
         else:
             print(f"Found {len(discovered_labels)} task(s)\n")
 
-    # Determine final queries: explicit override > discovered > preset default
+    # Determine final queries: explicit override > query-set > discovered > preset default
     final_queries = None
     if args.queries:
         final_queries = args.queries
+    elif args.query_set:
+        query_sets = preset_config.get("query_sets", {})
+        if args.query_set not in query_sets:
+            available = ", ".join(query_sets.keys()) if query_sets else "(none)"
+            print(
+                f"Error: Query set '{args.query_set}' not found in preset '{args.preset}'.\n"
+                f"Available query sets: {available}",
+                file=sys.stderr,
+            )
+            return 1
+        qs = query_sets[args.query_set]
+        qs_queries = qs.get("queries", [])
+        if not qs_queries:
+            print(
+                f"Error: Query set '{args.query_set}' has no queries defined.",
+                file=sys.stderr,
+            )
+            return 1
+        final_queries = qs_queries
+        qs_desc = qs.get("description", "")
+        print(f"Using query set '{args.query_set}': {qs_desc}")
+        print(f"{len(qs_queries)} queries:")
+        for q in qs_queries:
+            print(f"  - {q}")
+        print()
+        # Apply query set settings
+        if qs.get("use_existing_tasks"):
+            use_existing = True
+        if qs.get("skip_os_integration"):
+            args.no_os_integration = True
+        # Use query set watch filter if --watch and no explicit --watch-filter
+        if args.watch and not args.watch_filter:
+            args.watch_filter = qs.get("watch_filter")
     elif discovered_labels:
         final_queries = discovered_labels
 
