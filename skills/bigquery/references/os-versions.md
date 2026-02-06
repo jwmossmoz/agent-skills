@@ -11,6 +11,8 @@ Queries for analyzing Windows and macOS version distribution among Firefox users
 - [macOS Quick Queries](#macos-quick-queries)
 - [macOS Detailed Analysis](#macos-detailed-analysis)
 - [macOS Darwin Version Reference](#macos-darwin-version-reference)
+- [Linux Quick Queries](#linux-quick-queries)
+- [Linux Kernel-to-Distro Reference](#linux-kernel-to-distro-reference)
 
 ## Windows Quick Queries
 
@@ -302,6 +304,89 @@ The `normalized_os_version` field in `baseline_clients_daily` reports Darwin ker
 | 18.x | 10.14 | Mojave | Sep 2018 |
 
 **Formula**: macOS major version = Darwin major version - 10 (for Darwin 20+). E.g., Darwin 25 = macOS 15.
+
+## Linux Quick Queries
+
+There is no pre-aggregated Linux view. Use `baseline_clients_daily` with `normalized_os = 'Linux'`. The `normalized_os_version` field reports the **Linux kernel version**, not the distribution name (Ubuntu, Fedora, etc.) — telemetry does not report the distro.
+
+### Linux kernel version distribution
+
+```bash
+bq query --project_id=mozdata --use_legacy_sql=false --format=pretty "
+SELECT
+  normalized_os_version AS kernel_version,
+  COUNT(DISTINCT client_id) AS daily_active_clients,
+  ROUND(COUNT(DISTINCT client_id) * 100.0
+    / SUM(COUNT(DISTINCT client_id)) OVER (), 2) AS percent_of_linux_dau
+FROM \`moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily\`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND normalized_os = 'Linux'
+  AND normalized_channel = 'release'
+  AND sample_id = 0
+GROUP BY kernel_version
+ORDER BY daily_active_clients DESC
+LIMIT 20
+"
+```
+
+### Linux kernel version by channel
+
+```bash
+bq query --project_id=mozdata --use_legacy_sql=false --format=pretty "
+SELECT
+  normalized_channel,
+  normalized_os_version AS kernel_version,
+  COUNT(DISTINCT client_id) AS dau,
+  ROUND(COUNT(DISTINCT client_id) * 100.0
+    / SUM(COUNT(DISTINCT client_id)) OVER (PARTITION BY normalized_channel), 2) AS percent_of_channel
+FROM \`moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily\`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND normalized_os = 'Linux'
+  AND sample_id = 0
+GROUP BY normalized_channel, kernel_version
+ORDER BY normalized_channel, dau DESC
+LIMIT 30
+"
+```
+
+### Linux kernel major version rollup
+
+```bash
+bq query --project_id=mozdata --use_legacy_sql=false --format=pretty "
+SELECT
+  CONCAT(SPLIT(normalized_os_version, '.')[SAFE_OFFSET(0)], '.x') AS kernel_major,
+  COUNT(DISTINCT client_id) AS daily_active_clients,
+  ROUND(COUNT(DISTINCT client_id) * 100.0
+    / SUM(COUNT(DISTINCT client_id)) OVER (), 2) AS percent_of_linux_dau
+FROM \`moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily\`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND normalized_os = 'Linux'
+  AND normalized_channel = 'release'
+  AND sample_id = 0
+GROUP BY kernel_major
+ORDER BY daily_active_clients DESC
+"
+```
+
+## Linux Kernel-to-Distro Reference
+
+The kernel version can hint at the distribution, but is not definitive. Common mappings:
+
+| Kernel | Likely Distro | Notes |
+|--------|--------------|-------|
+| 6.8 | Ubuntu 24.04 LTS | Default kernel for Noble Numbat |
+| 6.5 | Ubuntu 23.10 | Short-term release |
+| 5.15 | Ubuntu 22.04 LTS | Default kernel for Jammy Jellyfish |
+| 5.4 | Ubuntu 20.04 LTS | Default kernel for Focal Fossa |
+| 4.15 | Ubuntu 18.04 LTS | Default kernel for Bionic Beaver |
+| 6.14+ | Fedora 42 / Arch | Rolling release, latest kernels |
+| 6.12 | Fedora 41 | Stable Fedora release |
+| 6.1 | Debian 12 (Bookworm) | Debian LTS kernel |
+| 5.10 | Debian 11 (Bullseye) | Previous Debian LTS |
+| 4.19 | Debian 10 (Buster) | Older Debian LTS |
+| 3.10 | RHEL/CentOS 7 | Enterprise, EOL Jun 2024 |
+
+**Caveats**: Users can install newer kernels on any distro (e.g., Ubuntu HWE kernels), so these are approximations. Rolling-release distros (Arch, Gentoo, openSUSE Tumbleweed) will always have the latest kernels.
 
 ## Related Dashboards
 

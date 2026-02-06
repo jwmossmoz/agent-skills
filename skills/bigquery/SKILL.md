@@ -5,8 +5,8 @@ description: >
   Use when the user wants to run SQL against Firefox telemetry, analyze Windows version
   distribution, count DAU/MAU/WAU, query Glean metrics, or investigate user populations.
   Triggers on "bigquery", "bq", "telemetry query", "DAU", "MAU", "Windows distribution",
-  "macOS distribution", "Darwin version", "client count", "user count", "Glean metrics query",
-  "baseline_clients".
+  "macOS distribution", "Darwin version", "Linux distribution", "kernel version",
+  "client count", "user count", "Glean metrics query", "baseline_clients".
 ---
 
 # BigQuery
@@ -18,6 +18,7 @@ Query Mozilla telemetry data directly using the `bq` CLI.
 - `gcloud` and `bq` CLI installed (`brew install google-cloud-sdk`)
 - Authenticated: `gcloud auth login` with a Mozilla account
 - Billing project set: queries run against a project you have `bigquery.jobs.create` on
+- [mozdata-claude-plugin](https://github.com/akkomar/mozdata-claude-plugin) installed — provides Glean Dictionary MCP for metric/ping discovery and query guidance
 
 ## Authentication
 
@@ -78,7 +79,7 @@ All tables are in the `moz-fx-data-shared-prod` project. Fully qualify as `` `mo
 ## References
 
 - `references/tables.md` — Detailed table schemas and common query patterns
-- `references/os-versions.md` — Windows and macOS version distribution queries, build number and Darwin version mappings
+- `references/os-versions.md` — Windows, macOS, and Linux version distribution queries with build number, Darwin, and kernel version mappings
 
 ## Related Skills
 
