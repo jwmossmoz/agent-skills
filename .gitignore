@@ -20,6 +20,8 @@ __pycache__/
 venv/
 *.egg-info/
 uv.lock
+.python-version
+.ruff_cache/
 
 # IDE
 .vscode/

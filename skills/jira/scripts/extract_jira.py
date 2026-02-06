@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "jira>=3.10.0",
+#     "requests>=2.31.0",
+# ]
+# ///
 """
 Extract, create, and modify JIRA stories from Mozilla JIRA (Atlassian Cloud).
 

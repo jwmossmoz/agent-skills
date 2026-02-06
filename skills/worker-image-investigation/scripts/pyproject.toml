@@ -1,9 +1,0 @@
-[project]
-name = "worker-image-investigation"
-version = "0.1.0"
-description = "Investigate Taskcluster worker image issues"
-requires-python = ">=3.11"
-dependencies = []
-
-[project.scripts]
-investigate = "investigate:main"

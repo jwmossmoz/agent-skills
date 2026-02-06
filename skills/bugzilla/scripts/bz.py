@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests>=2.31.0",
+# ]
+# ///
 """
 Interact with Mozilla Bugzilla (bugzilla.mozilla.org) via REST API.
 
