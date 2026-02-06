@@ -5,7 +5,8 @@ description: >
   Use when the user wants to run SQL against Firefox telemetry, analyze Windows version
   distribution, count DAU/MAU/WAU, query Glean metrics, or investigate user populations.
   Triggers on "bigquery", "bq", "telemetry query", "DAU", "MAU", "Windows distribution",
-  "client count", "user count", "Glean metrics query", "baseline_clients".
+  "macOS distribution", "Darwin version", "client count", "user count", "Glean metrics query",
+  "baseline_clients".
 ---
 
 # BigQuery
@@ -77,7 +78,7 @@ All tables are in the `moz-fx-data-shared-prod` project. Fully qualify as `` `mo
 ## References
 
 - `references/tables.md` — Detailed table schemas and common query patterns
-- `references/windows.md` — Windows version distribution queries and build number mappings
+- `references/os-versions.md` — Windows and macOS version distribution queries, build number and Darwin version mappings
 
 ## Related Skills
 
