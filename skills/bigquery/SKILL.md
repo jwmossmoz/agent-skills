@@ -18,7 +18,7 @@ Query Mozilla telemetry data directly using the `bq` CLI.
 - `gcloud` and `bq` CLI installed (`brew install google-cloud-sdk`)
 - Authenticated: `gcloud auth login` with a Mozilla account
 - Billing project set: queries run against a project you have `bigquery.jobs.create` on
-- [mozdata-claude-plugin](https://github.com/akkomar/mozdata-claude-plugin) installed — provides Glean Dictionary MCP for metric/ping discovery and query guidance
+- (Optional but highly recommended) [mozdata-claude-plugin](https://github.com/akkomar/mozdata-claude-plugin) — provides Glean Dictionary MCP for metric/ping discovery, making it much easier to find the right tables and columns
 
 ## Authentication
 
