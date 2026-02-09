@@ -562,6 +562,36 @@ def find_user_account_id(client: JIRA, query: str) -> str | None:
     return getattr(users[0], "accountId", None)
 
 
+def get_user_recent_sprint(client: JIRA, project_key: str) -> str | None:
+    """Get the most recent sprint name for the current user's issues."""
+    jql = f"project = {project_key} AND assignee = currentUser() AND Sprint is not EMPTY ORDER BY updated DESC"
+    try:
+        issues = client.search_issues(jql, maxResults=10, fields=["customfield_10020"])
+    except JIRAError:
+        return None
+
+    for issue in issues:
+        sprint_data = getattr(issue.fields, "customfield_10020", None)
+        if sprint_data and isinstance(sprint_data, list):
+            for sprint in sprint_data:
+                # Handle PropertyHolder objects (jira-python library wraps API responses)
+                if hasattr(sprint, "name"):
+                    sprint_name = getattr(sprint, "name", None)
+                    if sprint_name:
+                        return sprint_name
+                # Handle dict format (direct API responses)
+                elif isinstance(sprint, dict):
+                    sprint_name = sprint.get("name")
+                    if sprint_name:
+                        return sprint_name
+                # Handle string format (some JIRA versions)
+                elif isinstance(sprint, str):
+                    match = re.search(r"name=([^,\]]+)", sprint)
+                    if match:
+                        return match.group(1)
+    return None
+
+
 def fetch_description_adf(email: str, token: str, issue_key: str) -> dict[str, Any] | None:
     """
     Fetch the description of an issue in ADF format using REST API v3.
@@ -919,6 +949,10 @@ def link_issues(
 
     Returns (success, message) tuple.
     """
+    if link_type not in MOZILLA_JIRA_LINK_TYPES:
+        valid_types = ", ".join(MOZILLA_JIRA_LINK_TYPES)
+        return False, f"Invalid link type '{link_type}'. Valid types: {valid_types}"
+
     try:
         client.create_issue_link(link_type, inward_issue, outward_issue)
     except JIRAError as exc:
@@ -1217,6 +1251,9 @@ def build_jql_query(args) -> str:
     # Sprint filters
     if args.current_sprint:
         conditions.append("Sprint in openSprints()")
+    elif args.recent_sprint:
+        # Will be resolved by caller - placeholder for now
+        conditions.append("__RECENT_SPRINT__")
     elif args.sprint:
         conditions.append(f"Sprint = '{args.sprint}'")
 
@@ -1458,6 +1495,7 @@ Examples:
   %(prog)s --my-issues                        # Your assigned/reported stories
   %(prog)s --current-sprint                   # Stories in current active sprint
   %(prog)s --current-sprint --assignee currentUser()  # Your sprint stories
+  %(prog)s --recent-sprint --my-issues         # Your issues in most recent sprint
   %(prog)s --created-after 2025-01-01         # Stories created in 2025
   %(prog)s --assignee "John Doe" --resolved   # John's resolved stories
         """,
@@ -1625,6 +1663,11 @@ Examples:
         "--sprint",
         type=str,
         help="Filter by specific sprint name",
+    )
+    parser.add_argument(
+        "--recent-sprint",
+        action="store_true",
+        help="Issues in your most recent sprint (based on last updated issues with sprint assignment)",
     )
 
     # Ordering
@@ -2206,11 +2249,32 @@ Examples:
     # Build JQL query
     jql = build_jql_query(args)
 
+    # Handle --recent-sprint by resolving the sprint name
+    if args.recent_sprint:
+        if not args.quiet:
+            print("Finding your most recent sprint...")
+        project = args.project or DEFAULT_PROJECT
+        recent_sprint_name = get_user_recent_sprint(client, project)
+        if recent_sprint_name:
+            if not args.quiet:
+                print(f"Using sprint: {recent_sprint_name}")
+            jql = jql.replace("__RECENT_SPRINT__", f"Sprint = '{recent_sprint_name}'")
+        else:
+            print("Warning: Could not find any recent sprints with your issues", file=sys.stderr)
+            jql = jql.replace("__RECENT_SPRINT__", "Sprint is EMPTY")
+
     # Fetch all stories
     raw_issues = fetch_all_stories(client, jql, quiet=args.quiet)
 
     # Extract essential data
     stories = extract_essential_data(raw_issues)
+
+    # Provide helpful message if --current-sprint returned 0 results
+    if args.current_sprint and len(stories) == 0 and not args.quiet:
+        print("\nNote: --current-sprint uses 'Sprint in openSprints()' which only returns", file=sys.stderr)
+        print("active or future sprints. If your current sprint is closed, use:", file=sys.stderr)
+        print("  --recent-sprint         # Find your most recent sprint automatically", file=sys.stderr)
+        print("  --sprint \"Sprint Name\"   # Specify a sprint name explicitly", file=sys.stderr)
 
     if args.list_comments:
         for story in stories:
