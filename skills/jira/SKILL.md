@@ -24,15 +24,15 @@ uv run ~/.claude/skills/jira/scripts/extract_jira.py [options]
 
 | Operation | Command |
 |-----------|---------|
-| Query current sprint | `uv run extract_jira.py --current-sprint --summary` |
-| Query your issues | `uv run extract_jira.py --my-issues` |
-| Query specific issue | `uv run extract_jira.py --jql "key = RELOPS-123"` |
-| Create issue | `uv run extract_jira.py --create --create-summary "Title"` |
-| Modify issue | `uv run extract_jira.py --modify RELOPS-123 --set-status "In Progress"` |
-| Append description | `uv run extract_jira.py --modify RELOPS-123 --append-description "New notes"` |
-| Edit comment | `uv run extract_jira.py --modify RELOPS-123 --edit-comment 1242534 --comment-body "Updated content"` |
-| Link issues | `uv run extract_jira.py --modify RELOPS-123 --link-issue RELOPS-456` |
-| Output to stdout | `uv run extract_jira.py --stdout --quiet` |
+| Query current sprint | `--current-sprint --summary` |
+| Query your issues | `--my-issues` |
+| Query specific issue | `--jql "key = RELOPS-123"` |
+| Create issue | `--create --create-summary "Title"` |
+| Modify issue | `--modify RELOPS-123 --set-status "In Progress"` |
+| Append description | `--modify RELOPS-123 --append-description "New notes"` |
+| Edit comment | `--modify RELOPS-123 --edit-comment 1242534 --comment-body "Updated content"` |
+| Link issues | `--modify RELOPS-123 --link-issue RELOPS-456` |
+| Output to stdout | `--stdout --quiet` |
 
 ## Markdown Formatting
 
@@ -62,7 +62,7 @@ When creating JIRA stories, follow this workflow:
 # 1. Draft description (you do this in memory)
 # 2. Run humanizer on the description
 # 3. Create story with humanized description
-uv run extract_jira.py --create \
+uv run ~/.claude/skills/jira/scripts/extract_jira.py --create \
   --create-summary "Implement new feature" \
   --description "The feature adds capability to process tasks. It handles edge cases and provides error handling." \
   --epic-create RELOPS-2019
@@ -73,5 +73,5 @@ Use `/humanizer` to remove AI writing patterns from story descriptions before su
 ## Resources
 
 - **Full examples**: [references/examples.md](references/examples.md)
-- **All options**: `uv run extract_jira.py --help`
+- **All options**: `uv run ~/.claude/skills/jira/scripts/extract_jira.py --help`
 - **Output**: `~/moz_artifacts/jira_stories.json` (default)
