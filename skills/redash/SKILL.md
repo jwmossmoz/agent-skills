@@ -12,6 +12,7 @@ Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is
 
 ## Knowledge References
 @references/README.md
+@references/fxci-schema.md
 
 ## Prerequisites
 
@@ -42,3 +43,6 @@ Either `--sql` or `--query-id` is required.
 | `--output`, `-o` | Save results to JSON file |
 | `--format`, `-f` | Output format: `json`, `csv`, `table` (default: `table`) |
 | `--limit` | Limit number of rows displayed |
+
+## Common Queries
+@references/common-queries.md
