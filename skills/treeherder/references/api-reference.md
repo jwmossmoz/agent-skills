@@ -280,44 +280,20 @@ Status values:
 - 7: fixed
 - 8: backedout
 
-## Python Client
-
-The `lumberjackth` library provides a modern Python interface:
-
-```python
-from lumberjackth import TreeherderClient
-
-client = TreeherderClient()
-
-# Get pushes
-pushes = client.get_pushes('autoland', count=10)
-
-# Get jobs
-jobs = client.get_jobs('autoland', push_id=1816157)
-
-# Get repositories
-repos = client.get_repositories()
-
-# Get failures by bug (new in 1.1.0)
-failures = client.get_failures_by_bug(2012615, tree="autoland")
-
-# Get text log errors (new in 1.1.0)
-errors = client.get_text_log_errors("autoland", job_id=545896732)
-
-# Get bug suggestions (new in 1.1.0)
-suggestions = client.get_bug_suggestions("autoland", job_id=545896732)
-
-# Async support
-async with TreeherderClient() as client:
-    repos = await client.get_repositories_async()
-```
-
 ## Rate Limiting
 
 The API has rate limiting. For bulk operations, add delays between requests.
 
+## CLI Tools
+
+These API endpoints are accessed by the two CLI tools used in this skill:
+
+- **treeherder-cli** (primary) - Rust CLI for failure analysis, comparison, history, logs, and artifacts. See `cli-reference.md`.
+- **lumberjackth** (secondary) - Python CLI for push listing, failures-by-bug, error suggestions, perf alerts, and result/tier filtering. See `cli-reference.md`.
+
 ## External Documentation
 
 - [Treeherder ReadTheDocs](https://treeherder.readthedocs.io/)
+- [treeherder-cli on GitHub](https://github.com/padenot/treeherder-cli)
 - [lumberjackth on PyPI](https://pypi.org/project/lumberjackth/)
 - [Treeherder Source Code](https://github.com/mozilla/treeherder)

@@ -1,91 +1,124 @@
 # Sheriff Workflows with Treeherder
 
-This document describes common sheriff workflows and how to accomplish them using the lumberjackth CLI via `uvx`.
+This document describes common sheriff workflows using **treeherder-cli** (primary) and **lumberjackth** (secondary).
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| List recent pushes | `uvx --from lumberjackth lj pushes autoland -n 10` |
-| Get jobs for a push | `uvx --from lumberjackth lj jobs autoland --push-id <id>` |
-| Filter failed jobs | `uvx --from lumberjackth lj jobs autoland --push-id <id> --result testfailed` |
-| Get job details with logs | `uvx --from lumberjackth lj job autoland "<guid>" --logs` |
-| Performance alerts | `uvx --from lumberjackth lj perf-alerts -r autoland` |
+| Task | Tool | Command |
+|------|------|---------|
+| Get failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
+| Compare revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
+| Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
+| Fetch logs with search | treeherder-cli | `treeherder-cli abc123 --fetch-logs --pattern "ERROR"` |
+| Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
+| List recent pushes | lumberjackth | `lj pushes autoland -n 10` |
+| Filter by result/tier | lumberjackth | `lj jobs autoland --push-id 123 --result testfailed --tier 1` |
+| Get job details with logs | lumberjackth | `lj job autoland "<guid>" --logs` |
+| Failures by bug ID | lumberjackth | `lj failures 2012615 -t autoland` |
+| Error suggestions | lumberjackth | `lj errors autoland 545896732` |
+| Performance alerts | lumberjackth | `lj perf-alerts -r autoland` |
 
-## Workflow 1: Monitoring Tree Health
+## Workflow 1: Investigating Failures on a Push
 
-### Check recent pushes
+### Step 1: Find the revision
 
 ```bash
-# List last 10 pushes on autoland
+# List recent pushes on autoland
 uvx --from lumberjackth lj pushes autoland -n 10
 
 # Filter by author
 uvx --from lumberjackth lj pushes autoland -a user@mozilla.com
 ```
 
-Output shows push ID, revision, author, and commit count:
-```
-                        Pushes for autoland
-┏━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
-┃ ID      ┃ Revision     ┃ Author              ┃ Time                ┃ Commits ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
-│ 1815584 │ 12ae7cd09e4d │ user@mozilla.com    │ 2026-01-27 10:30:00 │       1 │
-└─────────┴──────────────┴─────────────────────┴─────────────────────┴─────────┘
-```
-
-### Get jobs for a specific push
+### Step 2: Analyze failures with treeherder-cli
 
 ```bash
-# All jobs for a push
-uvx --from lumberjackth lj jobs autoland --push-id 1815584
+# Get all failures for the revision
+treeherder-cli a13b9fc22101 --json
 
-# Failed jobs only
-uvx --from lumberjackth lj jobs autoland --push-id 1815584 --result testfailed
+# Filter by platform or job name
+treeherder-cli a13b9fc22101 --platform "windows.*24h2" --json
+treeherder-cli a13b9fc22101 --filter "mochitest" --json
 
-# Tier 1 jobs (sheriff-managed)
-uvx --from lumberjackth lj jobs autoland --push-id 1815584 --tier 1
+# Group failures by test name to see cross-platform impact
+treeherder-cli a13b9fc22101 --group-by test --json
+
+# Include intermittent failures for full picture
+treeherder-cli a13b9fc22101 --include-intermittent --json
 ```
 
-## Workflow 2: Investigating Failed Jobs
-
-### Step 1: Find failed jobs
+### Step 3: Get logs and error details
 
 ```bash
-# Get all failed jobs for a push
-uvx --from lumberjackth lj jobs autoland --push-id 1815584 --result testfailed
+# Fetch logs and search for patterns
+treeherder-cli a13b9fc22101 --fetch-logs --pattern "ASSERTION|CRASH" --json
 
-# Or filter by platform using JSON output and jq
-uvx --from lumberjackth lj --json jobs autoland --push-id 1815584 --result testfailed | jq '.[] | select(.platform | contains("linux"))'
+# Or use lumberjackth for error lines with bug suggestions
+uvx --from lumberjackth lj errors autoland 545896732
 ```
 
-### Step 2: Get job details and logs
+## Workflow 2: Regression Detection
+
+### Compare a suspicious revision against its parent
 
 ```bash
-# Get detailed info for a specific job
-uvx --from lumberjackth lj job autoland "abc123def/0" --logs
+# Compare two revisions to identify regressions
+treeherder-cli a13b9fc22101 --compare b2c3d4e5f678 --json
 ```
 
-Output includes:
-- Job ID and type
-- Platform and state
-- Result and tier
-- Submit/start/end timestamps
-- Duration
-- Task ID with Taskcluster link
-- Log URLs
+### Check test history for intermittent detection
 
-### Step 3: View logs in Taskcluster
+```bash
+# Is this test historically flaky?
+treeherder-cli --history "browser_all_files_flash.js" --history-count 20 --json
 
-The job output includes direct Taskcluster links:
-```
-  Task ID: abc123TaskId
-  Task URL: https://firefox-ci-tc.services.mozilla.com/tasks/abc123TaskId
+# Check via Treeherder's similar_jobs API
+treeherder-cli --similar-history 543981186 --similar-count 100 --repo autoland --json
 ```
 
-## Workflow 3: Filtering by Platform and Tier
+## Workflow 3: Monitoring a Try Push
 
-### Filter by result state
+### Watch with treeherder-cli
+
+```bash
+# Watch for updates, get notified on completion
+treeherder-cli abc123 --repo try --watch --notify
+
+# Shorter polling interval
+treeherder-cli abc123 --repo try --watch --watch-interval 60
+```
+
+### Watch with lumberjackth (more granular filtering)
+
+```bash
+# Watch with auto-refresh, filtered by result
+uvx --from lumberjackth lj jobs try -r abc123 --result testfailed --watch -i 60
+```
+
+## Workflow 4: Investigating Intermittent Failures by Bug
+
+Use lumberjackth for bug-based failure queries:
+
+```bash
+# All failures for a bug in last 7 days
+uvx --from lumberjackth lj failures 2012615
+
+# Filter by repository and platform
+uvx --from lumberjackth lj failures 2012615 -t autoland -p "windows.*24h2"
+
+# Filter by build type
+uvx --from lumberjackth lj failures 2012615 -b asan
+
+# Specific date range
+uvx --from lumberjackth lj failures 2012615 -s 2026-01-26 -e 2026-01-28
+
+# JSON output for scripting
+uvx --from lumberjackth lj --json failures 2012615
+```
+
+## Workflow 5: Filtering Jobs by Result, State, and Tier
+
+Use lumberjackth for detailed job filtering:
 
 ```bash
 # Only failed tests
@@ -96,21 +129,27 @@ uvx --from lumberjackth lj jobs autoland --push-id 12345 --result busted
 
 # Running jobs
 uvx --from lumberjackth lj jobs autoland --push-id 12345 --state running
-```
 
-### Filter by tier
-
-```bash
 # Tier 1 jobs only (sheriff-managed, require backout on failure)
 uvx --from lumberjackth lj jobs autoland --push-id 12345 --tier 1
 
-# Tier 2 jobs (shown by default, bugs filed but no auto-backout)
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --tier 2
+# Combine filters
+uvx --from lumberjackth lj jobs autoland --push-id 12345 --result testfailed --tier 1 -p "linux.*64"
 ```
 
-## Workflow 4: Performance Alerts
+## Workflow 6: Downloading Artifacts
 
-### Check for recent performance regressions
+```bash
+# Download all artifacts for a revision
+treeherder-cli a13b9fc22101 --download-artifacts
+
+# Filter to specific artifact types
+treeherder-cli a13b9fc22101 --download-artifacts --artifact-pattern "screenshot|errorsummary"
+```
+
+## Workflow 7: Performance Alerts
+
+Use lumberjackth for performance alert monitoring:
 
 ```bash
 # Recent alerts
@@ -121,33 +160,41 @@ uvx --from lumberjackth lj perf-alerts -r autoland -n 10
 
 # Filter by framework (1=talos, 10=raptor, 13=browsertime)
 uvx --from lumberjackth lj perf-alerts -f 1 -n 10
-```
 
-### List performance frameworks
-
-```bash
+# List performance frameworks
 uvx --from lumberjackth lj perf-frameworks
 ```
 
-Common frameworks:
-- 1: talos
-- 4: awsy (memory)
-- 10: raptor
-- 13: browsertime
-
-## Workflow 5: JSON Output for Scripting
-
-All commands support `--json` for machine-readable output:
+Use treeherder-cli for per-job performance data:
 
 ```bash
-# Get pushes as JSON
+# Get performance/resource metrics for a revision
+treeherder-cli a13b9fc22101 --perf --json
+```
+
+## Workflow 8: Log Caching for Repeated Analysis
+
+```bash
+# Fetch and cache logs
+treeherder-cli a13b9fc22101 --fetch-logs --cache-dir ./logs
+
+# Re-analyze cached logs with different patterns (no re-download)
+treeherder-cli --use-cache --cache-dir ./logs --pattern "ASSERTION" --json
+treeherder-cli --use-cache --cache-dir ./logs --pattern "timeout" --json
+```
+
+## Workflow 9: JSON Output for Scripting
+
+Both tools support JSON output:
+
+```bash
+# treeherder-cli always outputs JSON with --json
+treeherder-cli a13b9fc22101 --json
+treeherder-cli a13b9fc22101 --group-by test --json | jq '.[] | .test_name'
+
+# lumberjackth uses --json global flag
 uvx --from lumberjackth lj --json pushes autoland -n 5
-
-# Get failed jobs as JSON and filter with jq
 uvx --from lumberjackth lj --json jobs autoland --push-id 12345 --result testfailed | jq '.[].job_type_name'
-
-# Get job details as JSON
-uvx --from lumberjackth lj --json job autoland "abc123/0" --logs
 ```
 
 ## Job Tiers Reference
@@ -170,36 +217,10 @@ uvx --from lumberjackth lj --json job autoland "abc123/0" --logs
 | `running` | Currently executing |
 | `pending` | Waiting to run |
 
-## Python API for Advanced Workflows
-
-For workflows not covered by the CLI, use the Python API with PEP 723 inline metadata:
-
-```python
-#!/usr/bin/env -S uv run
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["lumberjackth"]
-# ///
-from lumberjackth import TreeherderClient
-
-client = TreeherderClient()
-
-# Get jobs and filter for unclassified failures
-jobs = client.get_jobs("autoland", push_id=12345, result="testfailed")
-unclassified = [j for j in jobs if j.failure_classification_id == 1]
-
-for job in unclassified:
-    print(f"{job.job_type_name} - {job.platform}")
-    if job.task_id:
-        print(f"  Task: https://firefox-ci-tc.services.mozilla.com/tasks/{job.task_id}")
-```
-
-Save as `script.py` and run with `uv run script.py`.
-
 ## External Resources
 
 - [Treeherder](https://treeherder.mozilla.org/)
+- [treeherder-cli](https://github.com/padenot/treeherder-cli)
 - [Sheriff How-To Guide](https://wiki.mozilla.org/Sheriffing/How_To/Treeherder)
 - [Job Visibility Policy](https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy)
 - [Test Disabling Policy](https://wiki.mozilla.org/EngineeringProductivity/Test_Disabling_Policy)
-- [lumberjackth on PyPI](https://pypi.org/project/lumberjackth/)

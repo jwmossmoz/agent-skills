@@ -1,11 +1,142 @@
-# Lumberjackth CLI Reference
+# Treeherder CLI Reference
 
-Complete command-line reference for the `lumberjackth` CLI tool.
+This skill uses two CLI tools. Use **treeherder-cli** as the primary tool for revision-based failure analysis, and **lumberjackth** for push browsing, failures-by-bug, error suggestions, and perf alerts.
+
+---
+
+# treeherder-cli (Primary)
+
+Rust CLI for fetching and analyzing Firefox CI failures from Treeherder.
 
 ## Installation
 
 ```bash
-# Zero-install execution with uvx
+cargo install --git https://github.com/padenot/treeherder-cli
+```
+
+## Usage
+
+```bash
+treeherder-cli <REVISION> [OPTIONS]
+treeherder-cli --history <TEST_NAME> [OPTIONS]
+treeherder-cli --similar-history <JOB_ID> [OPTIONS]
+treeherder-cli --use-cache [OPTIONS]
+```
+
+## Options
+
+### Core
+
+| Option | Description |
+|--------|-------------|
+| `<REVISION>` | Revision hash to query (positional argument) |
+| `--json` | Output results as JSON |
+| `--repo <REPO>` | Repository to query (default: autoland) |
+
+### Filtering
+
+| Option | Description |
+|--------|-------------|
+| `--filter <PATTERN>` | Filter by job name (regex) |
+| `--platform <PATTERN>` | Filter by platform (regex) |
+| `--group-by <FIELD>` | Group failures (e.g., `test` for cross-platform view) |
+| `--include-intermittent` | Include intermittent test failures in results |
+| `--duration-min <SECONDS>` | Filter to jobs with duration >= N seconds |
+
+### Comparison and History
+
+| Option | Description |
+|--------|-------------|
+| `--compare <REVISION>` | Compare against another revision to find regressions |
+| `--history <TEST_NAME>` | Examine test occurrence patterns across builds |
+| `--history-count <N>` | Number of historical records to retrieve |
+| `--similar-history <JOB_ID>` | Get job history via Treeherder's similar_jobs API |
+| `--similar-count <N>` | Number of similar job results to return |
+
+### Logs and Artifacts
+
+| Option | Description |
+|--------|-------------|
+| `--fetch-logs` | Download log files for matching jobs |
+| `--pattern <REGEX>` | Search pattern within fetched logs |
+| `--download-artifacts` | Download build artifacts |
+| `--artifact-pattern <PATTERN>` | Filter artifacts by name pattern |
+| `--cache-dir <PATH>` | Directory for cached logs |
+| `--use-cache` | Use previously cached log data |
+
+### Monitoring
+
+| Option | Description |
+|--------|-------------|
+| `--watch` | Continuously poll for status updates |
+| `--watch-interval <SECONDS>` | Polling frequency (default: 300s / 5 minutes) |
+| `--notify` | Trigger notification on state changes |
+
+### Performance
+
+| Option | Description |
+|--------|-------------|
+| `--perf` | Retrieve performance and resource metrics |
+
+## Examples
+
+```bash
+# Basic: get failed jobs for a revision
+treeherder-cli a13b9fc22101 --json
+
+# Filter by job name or platform
+treeherder-cli a13b9fc22101 --filter "mochitest" --json
+treeherder-cli a13b9fc22101 --platform "linux.*64" --json
+
+# Group failures by test name (cross-platform view)
+treeherder-cli a13b9fc22101 --group-by test --json
+
+# Compare revisions to find regressions
+treeherder-cli a13b9fc22101 --compare b2c3d4e5f678 --json
+
+# Check test history for intermittent detection
+treeherder-cli --history "test_audio_playback" --history-count 10 --repo try --json
+
+# Include intermittent failures
+treeherder-cli a13b9fc22101 --include-intermittent --json
+
+# Filter long-running jobs (>1 hour)
+treeherder-cli a13b9fc22101 --duration-min 3600 --json
+
+# Fetch logs with pattern matching
+treeherder-cli a13b9fc22101 --fetch-logs --pattern "ASSERTION|CRASH" --json
+
+# Download artifacts
+treeherder-cli a13b9fc22101 --download-artifacts --artifact-pattern "screenshot|errorsummary"
+
+# Get performance/resource data
+treeherder-cli a13b9fc22101 --perf --json
+
+# Watch mode with notification
+treeherder-cli a13b9fc22101 --watch --notify
+treeherder-cli a13b9fc22101 --watch --watch-interval 60
+
+# Cache logs for repeated queries
+treeherder-cli a13b9fc22101 --fetch-logs --cache-dir ./logs
+treeherder-cli --use-cache --cache-dir ./logs --pattern "ERROR" --json
+
+# Switch repository
+treeherder-cli a13b9fc22101 --repo try --json
+
+# Efficient job history via similar_jobs API
+treeherder-cli --similar-history 543981186 --similar-count 100 --repo autoland --json
+```
+
+---
+
+# Lumberjackth CLI (Secondary)
+
+Python CLI for broader Treeherder API access. Use for features treeherder-cli doesn't cover: push listing, failures-by-bug, error suggestions, perf alerts, and result/state/tier filtering.
+
+## Installation
+
+```bash
+# Zero-install execution with uvx (preferred)
 uvx --from lumberjackth lj <command>
 
 # Or install globally
@@ -58,29 +189,23 @@ lj pushes autoland -a user@mozilla.com  # Filter by author
 
 ## jobs
 
-List jobs for a project with powerful filtering.
+List jobs for a project with filtering.
 
 ```bash
 lj jobs autoland --push-id 12345           # Jobs for a push
 lj jobs try -r abc123                      # Jobs for a revision
-lj jobs try --guid "abc123/0"              # Filter by GUID
 lj jobs autoland --result testfailed       # Failed jobs only
 lj jobs autoland --state running           # Running jobs
 lj jobs autoland --tier 1                  # Tier 1 jobs only
 lj jobs autoland -p "linux.*64"            # Filter by platform regex
 lj jobs autoland -f "mochitest"            # Filter by job name regex
 lj jobs autoland --duration-min 60         # Jobs running 60+ seconds
-lj jobs autoland -n 50                     # Limit to 50 jobs
-
-# Watch mode - auto-refresh job status
-lj jobs try --push-id 12345 --watch        # Watch jobs, refresh every 30s
-lj jobs try -r abc123 -w -i 60             # Watch with 60s refresh interval
-lj jobs autoland --push-id 12345 --result testfailed --watch  # Watch failures
+lj jobs try --push-id 12345 --watch        # Watch mode
 ```
 
 **Options:**
 - `--push-id` - Filter by push ID
-- `-r, --revision` - Filter by revision (alternative to --push-id)
+- `-r, --revision` - Filter by revision
 - `--guid` - Filter by job GUID
 - `--result` - Filter by result (success, testfailed, busted, etc.)
 - `--state` - Filter by state (pending, running, completed)
@@ -119,7 +244,6 @@ lj log autoland 545896732 --tail 100       # Last 100 lines
 lj log autoland 545896732 --head 50        # First 50 lines
 lj log autoland 545896732 -p "ERROR|FAIL"  # Search with regex
 lj log autoland 545896732 -p "assertion" -c 5  # With context lines
-lj --json log autoland 545896732 -p "TEST-UNEXPECTED"  # JSON output
 ```
 
 **Options:**
@@ -141,8 +265,6 @@ lj failures 2012615 -t autoland            # Filter by repository
 lj failures 2012615 -p "windows.*24h2"     # Filter by platform regex
 lj failures 2012615 -b asan                # Filter by build type
 lj failures 2012615 -s 2026-01-26 -e 2026-01-28  # Date range
-lj failures 2012615 -n 10                  # Limit results
-lj --json failures 2012615                 # JSON output
 ```
 
 **Options:**
@@ -193,7 +315,7 @@ lj perf-alerts -n 20                       # Limit results
 List performance testing frameworks.
 
 ```bash
-lj perf-frameworks                         # List all frameworks
+lj perf-frameworks
 ```
 
 Common frameworks:
@@ -201,39 +323,6 @@ Common frameworks:
 - raptor (10)
 - browsertime (13)
 - awsy (4)
-
----
-
-## Python API
-
-For programmatic access:
-
-```python
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["lumberjackth"]
-# ///
-from lumberjackth import TreeherderClient
-
-client = TreeherderClient()
-
-# Get pushes
-pushes = client.get_pushes("mozilla-central", count=10)
-
-# Get jobs for a push
-jobs = client.get_jobs("mozilla-central", push_id=pushes[0].id)
-
-# Fetch job logs
-log_content = client.get_job_log("autoland", job_id=12345)
-matches = client.search_job_log("autoland", job_id=12345, pattern="ERROR")
-
-# Query failures by bug
-failures = client.get_failures_by_bug(2012615, tree="autoland")
-
-# Async support
-async with TreeherderClient() as client:
-    repos = await client.get_repositories_async()
-```
 
 ---
 
