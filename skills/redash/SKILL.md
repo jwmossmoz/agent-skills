@@ -3,7 +3,8 @@ name: redash
 description: >
   Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data from BigQuery.
   Use when querying Firefox user telemetry, Windows build distribution, or running
-  custom SQL against Mozilla's data warehouse.
+  custom SQL against Mozilla's data warehouse. Triggers on "redash", "telemetry query",
+  "sql.telemetry", "BigQuery query", "Firefox data", "client counts", "user population".
 ---
 
 # Redash Query Tool
