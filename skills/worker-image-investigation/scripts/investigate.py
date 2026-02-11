@@ -31,8 +31,8 @@ def extract_task_id(task_id_or_url: str) -> str:
     return task_id_or_url
 
 
-def run_tc_cmd(args: list[str], root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) -> dict | str | None:
-    """Run taskcluster CLI command and return parsed JSON or raw output."""
+def run_tc_cmd(args: list[str], root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) -> dict | None:
+    """Run taskcluster CLI command and return parsed JSON."""
     env = os.environ.copy()
     env["TASKCLUSTER_ROOT_URL"] = root_url
 
@@ -46,15 +46,17 @@ def run_tc_cmd(args: list[str], root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) ->
         try:
             return json.loads(result.stdout)
         except json.JSONDecodeError:
-            return result.stdout.strip()
+            print("Error: taskcluster command returned non-JSON output", file=sys.stderr)
+            print(result.stdout.strip(), file=sys.stderr)
+            return None
     except FileNotFoundError:
         print("Error: taskcluster CLI not found. Install with: brew install taskcluster", file=sys.stderr)
         return None
 
 
-def run_az_cmd(args: list[str]) -> dict | str | None:
-    """Run Azure CLI command and return parsed JSON or raw output."""
-    cmd = ["az"] + args
+def run_az_cmd(args: list[str]) -> dict | None:
+    """Run Azure CLI command and return parsed JSON."""
+    cmd = ["az"] + args + ["--output", "json"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if result.returncode != 0:
@@ -64,7 +66,9 @@ def run_az_cmd(args: list[str]) -> dict | str | None:
         try:
             return json.loads(result.stdout)
         except json.JSONDecodeError:
-            return result.stdout.strip()
+            print("Error: az command returned non-JSON output", file=sys.stderr)
+            print(result.stdout.strip(), file=sys.stderr)
+            return None
     except FileNotFoundError:
         print("Error: az CLI not found. Install Azure CLI first.", file=sys.stderr)
         return None
@@ -131,7 +135,7 @@ def get_worker_sbom(worker_pool: str, root_url: str = DEFAULT_TASKCLUSTER_ROOT_U
         root_url,
     )
 
-    if not pool_config:
+    if not pool_config or not isinstance(pool_config, dict):
         return None
 
     # Extract image information from pool config
@@ -183,7 +187,7 @@ def find_running_workers(worker_pool: str, root_url: str = DEFAULT_TASKCLUSTER_R
         root_url,
     )
 
-    if not workers:
+    if not workers or not isinstance(workers, dict):
         return []
 
     running = []
@@ -214,32 +218,70 @@ def run_vm_command(vm_name: str, resource_group: str, command: str) -> str | Non
     # Extract output from Azure response
     if isinstance(result, dict):
         values = result.get("value", [])
-        if values:
-            return values[0].get("message", "")
+        if isinstance(values, list) and values:
+            messages = []
+            for value in values:
+                if isinstance(value, dict):
+                    message = value.get("message")
+                    if isinstance(message, str) and message:
+                        messages.append(message)
+            merged_message = "\n".join(messages).strip()
+            if merged_message:
+                # Azure run-command returns a wrapper with [stdout]/[stderr] sections.
+                match = re.search(
+                    r"\[stdout\]\s*(.*?)(?:\r?\n\[stderr\]|\Z)",
+                    merged_message,
+                    flags=re.DOTALL | re.IGNORECASE,
+                )
+                if match:
+                    return match.group(1).strip()
+                return merged_message
 
     return str(result)
 
 
 def get_vm_info(vm_name: str, resource_group: str) -> dict | None:
     """Get Windows build and GenericWorker version from a VM."""
+    # Validate VM exists first so we fail once instead of repeating the same error.
+    vm_check = run_az_cmd(["vm", "show", "--resource-group", resource_group, "--name", vm_name])
+    if not vm_check:
+        return None
+
     # Get Windows version
     win_version_cmd = "(Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion').CurrentBuild"
     win_version = run_vm_command(vm_name, resource_group, win_version_cmd)
 
     # Get GenericWorker version
-    gw_version_cmd = "Get-Content C:\\generic-worker\\generic-worker-info.json | ConvertFrom-Json | Select-Object -ExpandProperty version"
+    gw_version_cmd = (
+        "if (Test-Path 'C:\\generic-worker\\generic-worker-info.json') { "
+        "(Get-Content C:\\generic-worker\\generic-worker-info.json | ConvertFrom-Json).version "
+        "} else { 'not-found' }"
+    )
     gw_version = run_vm_command(vm_name, resource_group, gw_version_cmd)
 
     # Get installed hotfixes
-    hotfix_cmd = "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 5 HotFixID, InstalledOn | ConvertTo-Json"
+    hotfix_cmd = (
+        "Get-HotFix | Sort-Object InstalledOn -Descending | "
+        "Select-Object -First 5 HotFixID, InstalledOn | ConvertTo-Json -Depth 3"
+    )
     hotfixes = run_vm_command(vm_name, resource_group, hotfix_cmd)
+
+    parsed_hotfixes: list[dict] | dict | str | None = None
+    if hotfixes:
+        try:
+            parsed_hotfixes = json.loads(hotfixes)
+        except json.JSONDecodeError:
+            parsed_hotfixes = hotfixes.strip()
+
+    if not win_version and not gw_version and not hotfixes:
+        return None
 
     return {
         "vmName": vm_name,
         "resourceGroup": resource_group,
         "windowsBuild": win_version.strip() if win_version else None,
         "genericWorkerVersion": gw_version.strip() if gw_version else None,
-        "recentHotfixes": hotfixes,
+        "recentHotfixes": parsed_hotfixes,
     }
 
 
@@ -259,6 +301,13 @@ def cmd_investigate(task_id: str, root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) 
     # Get worker pool SBOM
     sbom = get_worker_sbom(worker_info["workerPool"], root_url)
 
+    status = task_info.get("status", {})
+    status_state = None
+    if isinstance(status, dict):
+        nested_status = status.get("status", {})
+        if isinstance(nested_status, dict):
+            status_state = nested_status.get("state")
+
     result = {
         "taskId": task_id,
         "taskLabel": worker_info["taskLabel"],
@@ -267,7 +316,7 @@ def cmd_investigate(task_id: str, root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) 
         "workerGroup": worker_info["workerGroup"],
         "imageVersion": sbom.get("imageVersion") if sbom else None,
         "sbomUrl": sbom.get("sbomUrl") if sbom else None,
-        "status": task_info["status"].get("status", {}).get("state"),
+        "status": status_state,
     }
 
     print(json.dumps(result, indent=2))
@@ -291,6 +340,19 @@ def cmd_compare(task_id1: str, task_id2: str, root_url: str = DEFAULT_TASKCLUSTE
     sbom1 = get_worker_sbom(worker1["workerPool"], root_url)
     sbom2 = get_worker_sbom(worker2["workerPool"], root_url)
 
+    task1_status = task1.get("status", {}) if isinstance(task1, dict) else {}
+    task2_status = task2.get("status", {}) if isinstance(task2, dict) else {}
+    task1_state = None
+    task2_state = None
+    if isinstance(task1_status, dict):
+        s1 = task1_status.get("status", {})
+        if isinstance(s1, dict):
+            task1_state = s1.get("state")
+    if isinstance(task2_status, dict):
+        s2 = task2_status.get("status", {})
+        if isinstance(s2, dict):
+            task2_state = s2.get("state")
+
     result = {
         "task1": {
             "taskId": extract_task_id(task_id1),
@@ -298,7 +360,7 @@ def cmd_compare(task_id1: str, task_id2: str, root_url: str = DEFAULT_TASKCLUSTE
             "workerPool": worker1["workerPool"],
             "imageVersion": sbom1.get("imageVersion") if sbom1 else None,
             "sbomUrl": sbom1.get("sbomUrl") if sbom1 else None,
-            "status": task1["status"].get("status", {}).get("state"),
+            "status": task1_state,
         },
         "task2": {
             "taskId": extract_task_id(task_id2),
@@ -306,7 +368,7 @@ def cmd_compare(task_id1: str, task_id2: str, root_url: str = DEFAULT_TASKCLUSTE
             "workerPool": worker2["workerPool"],
             "imageVersion": sbom2.get("imageVersion") if sbom2 else None,
             "sbomUrl": sbom2.get("sbomUrl") if sbom2 else None,
-            "status": task2["status"].get("status", {}).get("state"),
+            "status": task2_state,
         },
     }
 

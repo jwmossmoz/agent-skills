@@ -12,55 +12,62 @@ description: >
 
 Interact with Mozilla Taskcluster CI using the official `taskcluster` CLI.
 
+Use this local skills checkout path for commands in this file:
+
+```bash
+SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
+TC="$SKILLS_ROOT/taskcluster/scripts/tc.py"
+```
+
 ## Usage
 
 ```bash
 # Query task status
-uv run ~/.claude/skills/taskcluster/scripts/tc.py status <TASK_ID>
+uv run "$TC" status <TASK_ID>
 
 # Get task logs
-uv run ~/.claude/skills/taskcluster/scripts/tc.py log <TASK_ID>
+uv run "$TC" log <TASK_ID>
 
 # List task artifacts
-uv run ~/.claude/skills/taskcluster/scripts/tc.py artifacts <TASK_ID>
+uv run "$TC" artifacts <TASK_ID>
 
 # Get full task definition
-uv run ~/.claude/skills/taskcluster/scripts/tc.py definition <TASK_ID>
+uv run "$TC" definition <TASK_ID>
 
 # Retrigger a task (uses in-tree action API for proper dependency handling)
-uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger <TASK_ID>
+uv run "$TC" retrigger <TASK_ID>
 
 # Rerun a task (same task ID)
-uv run ~/.claude/skills/taskcluster/scripts/tc.py rerun <TASK_ID>
+uv run "$TC" rerun <TASK_ID>
 
 # Cancel a task
-uv run ~/.claude/skills/taskcluster/scripts/tc.py cancel <TASK_ID>
+uv run "$TC" cancel <TASK_ID>
 
 # List tasks in a group
-uv run ~/.claude/skills/taskcluster/scripts/tc.py group-list <TASK_GROUP_ID>
+uv run "$TC" group-list <TASK_GROUP_ID>
 
 # Get task group status
-uv run ~/.claude/skills/taskcluster/scripts/tc.py group-status <TASK_GROUP_ID>
+uv run "$TC" group-status <TASK_GROUP_ID>
 
 # Extract task ID from Taskcluster URL
-uv run ~/.claude/skills/taskcluster/scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+uv run "$TC" status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
 
 # --- In-Tree Actions (require authentication) ---
 
 # List available actions for a task
-uv run ~/.claude/skills/taskcluster/scripts/tc.py action-list <TASK_ID>
+uv run "$TC" action-list <TASK_ID>
 
 # Confirm failures - re-run failing tests to determine if intermittent
-uv run ~/.claude/skills/taskcluster/scripts/tc.py confirm-failures <TASK_ID>
+uv run "$TC" confirm-failures <TASK_ID>
 
 # Backfill - run test on previous pushes to find regression range
-uv run ~/.claude/skills/taskcluster/scripts/tc.py backfill <TASK_ID>
+uv run "$TC" backfill <TASK_ID>
 
 # Retrigger multiple times (default 5)
-uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger-multiple <TASK_ID> --times 10
+uv run "$TC" retrigger-multiple <TASK_ID> --times 10
 
 # Trigger any action by name
-uv run ~/.claude/skills/taskcluster/scripts/tc.py action <TASK_ID> <ACTION_NAME> --input '{"key": "value"}'
+uv run "$TC" action <TASK_ID> <ACTION_NAME> --input '{"key": "value"}'
 ```
 
 ## Prerequisites
@@ -113,10 +120,10 @@ Edit the `config.toml` to specify your 1Password item and vault.
 
 ### Debugging Task Failures
 
-1. **Check task status**: `uv run ~/.claude/skills/taskcluster/scripts/tc.py status <TASK_ID>`
-2. **View logs**: `uv run ~/.claude/skills/taskcluster/scripts/tc.py log <TASK_ID>`
-3. **Inspect full definition**: `uv run ~/.claude/skills/taskcluster/scripts/tc.py definition <TASK_ID>`
-4. **Check all tasks in group**: `uv run ~/.claude/skills/taskcluster/scripts/tc.py group-list <GROUP_ID>`
+1. **Check task status**: `uv run "$TC" status <TASK_ID>`
+2. **View logs**: `uv run "$TC" log <TASK_ID>`
+3. **Inspect full definition**: `uv run "$TC" definition <TASK_ID>`
+4. **Check all tasks in group**: `uv run "$TC" group-list <GROUP_ID>`
 
 ### Working with Treeherder Tasks
 
@@ -133,10 +140,10 @@ https://treeherder.mozilla.org/jobs?repo=try&revision=ed901414ea5ec1e188547898b3
 ```bash
 # Retrigger uses the in-tree action API for proper task graph handling
 # This preserves dependencies and works correctly for Firefox CI tasks
-uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger <TASK_ID>
+uv run "$TC" retrigger <TASK_ID>
 
 # Rerun attempts to rerun the same task (same task ID)
-uv run ~/.claude/skills/taskcluster/scripts/tc.py rerun <TASK_ID>
+uv run "$TC" rerun <TASK_ID>
 ```
 
 Note: The `retrigger` command uses the in-tree action API rather than the raw
@@ -152,20 +159,20 @@ These are the API equivalent of actions available in Treeherder's "Custom Action
 
 ```bash
 # List available actions for a failed task
-uv run ~/.claude/skills/taskcluster/scripts/tc.py action-list <TASK_ID>
+uv run "$TC" action-list <TASK_ID>
 
 # Confirm failures - re-runs failing tests to determine if intermittent or regression
 # This is what Treeherder does when you: Select task > "..." > Custom Action > confirm-failures
-uv run ~/.claude/skills/taskcluster/scripts/tc.py confirm-failures <TASK_ID>
+uv run "$TC" confirm-failures <TASK_ID>
 
 # Backfill - runs the test on previous pushes to find when a regression started
-uv run ~/.claude/skills/taskcluster/scripts/tc.py backfill <TASK_ID>
+uv run "$TC" backfill <TASK_ID>
 
 # Retrigger multiple times - useful for stress-testing intermittent failures
-uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger-multiple <TASK_ID> --times 10
+uv run "$TC" retrigger-multiple <TASK_ID> --times 10
 
 # Trigger any action by name with custom input
-uv run ~/.claude/skills/taskcluster/scripts/tc.py action <TASK_ID> retrigger-custom --input '{"path": "test.js"}'
+uv run "$TC" action <TASK_ID> retrigger-custom --input '{"path": "test.js"}'
 ```
 
 **Common use case**: Investigating image rollout failures
@@ -175,10 +182,10 @@ uv run ~/.claude/skills/taskcluster/scripts/tc.py action <TASK_ID> retrigger-cus
 uvx --from lumberjackth lj failures 2012615 -t autoland -p windows11-64-24h2 -n 5
 
 # 2. Confirm if failures are intermittent or real regressions
-uv run ~/.claude/skills/taskcluster/scripts/tc.py confirm-failures <TASK_ID>
+uv run "$TC" confirm-failures <TASK_ID>
 
 # 3. If regression, backfill to find the culprit push
-uv run ~/.claude/skills/taskcluster/scripts/tc.py backfill <TASK_ID>
+uv run "$TC" backfill <TASK_ID>
 ```
 
 ## URL Support
@@ -187,8 +194,8 @@ The skill automatically extracts task IDs from Taskcluster URLs:
 
 ```bash
 # Both of these work identically:
-uv run ~/.claude/skills/taskcluster/scripts/tc.py status fuCPrKG2T62-4YH1tWYa7Q
-uv run ~/.claude/skills/taskcluster/scripts/tc.py status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+uv run "$TC" status fuCPrKG2T62-4YH1tWYa7Q
+uv run "$TC" status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
 ```
 
 Supported URL formats:
@@ -198,14 +205,14 @@ Supported URL formats:
 
 ## Output Formats
 
-All commands return JSON output that can be piped to `jq` for processing:
+All commands except `log` return JSON output that can be piped to `jq`:
 
 ```bash
 # Get only failed tasks from a group
-uv run ~/.claude/skills/taskcluster/scripts/tc.py group-list <GROUP_ID> | jq '.tasks[] | select(.status.state == "failed")'
+uv run "$TC" group-list <GROUP_ID> | jq '.tasks[] | select(.status.state == "failed")'
 
 # List artifact names
-uv run ~/.claude/skills/taskcluster/scripts/tc.py artifacts <TASK_ID> | jq '.artifacts[].name'
+uv run "$TC" artifacts <TASK_ID> | jq '.artifacts[].name'
 ```
 
 ## Related Skills

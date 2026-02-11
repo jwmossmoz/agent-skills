@@ -133,11 +133,10 @@ def cmd_get(args) -> None:
     bug_ids = args.bug_ids
 
     params = {}
-    if args.include_comments:
-        # Comments are fetched separately
-        pass
     if args.include_history:
         params["include_fields"] = "_all"
+
+    json_results = []
 
     for bug_id in bug_ids:
         result = make_request("GET", f"bug/{bug_id}", params=params, api_key=api_key)
@@ -148,21 +147,41 @@ def cmd_get(args) -> None:
             continue
 
         bug = bugs[0]
-        print_bug(bug, verbose=args.verbose)
+        comments = []
+        history = []
 
         if args.include_comments:
             comments_result = make_request(
                 "GET", f"bug/{bug_id}/comment", api_key=api_key
             )
             comments = comments_result.get("bugs", {}).get(str(bug_id), {}).get("comments", [])
+
+        if args.include_history:
+            history_result = make_request(
+                "GET", f"bug/{bug_id}/history", api_key=api_key
+            )
+            history = history_result.get("bugs", [{}])[0].get("history", [])
+
+        if args.format == "json":
+            entry = {"bug": bug}
+            if args.include_comments:
+                entry["comments"] = comments
+            if args.include_history:
+                entry["history"] = history
+            json_results.append(entry)
+            continue
+
+        print_bug(bug, verbose=args.verbose)
+
+        if args.include_comments:
             if comments:
                 print(f"\n  Comments ({len(comments)}):")
                 for i, comment in enumerate(comments):
                     author = comment.get("creator", "Unknown")
                     time = comment.get("creation_time", "")
                     full_text = comment.get("text", "")
-                    if args.verbose:
-                        # Show full comment in verbose mode
+                    if args.verbose or args.full_comments:
+                        # Show full comment in verbose/full-comments mode
                         print(f"    [{i}] {author} ({time}):")
                         for line in full_text.split("\n"):
                             print(f"        {line}")
@@ -176,10 +195,6 @@ def cmd_get(args) -> None:
                             print(f"        {line}")
 
         if args.include_history:
-            history_result = make_request(
-                "GET", f"bug/{bug_id}/history", api_key=api_key
-            )
-            history = history_result.get("bugs", [{}])[0].get("history", [])
             if history:
                 print(f"\n  History ({len(history)} changes):")
                 for change in history[-5:]:  # Last 5 changes
@@ -191,6 +206,12 @@ def cmd_get(args) -> None:
                         print(f"      {c.get('field_name')}: {c.get('removed', '')} -> {c.get('added', '')}")
 
         print()
+
+    if args.format == "json":
+        if len(json_results) == 1:
+            print(json.dumps(json_results[0], indent=2))
+        else:
+            print(json.dumps(json_results, indent=2))
 
 
 def print_bug(bug: dict, verbose: bool = False) -> None:
@@ -618,6 +639,8 @@ def main():
     get_parser.add_argument("-c", "--include-comments", action="store_true", help="Include comments")
     get_parser.add_argument("-H", "--include-history", action="store_true", help="Include history")
     get_parser.add_argument("-v", "--verbose", action="store_true", help="Show all fields")
+    get_parser.add_argument("--full-comments", action="store_true", help="Show full comment text in text mode")
+    get_parser.add_argument("-f", "--format", choices=["text", "json"], default="text", help="Output format")
 
     # search
     search_parser = subparsers.add_parser("search", help="Search for bugs")

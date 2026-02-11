@@ -9,13 +9,20 @@ Requires: `export BUGZILLA_API_KEY="your-key"` (get from https://bugzilla.mozill
 
 Read-only ops work without auth.
 
+Use this local skills checkout path for commands in this file:
+
+```bash
+SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
+BZ="$SKILLS_ROOT/bugzilla/scripts/bz.py"
+```
+
 ## Usage
 
 ```bash
-uv run ~/.claude/skills/bugzilla/scripts/bz.py <command> [options]
+uv run "$BZ" <command> [options]
 ```
 
-Run `uv run ~/.claude/skills/bugzilla/scripts/bz.py --help` for full options.
+Run `uv run "$BZ" --help` for full options.
 
 ## Commands
 
@@ -35,18 +42,20 @@ Run `uv run ~/.claude/skills/bugzilla/scripts/bz.py --help` for full options.
 
 ```bash
 # Search
-uv run ~/.claude/skills/bugzilla/scripts/bz.py search --quicksearch "crash" --limit 10
-uv run ~/.claude/skills/bugzilla/scripts/bz.py search --product Firefox --status NEW,ASSIGNED --priority P1
+uv run "$BZ" search --quicksearch "crash" --limit 10
+uv run "$BZ" search --product Firefox --status NEW,ASSIGNED --priority P1
 
 # View
-uv run ~/.claude/skills/bugzilla/scripts/bz.py get 1234567 -v --include-comments
+uv run "$BZ" get 1234567 -v --include-comments
+uv run "$BZ" get 1234567 --include-comments --full-comments
+uv run "$BZ" get 1234567 --include-comments --include-history --format json
 
 # Update
-uv run ~/.claude/skills/bugzilla/scripts/bz.py update 1234567 --status RESOLVED --resolution FIXED
-uv run ~/.claude/skills/bugzilla/scripts/bz.py needinfo 1234567 --request user@mozilla.com
+uv run "$BZ" update 1234567 --status RESOLVED --resolution FIXED
+uv run "$BZ" needinfo 1234567 --request user@mozilla.com
 
 # Create
-uv run ~/.claude/skills/bugzilla/scripts/bz.py create --product Firefox --component General --summary "Title" --version unspecified
+uv run "$BZ" create --product Firefox --component General --summary "Title" --version unspecified
 ```
 
 ## References

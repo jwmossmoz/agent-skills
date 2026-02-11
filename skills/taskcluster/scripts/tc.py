@@ -18,8 +18,6 @@ import re
 import subprocess
 import sys
 import tempfile
-import urllib.request
-from pathlib import Path
 from typing import Any, Optional
 
 # Default Taskcluster root URL for Firefox CI
@@ -45,16 +43,18 @@ def extract_task_id(task_id_or_url: str) -> str:
     return task_id_or_url
 
 
-def run_taskcluster_cmd(args: list[str], json_output: bool = True) -> int:
+def run_taskcluster_cmd(
+    args: list[str], expect_json: bool = True
+) -> tuple[int, dict[str, Any] | list[Any] | str | None]:
     """
-    Execute a taskcluster CLI command and return the exit code.
+    Execute a taskcluster CLI command and return parsed output.
 
     Args:
-        args: Command arguments to pass to taskcluster CLI
-        json_output: Whether to expect JSON output (for pretty printing)
+        args: Command arguments to pass to taskcluster CLI.
+        expect_json: Whether command output must be valid JSON.
 
     Returns:
-        Exit code from the taskcluster command
+        Tuple of (exit_code, parsed_output).
     """
     cmd = ["taskcluster"] + args
 
@@ -67,42 +67,102 @@ def run_taskcluster_cmd(args: list[str], json_output: bool = True) -> int:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
 
         if result.returncode != 0:
-            print(result.stderr, file=sys.stderr)
-            return result.returncode
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
+            return result.returncode, None
 
-        # Pretty print JSON output
-        if json_output and result.stdout.strip():
+        if expect_json:
+            if not result.stdout.strip():
+                print("Error: Command returned empty output; expected JSON", file=sys.stderr)
+                return 1, None
             try:
-                data = json.loads(result.stdout)
-                print(json.dumps(data, indent=2))
+                return 0, json.loads(result.stdout)
             except json.JSONDecodeError:
-                # Not JSON, print as-is
-                print(result.stdout)
-        else:
-            print(result.stdout, end='')
+                print("Error: Command returned non-JSON output; expected JSON", file=sys.stderr)
+                print(result.stdout.strip(), file=sys.stderr)
+                return 1, None
 
-        return 0
+        return 0, result.stdout
 
     except FileNotFoundError:
         print("Error: taskcluster CLI not found. Install with: brew install taskcluster", file=sys.stderr)
-        return 127
+        return 127, None
     except Exception as e:
         print(f"Error running taskcluster command: {e}", file=sys.stderr)
-        return 1
+        return 1, None
+
+
+def run_and_print_json(args: list[str]) -> int:
+    """Run a command that must return JSON and print pretty output."""
+    code, data = run_taskcluster_cmd(args, expect_json=True)
+    if code != 0:
+        return code
+    print(json.dumps(data, indent=2))
+    return 0
+
+
+def run_and_print_text(args: list[str]) -> int:
+    """Run a command and print text output as-is."""
+    code, output = run_taskcluster_cmd(args, expect_json=False)
+    if code != 0:
+        return code
+    if isinstance(output, str):
+        print(output, end="")
+    return 0
+
+
+def fetch_paginated_queue(
+    method: str,
+    method_args: list[str],
+    items_key: str,
+) -> tuple[int, dict[str, Any] | None]:
+    """
+    Fetch all pages for queue endpoints that return continuationToken.
+
+    Returns a merged response where `items_key` contains all items.
+    """
+    continuation: Optional[str] = None
+    merged_items: list[Any] = []
+    last_page: Optional[dict[str, Any]] = None
+
+    while True:
+        args = ["api", "queue", method, *method_args]
+        if continuation:
+            args.extend(["--continuationToken", continuation])
+
+        code, data = run_taskcluster_cmd(args, expect_json=True)
+        if code != 0:
+            return code, None
+        if not isinstance(data, dict):
+            print(f"Error: Unexpected response type from queue {method}", file=sys.stderr)
+            return 1, None
+
+        page_items = data.get(items_key, [])
+        if not isinstance(page_items, list):
+            print(f"Error: Expected '{items_key}' to be a list in queue {method} response", file=sys.stderr)
+            return 1, None
+        merged_items.extend(page_items)
+
+        continuation = data.get("continuationToken")
+        last_page = data
+        if not continuation:
+            break
+
+    if last_page is None:
+        return 1, None
+
+    merged = {k: v for k, v in last_page.items() if k not in {items_key, "continuationToken"}}
+    merged[items_key] = merged_items
+    return 0, merged
 
 
 def get_task_definition(task_id: str) -> Optional[dict[str, Any]]:
     """Get task definition as JSON."""
     task_id = extract_task_id(task_id)
-    env = os.environ.copy()
-    if "TASKCLUSTER_ROOT_URL" not in env:
-        env["TASKCLUSTER_ROOT_URL"] = DEFAULT_TASKCLUSTER_ROOT_URL
-
-    cmd = ["taskcluster", "task", "def", task_id]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
-    if result.returncode != 0:
+    code, data = run_taskcluster_cmd(["api", "queue", "task", task_id], expect_json=True)
+    if code != 0 or not isinstance(data, dict):
         return None
-    return json.loads(result.stdout)
+    return data
 
 
 def get_actions_json(task_group_id: str) -> Optional[dict[str, Any]]:
@@ -256,7 +316,9 @@ def trigger_action(
                     root_url = env.get("TASKCLUSTER_ROOT_URL", DEFAULT_TASKCLUSTER_ROOT_URL).rstrip("/")
                     print(f"# URL: {root_url}/tasks/{new_task_id}", file=sys.stderr)
             except json.JSONDecodeError:
-                print(result.stdout)
+                print("Error: Hook response was not valid JSON", file=sys.stderr)
+                print(result.stdout.strip(), file=sys.stderr)
+                return 1
 
         return 0
 
@@ -268,7 +330,7 @@ def cmd_status(task_id: str) -> int:
     """Get task status"""
     task_id = extract_task_id(task_id)
     print(f"# Task Status: {task_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["task", "status", task_id])
+    return run_and_print_json(["api", "queue", "status", task_id])
 
 
 def cmd_log(task_id: str, run: Optional[int] = None) -> int:
@@ -280,7 +342,7 @@ def cmd_log(task_id: str, run: Optional[int] = None) -> int:
     if run is not None:
         args.extend(["--run", str(run)])
 
-    return run_taskcluster_cmd(args, json_output=False)
+    return run_and_print_text(args)
 
 
 def cmd_artifacts(task_id: str, run: Optional[int] = None) -> int:
@@ -288,18 +350,21 @@ def cmd_artifacts(task_id: str, run: Optional[int] = None) -> int:
     task_id = extract_task_id(task_id)
     print(f"# Task Artifacts: {task_id}", file=sys.stderr)
 
-    args = ["task", "artifacts", task_id]
     if run is not None:
-        args.extend(["--run", str(run)])
-
-    return run_taskcluster_cmd(args)
+        code, data = fetch_paginated_queue("listArtifacts", [task_id, str(run)], "artifacts")
+    else:
+        code, data = fetch_paginated_queue("listLatestArtifacts", [task_id], "artifacts")
+    if code != 0 or data is None:
+        return code if code != 0 else 1
+    print(json.dumps(data, indent=2))
+    return 0
 
 
 def cmd_definition(task_id: str) -> int:
     """Get full task definition"""
     task_id = extract_task_id(task_id)
     print(f"# Task Definition: {task_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["task", "def", task_id])
+    return run_and_print_json(["api", "queue", "task", task_id])
 
 
 def cmd_retrigger(task_id: str) -> int:
@@ -319,35 +384,67 @@ def cmd_rerun(task_id: str) -> int:
     """Rerun a task (same task ID)"""
     task_id = extract_task_id(task_id)
     print(f"# Rerunning Task: {task_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["task", "rerun", task_id])
+    return run_and_print_json(["api", "queue", "rerunTask", task_id])
 
 
 def cmd_cancel(task_id: str) -> int:
     """Cancel a task"""
     task_id = extract_task_id(task_id)
     print(f"# Cancelling Task: {task_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["task", "cancel", task_id])
+    return run_and_print_json(["api", "queue", "cancelTask", task_id])
 
 
 def cmd_group_list(group_id: str) -> int:
     """List tasks in a group"""
     group_id = extract_task_id(group_id)
     print(f"# Task Group List: {group_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["group", "list", group_id])
+    code, data = fetch_paginated_queue("listTaskGroup", [group_id], "tasks")
+    if code != 0 or data is None:
+        return code if code != 0 else 1
+    print(json.dumps(data, indent=2))
+    return 0
 
 
 def cmd_group_status(group_id: str) -> int:
     """Get task group status"""
     group_id = extract_task_id(group_id)
     print(f"# Task Group Status: {group_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["group", "status", group_id])
+    meta_code, meta = run_taskcluster_cmd(["api", "queue", "getTaskGroup", group_id], expect_json=True)
+    if meta_code != 0 or not isinstance(meta, dict):
+        return meta_code if meta_code != 0 else 1
+
+    list_code, tasks_data = fetch_paginated_queue("listTaskGroup", [group_id], "tasks")
+    if list_code != 0 or tasks_data is None:
+        return list_code if list_code != 0 else 1
+
+    tasks = tasks_data.get("tasks", [])
+    state_counts: dict[str, int] = {}
+    if isinstance(tasks, list):
+        for task in tasks:
+            state = "unknown"
+            if isinstance(task, dict):
+                status = task.get("status", {})
+                if isinstance(status, dict):
+                    state = status.get("state", "unknown")
+            state_counts[state] = state_counts.get(state, 0) + 1
+
+    result = {
+        "taskGroupId": group_id,
+        "taskGroup": meta,
+        "taskSummary": {
+            "totalTasks": len(tasks) if isinstance(tasks, list) else 0,
+            "stateCounts": state_counts,
+        },
+    }
+    print(json.dumps(result, indent=2))
+    return 0
 
 
 def cmd_group_cancel(group_id: str) -> int:
     """Cancel a task group"""
     group_id = extract_task_id(group_id)
     print(f"# Cancelling Task Group: {group_id}", file=sys.stderr)
-    return run_taskcluster_cmd(["group", "cancel", group_id])
+    return run_and_print_json(["api", "queue", "cancelTaskGroup", group_id])
 
 
 # -------------------------------------------------------------------------
