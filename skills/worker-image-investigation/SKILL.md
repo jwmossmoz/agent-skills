@@ -113,6 +113,10 @@ az vm run-command invoke --resource-group RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTI
 | `gecko-t/win11-64-24h2-alpha` | Windows 11 24H2 64-bit alpha (os-integration) |
 | `gecko-t/win11-32-24h2` | Windows 11 24H2 32-bit |
 
+## Azure Resource Groups to Review
+
+- `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION` contains all taskcluster azure windows 10 windows 11 windows server machines.
+
 ## Stage Taskcluster
 
 For CI tasks on fxci-config PRs:
