@@ -51,27 +51,70 @@ uv run "$WII" vm-info <VM_NAME> <RESOURCE_GROUP>
 ### 1. Initial Task Analysis
 
 ```bash
-# Get task info including worker pool and image
+# Get task info including worker pool and image version
 uv run "$WII" investigate <FAILING_TASK_ID>
 ```
 
 Output includes: taskId, taskLabel, workerPool, workerId, imageVersion, status.
 
-### 2. Find Comparison Task
+### 2. Resolve Treeherder Job ID
 
-Use Treeherder to find a passing run of the same test on the same revision or a recent revision:
-- Check if test passed on an older image version
-- Look for passing runs on mozilla-central vs autoland
+`treeherder-cli --similar-history` takes a Treeherder job ID, not a Taskcluster task ID.
+Resolve it from the task ID:
 
-### 3. Compare Tasks
+```bash
+REPO=autoland  # or try, mozilla-central, etc.
+curl -s "https://treeherder.mozilla.org/api/project/${REPO}/jobs/?task_id=<TASK_ID>&count=5" \
+  | jq '.results[0] | {id, job_type_name, result, platform}'
+```
+
+Save the `id` field as `JOB_ID`.
+
+### 3. Check Similar Job History for a Pass/Fail Cliff
+
+Run `--similar-history` with a large count on the branch where failures are observed.
+A sudden flip from passing to all-failing indicates a regression — possibly an image update.
+
+```bash
+treeherder-cli --similar-history <JOB_ID> --similar-count 200 --repo autoland --json \
+  | jq '[.[] | {result, job_type_name, push_timestamp}]'
+```
+
+Look for a timestamp where results flip from `success` to `testfailed`/`busted`.
+Correlate that date against when the image was rolled out.
+
+### 4. Cross-Branch Comparison
+
+If autoland shows all failures, check mozilla-central (which may be on an older image)
+to confirm whether the job type still passes elsewhere:
+
+```bash
+job_type="<job_type_name from step 2>"
+enc=$(jq -nr --arg v "$job_type" '$v|@uri')
+
+for repo in autoland mozilla-central mozilla-beta; do
+  curl -s "https://treeherder.mozilla.org/api/project/${repo}/jobs/?job_type_name=${enc}&result=success&count=50" \
+    | jq -r --arg repo "$repo" '
+        if (.results|length)==0 then "\($repo)\tNO_PASSING_RUNS"
+        else (.results|last) as $r | "\($repo)\t\($r.last_modified)\t\($r.id)"
+        end'
+done
+```
+
+If mozilla-central shows recent passes but autoland does not, the failure is branch/image-specific.
+
+### 5. Compare Tasks to Confirm Image Version Difference
+
+Grab a passing task ID from step 4 (e.g., from a mozilla-central run) and compare:
 
 ```bash
 uv run "$WII" compare <PASSING_TASK_ID> <FAILING_TASK_ID>
 ```
 
-Look for differences in image versions (e.g., 1.0.8 vs 1.0.9).
+Look for differences in `imageVersion` (e.g., 1.0.8 vs 1.0.9).
+A version bump that aligns with the pass/fail cliff confirms the image caused the regression.
 
-### 4. Debug Running Worker (Azure)
+### 6. Debug Running Worker (Azure)
 
 ```bash
 # Find running workers
@@ -81,7 +124,7 @@ uv run "$WII" workers gecko-t/win11-64-24h2
 uv run "$WII" vm-info vm-xyz RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION
 ```
 
-### 5. Direct Azure VM Commands
+### 7. Direct Azure VM Commands
 
 For deeper investigation, use Azure CLI directly:
 
