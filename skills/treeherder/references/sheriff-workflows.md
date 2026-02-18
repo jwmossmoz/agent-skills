@@ -9,6 +9,7 @@ This document describes common sheriff workflows using **treeherder-cli** (prima
 | Get failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
 | Compare revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
 | Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
+| Compare a failed job with similar jobs | treeherder-cli + API | `treeherder-cli --similar-history 543981186 --repo try --json` |
 | Fetch logs with search | treeherder-cli | `treeherder-cli abc123 --fetch-logs --pattern "ERROR"` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
 | List recent pushes | lumberjackth | `lj pushes autoland -n 10` |
@@ -196,6 +197,36 @@ treeherder-cli a13b9fc22101 --group-by test --json | jq '.[] | .test_name'
 uvx --from lumberjackth lj --json pushes autoland -n 5
 uvx --from lumberjackth lj --json jobs autoland --push-id 12345 --result testfailed | jq '.[].job_type_name'
 ```
+
+## Workflow 10: Compare a Failed Try Job with Similar Jobs
+
+Use this when a try failure needs cross-branch context.
+
+### Step 1: Get similar job history on the same repo
+
+```bash
+treeherder-cli --similar-history 549239688 --repo try --similar-count 100 --json
+```
+
+### Step 2: Compare exact job type on other branches
+
+```bash
+job_type="test-windows11-64-24h2/debug-mochitest-browser-chrome-msix-13"
+enc=$(jq -nr --arg v "$job_type" '$v|@uri')
+
+for repo in autoland mozilla-central mozilla-beta; do
+  curl -s "https://treeherder.mozilla.org/api/project/${repo}/jobs/?job_type_name=${enc}&result=success&count=2000" \
+    | jq -r --arg repo "$repo" '
+        if (.results|length)==0 then
+          "\($repo)\tNO_MATCH"
+        else
+          (.results|last) as $last
+          | "\($repo)\t\($last.last_modified)\t\($last.ref_data_name)\t\($last.id)"
+        end'
+done
+```
+
+For full API details and a complete example, see `references/similar-jobs-comparison.md`.
 
 ## Job Tiers Reference
 

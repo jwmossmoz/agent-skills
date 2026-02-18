@@ -147,6 +147,37 @@ Returns parsed error lines from job log:
 ]
 ```
 
+#### Similar Jobs
+```
+GET /api/project/{repo}/jobs/{job_id}/similar_jobs/
+```
+
+Query parameters:
+- `count` - Number of similar jobs to return (default: 50)
+
+Returns jobs with the same `job_type_name` in the specified repo, which is useful for pass/fail history and intermittent analysis:
+```json
+{
+  "meta": {"repository": "try", "count": 50, "offset": 0},
+  "results": [
+    {
+      "id": 549239688,
+      "job_type_name": "test-windows11-64-24h2/debug-mochitest-browser-chrome-msix-13",
+      "platform": "windows11-64-24h2",
+      "result": "testfailed",
+      "state": "completed",
+      "push_id": 1835132,
+      "task_id": "BM40CReDQzaANmxbrbkJHA"
+    }
+  ]
+}
+```
+
+Comparison pattern:
+- Use `similar_jobs` on the original repo to get history for a failed job ID.
+- Extract `job_type_name` from that response.
+- Query `/jobs/` on other repos with `job_type_name` and `result=success` to find matching passes.
+
 #### Job Notes
 ```
 GET /api/project/{repo}/note/

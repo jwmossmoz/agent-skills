@@ -127,6 +127,8 @@ treeherder-cli a13b9fc22101 --repo try --json
 treeherder-cli --similar-history 543981186 --similar-count 100 --repo autoland --json
 ```
 
+For cross-branch comparisons based on the same `job_type_name`, see `references/similar-jobs-comparison.md`.
+
 ---
 
 # Lumberjackth CLI (Secondary)

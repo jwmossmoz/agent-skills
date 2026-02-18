@@ -44,6 +44,9 @@ treeherder-cli a13b9fc22101 --compare b2c3d4e5f678 --json
 # Check test history for intermittent detection
 treeherder-cli --history "test_audio_playback" --history-count 10 --repo try --json
 
+# Show similar job history for a failed job ID
+treeherder-cli --similar-history 543981186 --similar-count 100 --repo try --json
+
 # Fetch logs with pattern matching
 treeherder-cli a13b9fc22101 --fetch-logs --pattern "ASSERTION|CRASH" --json
 
@@ -89,6 +92,7 @@ uvx --from lumberjackth lj --json jobs autoland --push-id 12345
 | Analyze failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
 | Compare two revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
 | Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
+| Compare a failed job to similar jobs | treeherder-cli | `treeherder-cli --similar-history 543981186 --repo try --json` |
 | Fetch/search logs | treeherder-cli | `treeherder-cli abc123 --fetch-logs --pattern "ERROR"` |
 | Download artifacts | treeherder-cli | `treeherder-cli abc123 --download-artifacts` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
@@ -113,6 +117,7 @@ No authentication required for either tool.
 - `references/cli-reference.md` - Complete CLI reference for both tools
 - `references/sheriff-workflows.md` - Sheriff workflow examples
 - `references/api-reference.md` - REST API documentation
+- `references/similar-jobs-comparison.md` - Compare failed jobs using Treeherder's `similar_jobs` API
 
 ## External Documentation
 
