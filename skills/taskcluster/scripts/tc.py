@@ -4,11 +4,27 @@
 # dependencies = []
 # ///
 """
-Simple wrapper for the taskcluster CLI.
+Taskcluster helper for operations not covered by the native CLI.
 
-This script provides a thin layer over the taskcluster CLI for common operations.
-It primarily shells out to the `taskcluster` command and handles URL parsing.
-Includes support for triggering in-tree actions like confirm-failures and backfill.
+For basic operations, use the taskcluster CLI directly:
+  taskcluster task status <taskId>
+  taskcluster task log <taskId>
+  taskcluster task def <taskId>
+  taskcluster task rerun <taskId>
+  taskcluster task cancel <taskId>
+  taskcluster group list --all <groupId>
+  taskcluster group status <groupId>
+  taskcluster group cancel --force <groupId>
+
+This script handles what the native CLI cannot:
+  artifacts     Full artifact listing as JSON (URLs, content types, expiry)
+  group-status  Structured state count summary (JSON)
+  retrigger     In-tree action retrigger (preserves task graph dependencies)
+  retrigger-multiple  Retrigger N times via in-tree action
+  confirm-failures    Re-run failing tests to check intermittent vs regression
+  backfill      Run test on previous pushes to find regression range
+  action-list   List all available in-tree actions for a task
+  action        Trigger any in-tree action by name with optional JSON input
 """
 
 import argparse
@@ -33,13 +49,10 @@ def extract_task_id(task_id_or_url: str) -> str:
     - https://stage.taskcluster.nonprod.cloudops.mozgcp.net/tasks/<TASK_ID>
     - https://community-tc.services.mozilla.com/tasks/<TASK_ID>
     """
-    # Match taskcluster URLs with /tasks/ or /task-group/ paths
     url_pattern = r'https?://[^/]+/(?:tasks|task-group)/([A-Za-z0-9_-]{22})'
     match = re.search(url_pattern, task_id_or_url)
     if match:
         return match.group(1)
-
-    # If not a URL, assume it's already a task ID
     return task_id_or_url
 
 
@@ -58,7 +71,6 @@ def run_taskcluster_cmd(
     """
     cmd = ["taskcluster"] + args
 
-    # Set default TASKCLUSTER_ROOT_URL if not already set
     env = os.environ.copy()
     if "TASKCLUSTER_ROOT_URL" not in env:
         env["TASKCLUSTER_ROOT_URL"] = DEFAULT_TASKCLUSTER_ROOT_URL
@@ -90,25 +102,6 @@ def run_taskcluster_cmd(
     except Exception as e:
         print(f"Error running taskcluster command: {e}", file=sys.stderr)
         return 1, None
-
-
-def run_and_print_json(args: list[str]) -> int:
-    """Run a command that must return JSON and print pretty output."""
-    code, data = run_taskcluster_cmd(args, expect_json=True)
-    if code != 0:
-        return code
-    print(json.dumps(data, indent=2))
-    return 0
-
-
-def run_and_print_text(args: list[str]) -> int:
-    """Run a command and print text output as-is."""
-    code, output = run_taskcluster_cmd(args, expect_json=False)
-    if code != 0:
-        return code
-    if isinstance(output, str):
-        print(output, end="")
-    return 0
 
 
 def fetch_paginated_queue(
@@ -176,7 +169,6 @@ def get_actions_json(task_group_id: str) -> Optional[dict[str, Any]]:
     url = f"{root_url}/api/queue/v1/task/{task_group_id}/artifacts/public/actions.json"
 
     try:
-        # Use curl for more reliable redirect handling
         result = subprocess.run(
             ["curl", "-sL", url],
             capture_output=True,
@@ -225,7 +217,6 @@ def trigger_action(
     """
     task_id = extract_task_id(task_id)
 
-    # Get task definition to find task group ID
     task_def = get_task_definition(task_id)
     if not task_def:
         print(f"Error: Could not get task definition for {task_id}", file=sys.stderr)
@@ -236,13 +227,11 @@ def trigger_action(
         print("Error: Could not determine task group ID", file=sys.stderr)
         return 1
 
-    # Get actions.json from the decision task (task group ID is the decision task)
     actions_json = get_actions_json(task_group_id)
     if not actions_json:
         print(f"Error: Could not fetch actions.json for task group {task_group_id}", file=sys.stderr)
         return 1
 
-    # Find the requested action
     action = find_action(actions_json, action_name)
     if not action:
         print(f"Error: Action '{action_name}' not found in actions.json", file=sys.stderr)
@@ -251,7 +240,6 @@ def trigger_action(
             print(f"  - {a.get('name')}: {a.get('title')}", file=sys.stderr)
         return 1
 
-    # Build the hook payload
     hook_group_id = action.get("hookGroupId")
     hook_id = action.get("hookId")
     hook_payload = action.get("hookPayload", {})
@@ -260,8 +248,6 @@ def trigger_action(
         print(f"Error: Action '{action_name}' is missing hook configuration", file=sys.stderr)
         return 1
 
-    # Construct the payload by substituting variables
-    # The hookPayload uses JSON-e expressions like {$eval: "input"}
     payload = {
         "decision": hook_payload.get("decision", {}),
         "user": {
@@ -271,7 +257,6 @@ def trigger_action(
         },
     }
 
-    # Write payload to temp file for taskcluster CLI
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(payload, f)
         payload_file = f.name
@@ -286,16 +271,8 @@ def trigger_action(
         if "TASKCLUSTER_ROOT_URL" not in env:
             env["TASKCLUSTER_ROOT_URL"] = DEFAULT_TASKCLUSTER_ROOT_URL
 
-        cmd = [
-            "taskcluster",
-            "api",
-            "hooks",
-            "triggerHook",
-            hook_group_id,
-            hook_id,
-        ]
+        cmd = ["taskcluster", "api", "hooks", "triggerHook", hook_group_id, hook_id]
 
-        # Read payload from stdin
         with open(payload_file) as f:
             result = subprocess.run(
                 cmd, stdin=f, capture_output=True, text=True, check=False, env=env
@@ -305,7 +282,6 @@ def trigger_action(
             print(f"Error triggering hook: {result.stderr}", file=sys.stderr)
             return result.returncode
 
-        # Pretty print the response
         if result.stdout.strip():
             try:
                 data = json.loads(result.stdout)
@@ -326,27 +302,8 @@ def trigger_action(
         os.unlink(payload_file)
 
 
-def cmd_status(task_id: str) -> int:
-    """Get task status"""
-    task_id = extract_task_id(task_id)
-    print(f"# Task Status: {task_id}", file=sys.stderr)
-    return run_and_print_json(["api", "queue", "status", task_id])
-
-
-def cmd_log(task_id: str, run: Optional[int] = None) -> int:
-    """Stream task log"""
-    task_id = extract_task_id(task_id)
-    print(f"# Task Log: {task_id}", file=sys.stderr)
-
-    args = ["task", "log", task_id]
-    if run is not None:
-        args.extend(["--run", str(run)])
-
-    return run_and_print_text(args)
-
-
 def cmd_artifacts(task_id: str, run: Optional[int] = None) -> int:
-    """List task artifacts"""
+    """List task artifacts as full JSON (names, URLs, content types, expiry)."""
     task_id = extract_task_id(task_id)
     print(f"# Task Artifacts: {task_id}", file=sys.stderr)
 
@@ -360,53 +317,8 @@ def cmd_artifacts(task_id: str, run: Optional[int] = None) -> int:
     return 0
 
 
-def cmd_definition(task_id: str) -> int:
-    """Get full task definition"""
-    task_id = extract_task_id(task_id)
-    print(f"# Task Definition: {task_id}", file=sys.stderr)
-    return run_and_print_json(["api", "queue", "task", task_id])
-
-
-def cmd_retrigger(task_id: str) -> int:
-    """
-    Retrigger a task using the in-tree action API.
-
-    This uses the Firefox taskgraph's retrigger hook, which properly
-    recreates the task within the task graph context with correct dependencies.
-
-    Note: The raw `taskcluster task retrigger` command clears dependencies,
-    which breaks Firefox CI tasks that depend on upstream artifacts.
-    """
-    return trigger_action(task_id, "retrigger")
-
-
-def cmd_rerun(task_id: str) -> int:
-    """Rerun a task (same task ID)"""
-    task_id = extract_task_id(task_id)
-    print(f"# Rerunning Task: {task_id}", file=sys.stderr)
-    return run_and_print_json(["api", "queue", "rerunTask", task_id])
-
-
-def cmd_cancel(task_id: str) -> int:
-    """Cancel a task"""
-    task_id = extract_task_id(task_id)
-    print(f"# Cancelling Task: {task_id}", file=sys.stderr)
-    return run_and_print_json(["api", "queue", "cancelTask", task_id])
-
-
-def cmd_group_list(group_id: str) -> int:
-    """List tasks in a group"""
-    group_id = extract_task_id(group_id)
-    print(f"# Task Group List: {group_id}", file=sys.stderr)
-    code, data = fetch_paginated_queue("listTaskGroup", [group_id], "tasks")
-    if code != 0 or data is None:
-        return code if code != 0 else 1
-    print(json.dumps(data, indent=2))
-    return 0
-
-
 def cmd_group_status(group_id: str) -> int:
-    """Get task group status"""
+    """Get task group status with structured state count summary."""
     group_id = extract_task_id(group_id)
     print(f"# Task Group Status: {group_id}", file=sys.stderr)
     meta_code, meta = run_taskcluster_cmd(["api", "queue", "getTaskGroup", group_id], expect_json=True)
@@ -440,23 +352,10 @@ def cmd_group_status(group_id: str) -> int:
     return 0
 
 
-def cmd_group_cancel(group_id: str) -> int:
-    """Cancel a task group"""
-    group_id = extract_task_id(group_id)
-    print(f"# Cancelling Task Group: {group_id}", file=sys.stderr)
-    return run_and_print_json(["api", "queue", "cancelTaskGroup", group_id])
-
-
-# -------------------------------------------------------------------------
-# Action commands
-# -------------------------------------------------------------------------
-
-
 def cmd_action_list(task_id: str) -> int:
-    """List available actions for a task"""
+    """List available in-tree actions for a task."""
     task_id = extract_task_id(task_id)
 
-    # Get task definition to find task group ID
     task_def = get_task_definition(task_id)
     if not task_def:
         print(f"Error: Could not get task definition for {task_id}", file=sys.stderr)
@@ -475,52 +374,49 @@ def cmd_action_list(task_id: str) -> int:
         print(f"Error: Could not fetch actions.json for task group {task_group_id}", file=sys.stderr)
         return 1
 
-    # Format actions as JSON
-    actions_list = []
-    for action in actions_json.get("actions", []):
-        actions_list.append({
+    actions_list = [
+        {
             "name": action.get("name"),
             "title": action.get("title"),
             "description": action.get("description", ""),
             "kind": action.get("kind"),
-        })
-
+        }
+        for action in actions_json.get("actions", [])
+    ]
     print(json.dumps(actions_list, indent=2))
     return 0
 
 
-def cmd_confirm_failures(task_id: str) -> int:
+def cmd_retrigger(task_id: str) -> int:
     """
-    Trigger confirm-failures action for a task.
+    Retrigger a task using the in-tree action API.
 
-    This action re-runs the failing tests multiple times to determine
-    if they are intermittent failures or real regressions.
+    Uses the Firefox taskgraph's retrigger hook, which recreates the task
+    within the task graph context with correct dependencies.
+
+    Note: `taskcluster task retrigger` clears dependencies, breaking Firefox CI
+    tasks that depend on upstream artifacts (e.g., signing tasks needing builds).
     """
+    return trigger_action(task_id, "retrigger")
+
+
+def cmd_confirm_failures(task_id: str) -> int:
+    """Re-run failing tests to determine if intermittent or regression."""
     return trigger_action(task_id, "confirm-failures")
 
 
 def cmd_backfill(task_id: str) -> int:
-    """
-    Trigger backfill action for a task.
-
-    This action runs the same test on previous pushes to help identify
-    when a regression was introduced.
-    """
+    """Run test on previous pushes to find regression range."""
     return trigger_action(task_id, "backfill")
 
 
 def cmd_retrigger_multiple(task_id: str, times: int = 5) -> int:
-    """
-    Trigger retrigger-multiple action for a task.
-
-    This action retriggers the task multiple times, useful for
-    confirming intermittent failures.
-    """
+    """Retrigger a task N times via in-tree action."""
     return trigger_action(task_id, "retrigger-multiple", {"requests": [{"times": times}]})
 
 
 def cmd_action(task_id: str, action_name: str, input_json: Optional[str] = None) -> int:
-    """Trigger any action by name with optional input"""
+    """Trigger any in-tree action by name with optional JSON input."""
     input_data = None
     if input_json:
         try:
@@ -528,89 +424,56 @@ def cmd_action(task_id: str, action_name: str, input_json: Optional[str] = None)
         except json.JSONDecodeError as e:
             print(f"Error parsing input JSON: {e}", file=sys.stderr)
             return 1
-
     return trigger_action(task_id, action_name, input_data)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Taskcluster CLI wrapper for common operations",
+        description="Taskcluster helper for operations not covered by the native CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  # Query task status
-  %(prog)s status dtMnwBMHSc6kq5VGqJz0fw
-  %(prog)s status https://firefox-ci-tc.services.mozilla.com/tasks/dtMnwBMHSc6kq5VGqJz0fw
+For basic operations use the native taskcluster CLI:
+  taskcluster task status <taskId>       # task status
+  taskcluster task log <taskId>          # stream log
+  taskcluster task def <taskId>          # full task definition
+  taskcluster task rerun <taskId>        # rerun (same task ID)
+  taskcluster task cancel <taskId>       # cancel
+  taskcluster group list --all <groupId> # list all tasks in group
+  taskcluster group status <groupId>     # group status
+  taskcluster group cancel --force <groupId>  # cancel group
 
-  # Get task logs
-  %(prog)s log dtMnwBMHSc6kq5VGqJz0fw
-
-  # List artifacts
-  %(prog)s artifacts dtMnwBMHSc6kq5VGqJz0fw
-
-  # Retrigger a task
-  %(prog)s retrigger dtMnwBMHSc6kq5VGqJz0fw
-
-  # List tasks in a group
-  %(prog)s group-list fuCPrKG2T62-4YH1tWYa7Q
+This script handles the rest:
+  %(prog)s artifacts <taskId>                     # full JSON with URLs
+  %(prog)s group-status <groupId>                 # structured state counts
+  %(prog)s retrigger <taskId>                     # in-tree retrigger
+  %(prog)s retrigger-multiple <taskId> --times 5  # retrigger N times
+  %(prog)s confirm-failures <taskId>              # confirm intermittent
+  %(prog)s backfill <taskId>                      # find regression range
+  %(prog)s action-list <taskId>                   # list available actions
+  %(prog)s action <taskId> <name> --input '{}'    # trigger any action
         """
     )
 
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
 
-    # Task commands
-    status_parser = subparsers.add_parser('status', help='Get task status')
-    status_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    log_parser = subparsers.add_parser('log', help='Stream task log')
-    log_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-    log_parser.add_argument('--run', type=int, help='Specific run number')
-
-    artifacts_parser = subparsers.add_parser('artifacts', help='List task artifacts')
+    artifacts_parser = subparsers.add_parser(
+        'artifacts', help='List task artifacts as full JSON (includes URLs, content types, expiry)'
+    )
     artifacts_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
     artifacts_parser.add_argument('--run', type=int, help='Specific run number')
 
-    def_parser = subparsers.add_parser('definition', help='Get full task definition')
-    def_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    retrigger_parser = subparsers.add_parser('retrigger', help='Retrigger task (new task ID)')
-    retrigger_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    rerun_parser = subparsers.add_parser('rerun', help='Rerun task (same task ID)')
-    rerun_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    cancel_parser = subparsers.add_parser('cancel', help='Cancel a task')
-    cancel_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    # Group commands
-    group_list_parser = subparsers.add_parser('group-list', help='List tasks in a group')
-    group_list_parser.add_argument('group_id', help='Task Group ID or URL')
-
-    group_status_parser = subparsers.add_parser('group-status', help='Get task group status')
+    group_status_parser = subparsers.add_parser(
+        'group-status', help='Get task group status with structured state count summary'
+    )
     group_status_parser.add_argument('group_id', help='Task Group ID or URL')
 
-    group_cancel_parser = subparsers.add_parser('group-cancel', help='Cancel a task group')
-    group_cancel_parser.add_argument('group_id', help='Task Group ID or URL')
-
-    # Action commands
-    action_list_parser = subparsers.add_parser('action-list', help='List available actions for a task')
-    action_list_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    confirm_failures_parser = subparsers.add_parser(
-        'confirm-failures',
-        help='Re-run failing tests to confirm if intermittent or regression'
+    retrigger_parser = subparsers.add_parser(
+        'retrigger', help='Retrigger task via in-tree action (preserves dependencies)'
     )
-    confirm_failures_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
-
-    backfill_parser = subparsers.add_parser(
-        'backfill',
-        help='Run test on previous pushes to find regression range'
-    )
-    backfill_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
+    retrigger_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
 
     retrigger_multiple_parser = subparsers.add_parser(
-        'retrigger-multiple',
-        help='Retrigger a task multiple times'
+        'retrigger-multiple', help='Retrigger a task N times via in-tree action'
     )
     retrigger_multiple_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
     retrigger_multiple_parser.add_argument(
@@ -618,9 +481,23 @@ Examples:
         help='Number of times to retrigger (default: 5)'
     )
 
+    confirm_failures_parser = subparsers.add_parser(
+        'confirm-failures', help='Re-run failing tests to confirm intermittent or regression'
+    )
+    confirm_failures_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
+
+    backfill_parser = subparsers.add_parser(
+        'backfill', help='Run test on previous pushes to find regression range'
+    )
+    backfill_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
+
+    action_list_parser = subparsers.add_parser(
+        'action-list', help='List available in-tree actions for a task'
+    )
+    action_list_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
+
     action_parser = subparsers.add_parser(
-        'action',
-        help='Trigger any action by name'
+        'action', help='Trigger any in-tree action by name'
     )
     action_parser.add_argument('task_id', help='Task ID or Taskcluster URL')
     action_parser.add_argument('action_name', help='Name of the action to trigger')
@@ -632,35 +509,20 @@ Examples:
         parser.print_help()
         return 1
 
-    # Dispatch to command handlers
-    if args.command == 'status':
-        return cmd_status(args.task_id)
-    elif args.command == 'log':
-        return cmd_log(args.task_id, args.run)
-    elif args.command == 'artifacts':
+    if args.command == 'artifacts':
         return cmd_artifacts(args.task_id, args.run)
-    elif args.command == 'definition':
-        return cmd_definition(args.task_id)
-    elif args.command == 'retrigger':
-        return cmd_retrigger(args.task_id)
-    elif args.command == 'rerun':
-        return cmd_rerun(args.task_id)
-    elif args.command == 'cancel':
-        return cmd_cancel(args.task_id)
-    elif args.command == 'group-list':
-        return cmd_group_list(args.group_id)
     elif args.command == 'group-status':
         return cmd_group_status(args.group_id)
-    elif args.command == 'group-cancel':
-        return cmd_group_cancel(args.group_id)
-    elif args.command == 'action-list':
-        return cmd_action_list(args.task_id)
+    elif args.command == 'retrigger':
+        return cmd_retrigger(args.task_id)
+    elif args.command == 'retrigger-multiple':
+        return cmd_retrigger_multiple(args.task_id, args.times)
     elif args.command == 'confirm-failures':
         return cmd_confirm_failures(args.task_id)
     elif args.command == 'backfill':
         return cmd_backfill(args.task_id)
-    elif args.command == 'retrigger-multiple':
-        return cmd_retrigger_multiple(args.task_id, args.times)
+    elif args.command == 'action-list':
+        return cmd_action_list(args.task_id)
     elif args.command == 'action':
         return cmd_action(args.task_id, args.action_name, args.input)
 

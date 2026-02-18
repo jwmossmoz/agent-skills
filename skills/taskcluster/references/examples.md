@@ -2,75 +2,83 @@
 
 Common usage patterns for the Taskcluster skill based on Mozilla CI workflows.
 
-Run these examples from the taskcluster skill directory. Replace `<agent-skills-root>` with the path to this repo when referencing other skills.
+Always set the root URL first:
+
+```bash
+export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
+TC=/Users/jwmoss/github_moz/agent-skills/skills/taskcluster/scripts/tc.py
+```
 
 ## Basic Task Operations
 
 ### Check Task Status
 
 ```bash
-# Using task ID directly
-uv run scripts/tc.py status dtMnwBMHSc6kq5VGqJz0fw
-
-# Using full Taskcluster URL (from Treeherder or other sources)
-uv run scripts/tc.py status \
-  https://firefox-ci-tc.services.mozilla.com/tasks/dtMnwBMHSc6kq5VGqJz0fw
+taskcluster task status <TASK_ID>
 ```
 
 ### View Task Logs
 
 ```bash
-# Stream the log for a task
-uv run scripts/tc.py log dtMnwBMHSc6kq5VGqJz0fw
+# Stream the log
+taskcluster task log <TASK_ID>
 
-# View log for a specific run (if task was rerun)
-uv run scripts/tc.py log dtMnwBMHSc6kq5VGqJz0fw --run 0
-```
-
-### List Task Artifacts
-
-```bash
-# List all artifacts for a task
-uv run scripts/tc.py artifacts dtMnwBMHSc6kq5VGqJz0fw
-
-# Pipe to jq to extract specific artifact URLs
-uv run scripts/tc.py artifacts dtMnwBMHSc6kq5VGqJz0fw | \
-  jq -r '.artifacts[] | select(.name | contains("log")) | .url'
+# Pipe to tail for the last 100 lines
+taskcluster task log <TASK_ID> | tail -100
 ```
 
 ### Get Full Task Definition
 
 ```bash
-# Useful for debugging worker pool configuration issues
-uv run scripts/tc.py definition dtMnwBMHSc6kq5VGqJz0fw
+# Full task definition as JSON
+taskcluster task def <TASK_ID>
 
-# Extract worker pool information
-uv run scripts/tc.py definition dtMnwBMHSc6kq5VGqJz0fw | \
-  jq -r '.payload.env.TASKCLUSTER_WORKER_POOL_ID'
+# Extract worker type and payload
+taskcluster task def <TASK_ID> | jq '.workerType, .payload'
+
+# Check worker pool and env vars
+taskcluster task def <TASK_ID> | jq '.provisionerId, .workerType, .payload.env'
+```
+
+### List Task Artifacts (with URLs)
+
+The native CLI only lists artifact names. Use `tc.py` when you need URLs, content types, or expiry:
+
+```bash
+# Full artifact listing with URLs and metadata
+uv run "$TC" artifacts <TASK_ID>
+
+# Extract log artifact URLs
+uv run "$TC" artifacts <TASK_ID> | jq -r '.artifacts[] | select(.name | contains("log")) | .url'
+
+# For a specific run
+uv run "$TC" artifacts <TASK_ID> --run 0
 ```
 
 ## Task Group Operations
 
-### List All Tasks in a Group
+### List Tasks in a Group
 
 ```bash
-# Get all tasks from a task group (useful for viewing all jobs from a push)
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q
+# All tasks
+taskcluster group list --all <TASK_GROUP_ID>
 
-# Filter to show only failed tasks
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq '.tasks[] | select(.status.state == "failed") | {taskId, label: .task.metadata.name}'
+# Only failed tasks
+taskcluster group list --failed <TASK_GROUP_ID>
+
+# Only running tasks
+taskcluster group list --running <TASK_GROUP_ID>
 ```
 
-### Check Group Status Summary
+### Group Status Summary (State Counts)
 
 ```bash
-# Get overall status of a task group
-uv run scripts/tc.py group-status fuCPrKG2T62-4YH1tWYa7Q
+# Native group status (text output)
+taskcluster group status <TASK_GROUP_ID>
 
-# Count tasks by state
-uv run scripts/tc.py group-status fuCPrKG2T62-4YH1tWYa7Q | \
-  jq '.taskGroupId as $id | .status | group_by(.state) | map({state: .[0].state, count: length})'
+# Structured JSON with totalTasks and stateCounts breakdown (for scripting)
+uv run "$TC" group-status <TASK_GROUP_ID>
+uv run "$TC" group-status <TASK_GROUP_ID> | jq '.taskSummary'
 ```
 
 ## Debugging Failed Tasks
@@ -79,33 +87,30 @@ uv run scripts/tc.py group-status fuCPrKG2T62-4YH1tWYa7Q | \
 
 ```bash
 # 1. Check task status
-uv run scripts/tc.py status dtMnwBMHSc6kq5VGqJz0fw
+taskcluster task status <TASK_ID>
 
 # 2. View the task log
-uv run scripts/tc.py log dtMnwBMHSc6kq5VGqJz0fw | tail -100
+taskcluster task log <TASK_ID> | tail -100
 
 # 3. Get task definition to check worker pool and payload
-uv run scripts/tc.py definition dtMnwBMHSc6kq5VGqJz0fw | jq '.workerType, .payload'
+taskcluster task def <TASK_ID> | jq '.workerType, .payload'
 
 # 4. Check if other tasks in the group also failed
-TASK_GROUP_ID=$(uv run scripts/tc.py definition dtMnwBMHSc6kq5VGqJz0fw | jq -r '.taskGroupId')
-uv run scripts/tc.py group-list $TASK_GROUP_ID | \
-  jq '.tasks[] | select(.status.state == "failed") | .task.metadata.name'
+TASK_GROUP_ID=$(taskcluster task def <TASK_ID> | jq -r '.taskGroupId')
+taskcluster group list --failed $TASK_GROUP_ID
 ```
 
 ### Worker Pool Configuration Issues
 
-Common pattern when debugging worker pool errors (like E8ads_v6 NVMe issues):
-
 ```bash
-# Get worker type and pool from failed task
-uv run scripts/tc.py definition <TASK_ID> | jq -r '.workerType, .provisionerId'
+# Get worker type and provisioner from failed task
+taskcluster task def <TASK_ID> | jq -r '.workerType, .provisionerId'
 
-# Check the full payload to see what's being requested
-uv run scripts/tc.py definition <TASK_ID> | jq '.payload'
+# Check the full payload
+taskcluster task def <TASK_ID> | jq '.payload'
 
 # Check task state and reason for failure
-uv run scripts/tc.py status <TASK_ID> | jq '.status.runs[-1].reasonResolved'
+taskcluster api queue status <TASK_ID> | jq '.status.runs[-1].reasonResolved'
 ```
 
 ## Retriggering Tasks
@@ -113,48 +118,25 @@ uv run scripts/tc.py status <TASK_ID> | jq '.status.runs[-1].reasonResolved'
 ### Retrigger a Failed Task
 
 ```bash
-# Retrigger creates a NEW task with updated timestamps
-# Use this when you've fixed the issue and want to try again
-uv run scripts/tc.py retrigger dtMnwBMHSc6kq5VGqJz0fw
+# Retrigger via in-tree action — preserves dependencies (correct for Firefox CI)
+uv run "$TC" retrigger <TASK_ID>
 
-# Output will include the new task ID
+# Rerun the same task (same task ID, no dependency handling needed)
+taskcluster task rerun <TASK_ID>
 ```
 
-### Rerun a Task
-
-```bash
-# Rerun attempts to run the SAME task again (same task ID)
-# Use this when the task failed due to intermittent issues
-uv run scripts/tc.py rerun dtMnwBMHSc6kq5VGqJz0fw
-```
+**Important**: `taskcluster task retrigger` clears dependencies and breaks Firefox CI tasks that
+depend on upstream artifacts. Always use `uv run "$TC" retrigger` for Firefox CI tasks.
 
 ### Bulk Retrigger Failed Tasks in a Group
 
 ```bash
-# Get all failed task IDs from a group and retrigger them
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq -r '.tasks[] | select(.status.state == "failed") | .status.taskId' | \
+taskcluster group list --failed <TASK_GROUP_ID> | \
+  awk '{print $1}' | \
   while read task_id; do
     echo "Retriggering $task_id"
-    uv run scripts/tc.py retrigger "$task_id"
+    uv run "$TC" retrigger "$task_id"
   done
-```
-
-## Integration with Treeherder
-
-### Workflow: From Treeherder URL to Task Details
-
-```bash
-# 1. Start with a Treeherder URL
-REVISION="ed901414ea5ec1e188547898b31d133731e77588"
-
-# 2. Use treeherder skill to get task IDs
-uv run <agent-skills-root>/skills/treeherder/scripts/query.py --revision $REVISION --repo try
-
-# 3. Pick a failed task ID and investigate
-TASK_ID="dtMnwBMHSc6kq5VGqJz0fw"
-uv run scripts/tc.py status $TASK_ID
-uv run scripts/tc.py log $TASK_ID
 ```
 
 ## Cancel Operations
@@ -162,62 +144,34 @@ uv run scripts/tc.py log $TASK_ID
 ### Cancel a Single Task
 
 ```bash
-# Cancel a running or pending task
-uv run scripts/tc.py cancel dtMnwBMHSc6kq5VGqJz0fw
+taskcluster task cancel <TASK_ID>
 ```
 
 ### Cancel All Tasks in a Group
 
 ```bash
-# Cancel all tasks in a task group (useful for stopping an unwanted push)
-uv run scripts/tc.py group-cancel fuCPrKG2T62-4YH1tWYa7Q
+# Efficient API approach (seal first, then cancel)
+taskcluster api queue sealTaskGroup <TASK_GROUP_ID>
+taskcluster api queue cancelTaskGroup <TASK_GROUP_ID>
+
+# Or via CLI (slower, cancels one by one)
+taskcluster group cancel --force <TASK_GROUP_ID>
 ```
 
-### Cancel All Pending Tasks in a Group
+## Integration with Treeherder
+
+### Workflow: From Treeherder URL to Task Details
 
 ```bash
-# Cancel only pending tasks (leave running tasks alone)
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq -r '.tasks[] | select(.status.state == "pending") | .status.taskId' | \
-  while read task_id; do
-    uv run scripts/tc.py cancel "$task_id"
-  done
-```
+REVISION="ed901414ea5ec1e188547898b31d133731e77588"
 
-## Advanced Queries with jq
+# 1. Use treeherder-cli for failure analysis
+treeherder-cli $REVISION --json
 
-### Find Tasks by Worker Type
-
-```bash
-# List all tasks using a specific worker type
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq '.tasks[] | select(.task.workerType == "gecko-t-win11-64-24h2-amd") | .task.metadata.name'
-```
-
-### Get Task Duration Statistics
-
-```bash
-# Calculate average task duration in a group
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq '.tasks[] | select(.status.state == "completed") |
-      .status.runs[-1] |
-      {
-        name: .taskId,
-        duration: (((.resolved | fromdate) - (.started | fromdate)) / 60)
-      }'
-```
-
-### Find Tasks with Specific Artifacts
-
-```bash
-# Find all tasks that have crash reports
-uv run scripts/tc.py group-list fuCPrKG2T62-4YH1tWYa7Q | \
-  jq -r '.tasks[].status.taskId' | \
-  while read task_id; do
-    uv run scripts/tc.py artifacts "$task_id" 2>/dev/null | \
-      jq -r --arg tid "$task_id" \
-        'select(.artifacts[]? | .name | contains("crash")) | $tid'
-  done
+# 2. Pick a failed task ID and investigate
+TASK_ID="dtMnwBMHSc6kq5VGqJz0fw"
+taskcluster task status $TASK_ID
+taskcluster task log $TASK_ID
 ```
 
 ## Real-World Scenarios
@@ -228,24 +182,21 @@ When testing new worker pools (e.g., win11-64-24h2-alpha):
 
 ```bash
 # 1. Trigger a try push with os-integrations skill
-cd ~/firefox && uv run <agent-skills-root>/skills/os-integrations/scripts/run_try.py win11-24h2
+cd ~/firefox && uv run /Users/jwmoss/github_moz/agent-skills/skills/os-integrations/scripts/run_try.py win11-24h2
 
 # 2. Get the task group ID from the output
 TASK_GROUP_ID="<from mach try output>"
 
 # 3. Monitor the task group
-uv run scripts/tc.py group-status $TASK_GROUP_ID
+taskcluster group status $TASK_GROUP_ID
 
 # 4. Check for failures
-uv run scripts/tc.py group-list $TASK_GROUP_ID | \
-  jq '.tasks[] | select(.status.state == "failed")'
+taskcluster group list --failed $TASK_GROUP_ID
 
 # 5. Investigate a specific failure
-FAILED_TASK=$(uv run scripts/tc.py group-list $TASK_GROUP_ID | \
-  jq -r '.tasks[] | select(.status.state == "failed") | .status.taskId' | head -1)
-
-uv run scripts/tc.py log $FAILED_TASK
-uv run scripts/tc.py definition $FAILED_TASK | jq '.payload, .workerType'
+FAILED_TASK=$(taskcluster group list --failed $TASK_GROUP_ID | head -1 | awk '{print $1}')
+taskcluster task log $FAILED_TASK
+taskcluster task def $FAILED_TASK | jq '.payload, .workerType'
 ```
 
 ### Scenario 2: Verifying Worker Image Updates
@@ -253,33 +204,32 @@ uv run scripts/tc.py definition $FAILED_TASK | jq '.payload, .workerType'
 After updating worker images in fxci-config:
 
 ```bash
-# 1. Find tasks using the new image
-uv run scripts/tc.py group-list <TASK_GROUP_ID> | \
-  jq '.tasks[] |
-      {
-        taskId: .status.taskId,
-        workerType: .task.workerType,
-        workerGroup: .status.runs[-1].workerGroup
-      }'
+# Find tasks using the new image and check their state
+taskcluster group list --all <TASK_GROUP_ID>
 
-# 2. Check if tasks are running on expected workers
-uv run scripts/tc.py definition <TASK_ID> | \
-  jq '.payload.image // .payload.osGroups // .task.tags'
+# Check what worker ran a specific task
+taskcluster api queue status <TASK_ID> | jq '.status.runs[-1] | {workerGroup, workerId, state}'
+
+# Get full definition to check image tags
+taskcluster task def <TASK_ID> | jq '.task.tags // .tags'
 ```
 
 ### Scenario 3: Analyzing Intermittent Test Failures
 
 ```bash
-# 1. Get all runs of a specific test
-uv run scripts/tc.py group-list $TASK_GROUP_ID | \
-  jq '.tasks[] | select(.task.metadata.name | contains("mochitest-plain"))'
+# 1. Find all runs of a specific test in a group
+taskcluster group list --all $TASK_GROUP_ID | grep "mochitest-plain"
 
-# 2. Check which runs failed
-uv run scripts/tc.py status $TASK_ID | \
-  jq '.status.runs[] | {runId, state: .state, resolved: .reasonResolved}'
+# 2. Check run history for a task
+taskcluster api queue status $TASK_ID | jq '.status.runs[] | {runId, state, reasonResolved}'
 
-# 3. Compare logs between successful and failed runs
-uv run scripts/tc.py log $TASK_ID --run 0 > run0.log
-uv run scripts/tc.py log $TASK_ID --run 1 > run1.log
-diff run0.log run1.log
+# 3. Confirm if failure is intermittent
+uv run "$TC" confirm-failures $TASK_ID
+
+# 4. Backfill to find regression range
+uv run "$TC" backfill $TASK_ID
+
+# 5. Compare logs between runs (save to files first)
+taskcluster task log $TASK_ID > run_latest.log
+taskcluster api queue artifacts $TASK_ID 0 | jq  # check run 0 artifacts
 ```

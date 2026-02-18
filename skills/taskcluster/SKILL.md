@@ -10,172 +10,185 @@ description: >
 
 # Taskcluster
 
-Interact with Mozilla Taskcluster CI using the official `taskcluster` CLI.
+Interact with Mozilla Taskcluster CI. Use the native `taskcluster` CLI for most operations.
+The Python helper script (`tc.py`) handles only what the native CLI cannot.
 
-Use this local skills checkout path for commands in this file:
+## Prerequisites
+
+### Taskcluster CLI
+
+```bash
+brew install taskcluster
+taskcluster version
+```
+
+### Authentication
+
+Read-only operations (status, logs, artifacts) work without auth. Write operations require credentials.
+
+```bash
+# Sign in interactively (recommended for local use)
+export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
+taskcluster signin
+
+# Or set credentials directly
+export TASKCLUSTER_CLIENT_ID=your-client-id
+export TASKCLUSTER_ACCESS_TOKEN=your-access-token
+```
+
+## Native CLI — Use for Most Operations
+
+Always set the root URL when targeting Firefox CI:
+
+```bash
+export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
+```
+
+### Task Operations
+
+```bash
+# Task status
+taskcluster task status <TASK_ID>
+
+# Stream task log
+taskcluster task log <TASK_ID>
+
+# Full task definition (JSON)
+taskcluster task def <TASK_ID>
+
+# Rerun a task (same task ID)
+taskcluster task rerun <TASK_ID>
+
+# Cancel a task
+taskcluster task cancel <TASK_ID>
+```
+
+### Task Group Operations
+
+```bash
+# List all tasks in a group (with state filter options)
+taskcluster group list --all <TASK_GROUP_ID>
+taskcluster group list --failed <TASK_GROUP_ID>
+taskcluster group list --running <TASK_GROUP_ID>
+
+# Group status summary
+taskcluster group status <TASK_GROUP_ID>
+
+# Cancel all tasks in a group
+taskcluster group cancel --force <TASK_GROUP_ID>
+```
+
+### Worker Pool Operations
+
+For worker pool management (list workers, terminate, bulk cancel), see `references/worker-pools.md`.
+These use `taskcluster api workerManager` and `taskcluster api queue` directly.
+
+## Python Helper — tc.py
+
+Use this local skills checkout path:
 
 ```bash
 SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
 TC="$SKILLS_ROOT/taskcluster/scripts/tc.py"
 ```
 
-## Usage
+The helper handles two categories the native CLI doesn't cover well:
+
+### Artifact Listing (Full JSON with URLs)
+
+The native `taskcluster task artifacts` only lists names. Use `tc.py` when you need URLs,
+content types, or expiry dates to locate and download specific artifacts.
 
 ```bash
-# Query task status
-uv run "$TC" status <TASK_ID>
-
-# Get task logs
-uv run "$TC" log <TASK_ID>
-
-# List task artifacts
+# Full artifact listing as JSON (URLs, content types, expiry)
 uv run "$TC" artifacts <TASK_ID>
 
-# Get full task definition
-uv run "$TC" definition <TASK_ID>
+# For a specific run
+uv run "$TC" artifacts <TASK_ID> --run 0
 
-# Retrigger a task (uses in-tree action API for proper dependency handling)
-uv run "$TC" retrigger <TASK_ID>
+# Pipe to jq to find specific artifacts
+uv run "$TC" artifacts <TASK_ID> | jq '.artifacts[] | select(.name | contains("log")) | .url'
+```
 
-# Rerun a task (same task ID)
-uv run "$TC" rerun <TASK_ID>
+### Group Status with State Counts (JSON)
 
-# Cancel a task
-uv run "$TC" cancel <TASK_ID>
+The native `taskcluster group status` output is not structured JSON. Use `tc.py` when you need
+machine-readable state counts for scripting or analysis.
 
-# List tasks in a group
-uv run "$TC" group-list <TASK_GROUP_ID>
-
-# Get task group status
+```bash
+# Structured JSON with totalTasks and stateCounts breakdown
 uv run "$TC" group-status <TASK_GROUP_ID>
+```
 
-# Extract task ID from Taskcluster URL
-uv run "$TC" status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
+### In-Tree Actions (require authentication)
 
-# --- In-Tree Actions (require authentication) ---
+In-tree actions are defined in the Firefox taskgraph and triggered via Taskcluster hooks.
+These are the API equivalent of actions in Treeherder's "Custom Action" menu.
 
+**Required scopes**: `hooks:trigger-hook:project-gecko/in-tree-action-*`
+
+```bash
 # List available actions for a task
 uv run "$TC" action-list <TASK_ID>
 
-# Confirm failures - re-run failing tests to determine if intermittent
-uv run "$TC" confirm-failures <TASK_ID>
+# Retrigger via in-tree action (preserves task graph dependencies)
+# Use this instead of `taskcluster task retrigger`, which clears dependencies
+uv run "$TC" retrigger <TASK_ID>
 
-# Backfill - run test on previous pushes to find regression range
-uv run "$TC" backfill <TASK_ID>
-
-# Retrigger multiple times (default 5)
+# Retrigger multiple times (default: 5)
 uv run "$TC" retrigger-multiple <TASK_ID> --times 10
 
-# Trigger any action by name
+# Confirm failures — re-runs failing tests to determine intermittent vs regression
+uv run "$TC" confirm-failures <TASK_ID>
+
+# Backfill — runs test on previous pushes to find regression range
+uv run "$TC" backfill <TASK_ID>
+
+# Trigger any action by name with optional JSON input
 uv run "$TC" action <TASK_ID> <ACTION_NAME> --input '{"key": "value"}'
 ```
 
-## Prerequisites
-
-### 1. Taskcluster CLI
-
-The skill uses the `taskcluster` CLI which should be installed via Homebrew:
+The `tc.py` action commands accept both task IDs and full Taskcluster URLs:
 
 ```bash
-brew install taskcluster
+uv run "$TC" retrigger https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
 ```
-
-Check installation:
-```bash
-taskcluster version
-```
-
-### 2. Authentication (Optional)
-
-Most read-only operations (status, logs, artifacts) work without authentication. For write operations (retrigger, cancel), you need Taskcluster credentials.
-
-#### Option 1: Environment Variables
-
-```bash
-export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
-export TASKCLUSTER_CLIENT_ID=your-client-id
-export TASKCLUSTER_ACCESS_TOKEN=your-access-token
-```
-
-#### Option 2: Configuration File
-
-Create `~/.config/taskcluster/credentials.json` or use the CLI:
-
-```bash
-taskcluster signin
-```
-
-#### Option 3: 1Password CLI
-
-Store credentials in 1Password and configure in `config.toml`:
-
-```bash
-cd scripts
-cp config.toml.example config.toml
-```
-
-Edit the `config.toml` to specify your 1Password item and vault.
 
 ## Common Workflows
 
 ### Debugging Task Failures
 
-1. **Check task status**: `uv run "$TC" status <TASK_ID>`
-2. **View logs**: `uv run "$TC" log <TASK_ID>`
-3. **Inspect full definition**: `uv run "$TC" definition <TASK_ID>`
-4. **Check all tasks in group**: `uv run "$TC" group-list <GROUP_ID>`
+```bash
+export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
 
-### Working with Treeherder Tasks
+# 1. Check task status
+taskcluster task status <TASK_ID>
 
-When you have a Treeherder URL like:
+# 2. View logs
+taskcluster task log <TASK_ID>
+
+# 3. Inspect full definition
+taskcluster task def <TASK_ID>
+
+# 4. Check all tasks in group
+taskcluster group list --all <GROUP_ID>
 ```
-https://treeherder.mozilla.org/jobs?repo=try&revision=ed901414ea5ec1e188547898b31d133731e77588
-```
-
-1. Use the treeherder skill to get task IDs
-2. Use this skill to query individual tasks
 
 ### Retriggering Failed Tasks
 
 ```bash
-# Retrigger uses the in-tree action API for proper task graph handling
-# This preserves dependencies and works correctly for Firefox CI tasks
+# Retrigger via in-tree action (correct for Firefox CI — preserves dependencies)
 uv run "$TC" retrigger <TASK_ID>
 
-# Rerun attempts to rerun the same task (same task ID)
-uv run "$TC" rerun <TASK_ID>
+# Rerun the same task (same task ID, no new task created)
+taskcluster task rerun <TASK_ID>
 ```
 
-Note: The `retrigger` command uses the in-tree action API rather than the raw
-`taskcluster task retrigger` CLI command, which clears dependencies and breaks
-tasks that depend on upstream artifacts (like signing tasks needing build outputs).
+Note: `taskcluster task retrigger` clears dependencies and breaks Firefox CI tasks that depend
+on upstream artifacts (e.g., signing tasks needing build outputs). Always use `uv run "$TC" retrigger`
+for Firefox CI tasks.
 
-### In-Tree Actions (Confirm Failures, Backfill)
-
-In-tree actions are defined in the Firefox taskgraph and triggered via Taskcluster hooks.
-These are the API equivalent of actions available in Treeherder's "Custom Action" menu.
-
-**Required scopes**: `hooks:trigger-hook:project-gecko/in-tree-action-*`
-
-```bash
-# List available actions for a failed task
-uv run "$TC" action-list <TASK_ID>
-
-# Confirm failures - re-runs failing tests to determine if intermittent or regression
-# This is what Treeherder does when you: Select task > "..." > Custom Action > confirm-failures
-uv run "$TC" confirm-failures <TASK_ID>
-
-# Backfill - runs the test on previous pushes to find when a regression started
-uv run "$TC" backfill <TASK_ID>
-
-# Retrigger multiple times - useful for stress-testing intermittent failures
-uv run "$TC" retrigger-multiple <TASK_ID> --times 10
-
-# Trigger any action by name with custom input
-uv run "$TC" action <TASK_ID> retrigger-custom --input '{"path": "test.js"}'
-```
-
-**Common use case**: Investigating image rollout failures
+### Investigating Intermittent Failures
 
 ```bash
 # 1. Find failed tasks using treeherder skill
@@ -186,33 +199,6 @@ uv run "$TC" confirm-failures <TASK_ID>
 
 # 3. If regression, backfill to find the culprit push
 uv run "$TC" backfill <TASK_ID>
-```
-
-## URL Support
-
-The skill automatically extracts task IDs from Taskcluster URLs:
-
-```bash
-# Both of these work identically:
-uv run "$TC" status fuCPrKG2T62-4YH1tWYa7Q
-uv run "$TC" status https://firefox-ci-tc.services.mozilla.com/tasks/fuCPrKG2T62-4YH1tWYa7Q
-```
-
-Supported URL formats:
-- `https://firefox-ci-tc.services.mozilla.com/tasks/<TASK_ID>`
-- `https://stage.taskcluster.nonprod.cloudops.mozgcp.net/tasks/<TASK_ID>`
-- `https://community-tc.services.mozilla.com/tasks/<TASK_ID>`
-
-## Output Formats
-
-All commands except `log` return JSON output that can be piped to `jq`:
-
-```bash
-# Get only failed tasks from a group
-uv run "$TC" group-list <GROUP_ID> | jq '.tasks[] | select(.status.state == "failed")'
-
-# List artifact names
-uv run "$TC" artifacts <TASK_ID> | jq '.artifacts[].name'
 ```
 
 ## Related Skills
@@ -226,12 +212,11 @@ uv run "$TC" artifacts <TASK_ID> | jq '.artifacts[].name'
 - `references/actions.md` - Detailed guide to in-tree actions (confirm-failures, backfill, etc.)
 - `references/examples.md` - Common usage patterns and workflows
 - `references/integration.md` - Integration with other Mozilla tools
-- `references/worker-pools.md` - Worker pool management, bulk operations, and emergency shutdown procedures
+- `references/worker-pools.md` - Worker pool management, bulk operations, and emergency shutdown
 
 ## Documentation
 
 - **Taskcluster Docs**: https://docs.taskcluster.net/
 - **Taskcluster CLI**: https://github.com/taskcluster/taskcluster/tree/main/clients/client-shell
 - **Firefox CI**: https://firefox-ci-tc.services.mozilla.com/
-- **Community Taskcluster**: https://community-tc.services.mozilla.com/
 - **Actions Spec**: https://docs.taskcluster.net/docs/manual/using/actions/spec
