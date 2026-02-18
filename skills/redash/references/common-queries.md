@@ -60,6 +60,22 @@ LIMIT {limit}
 | macOS | `AND platform LIKE 'macosx%'` |
 | Android | `AND platform LIKE 'android%'` |
 
+## Windows Version Distribution (Firefox Desktop)
+
+Client count by Windows version over the last 28 days. Returns `build_group` (e.g., `Win11 25H2`) and `observations` (raw client count).
+
+Source: [Redash Query 65967](https://sql.telemetry.mozilla.org/queries/65967/)
+
+```bash
+uv run scripts/query_redash.py --query-id 65967 --format table
+```
+
+**Caveats:**
+- Uses `sample_id = 42` (1% sample) — multiply `observations` by ~100 for population estimates
+- Only includes Firefox >= 47
+- Cached results are up to 48 hours old (query runs every 2 days)
+- `Win11 25H2` covers build numbers 26101–26200 only; builds > 26200 (e.g., cumulative updates 26220, 26300) are bucketed as `Win11 Insider`
+
 ## Task Group Cost by Pusher
 
 Cost breakdown per task group for a specific user. Replace `{start_date}` and `{user_email}` with actual values.
