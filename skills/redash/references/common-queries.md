@@ -76,6 +76,40 @@ uv run scripts/query_redash.py --query-id 65967 --format table
 - Cached results are up to 48 hours old (query runs every 2 days)
 - `Win11 25H2` covers build numbers 26101–26200 only; builds > 26200 (e.g., cumulative updates 26220, 26300) are bucketed as `Win11 Insider`
 
+## macOS Version × Architecture Distribution (Firefox Desktop)
+
+Client count broken down by macOS version and Firefox build architecture (aarch64 vs x86-64) over the last 28 days. Useful for understanding Apple Silicon vs Intel adoption across OS versions.
+
+```bash
+uv run scripts/query_redash.py --format table --sql "
+SELECT
+  CASE
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 25 THEN 'macOS 16'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 24 THEN 'macOS 15 Sequoia'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 23 THEN 'macOS 14 Sonoma'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 22 THEN 'macOS 13 Ventura'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 21 THEN 'macOS 12 Monterey'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 20 THEN 'macOS 11 Big Sur'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 19 THEN 'macOS 10.15 Catalina'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 18 THEN 'macOS 10.14 Mojave'
+    WHEN CAST(SPLIT(os_version, '.')[OFFSET(0)] AS INT64) = 17 THEN 'macOS 10.13 High Sierra'
+    ELSE CONCAT('Darwin ', SPLIT(os_version, '.')[OFFSET(0)])
+  END AS macos_version,
+  env_build_arch AS arch,
+  COUNT(DISTINCT client_id) AS client_count
+FROM \`moz-fx-data-shared-prod.telemetry.clients_daily\`
+WHERE submission_date > DATE_SUB(CURRENT_DATE, INTERVAL 28 DAY)
+  AND os = 'Darwin'
+  AND env_build_arch IN ('aarch64', 'x86-64')
+GROUP BY macos_version, arch
+ORDER BY macos_version, arch
+"
+```
+
+**Caveats:**
+- `env_build_arch` reflects the Firefox *build* architecture — Intel builds running under Rosetta 2 on Apple Silicon show as `x86-64`, so true Apple Silicon hardware share is higher than the aarch64 count alone
+- Darwin kernel version is used to derive macOS version name; update the `CASE` statement as new macOS releases ship
+
 ## Task Group Cost by Pusher
 
 Cost breakdown per task group for a specific user. Replace `{start_date}` and `{user_email}` with actual values.
