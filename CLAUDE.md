@@ -136,6 +136,11 @@ taskcluster group list --all <TASK_GROUP_ID>                          # list gro
 uv run ~/.claude/skills/taskcluster/scripts/tc.py artifacts <TASK_ID> # full artifact JSON
 uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger <TASK_ID> # in-tree retrigger
 
+# Worker Image Investigation
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py investigate <TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py compare <PASSING_TASK_ID> <FAILING_TASK_ID>
+uv run ~/.claude/skills/worker-image-investigation/scripts/investigate.py workers gecko-t/win11-64-24h2
+
 # OS Integrations - requires Firefox repo at ~/firefox for mach try
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --dry-run
 ```
