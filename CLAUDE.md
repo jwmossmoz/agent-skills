@@ -222,6 +222,15 @@ description: >
 - **Never use** `taskcluster task retrigger` for Firefox CI — it clears dependencies; use `uv run tc.py retrigger` instead
 - Intermittent triage order: `treeherder-cli --history` / `--similar-history` → `lj errors` → `tc.py confirm-failures` → `tc.py backfill`
 
+### Worker Image Investigation Skill
+- Use `uv run "$WII" investigate <TASK_ID>` to get worker pool and image version from a failing task
+- **Image regression detection workflow** (did an image update cause a permafailure?):
+  1. Resolve Treeherder job ID from task ID: `curl "https://treeherder.mozilla.org/api/project/autoland/jobs/?task_id=<TASK_ID>&count=5" | jq '.results[0].id'`
+  2. Check pass/fail cliff: `treeherder-cli --similar-history <JOB_ID> --similar-count 200 --repo autoland --json` — a flip from success to all-failing at a point in time signals a regression
+  3. Cross-branch check: query `mozilla-central` for recent passing runs of the same `job_type_name` — passes there but not autoland = branch/image-specific
+  4. Confirm: `uv run "$WII" compare <PASSING_TASK_ID> <FAILING_TASK_ID>` — look for an `imageVersion` bump that aligns with the cliff
+- Use `uv run "$WII" workers <POOL>` and `vm-info` for live Azure VM inspection
+
 ## Working with Firefox Repository
 
 The local Firefox repository (`~/firefox`) is only needed for running `mach try` pushes to test changes on CI. **Do not search the local Firefox repo** - always use `searchfox-cli` for code searches instead, as the Firefox codebase is too large for local grep/rg.
