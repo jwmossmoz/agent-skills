@@ -217,19 +217,21 @@ taskcluster task def <TASK_ID> | jq '.task.tags // .tags'
 ### Scenario 3: Analyzing Intermittent Test Failures
 
 ```bash
-# 1. Find all runs of a specific test in a group
-taskcluster group list --all $TASK_GROUP_ID | grep "mochitest-plain"
+# 1. Check historical pass/fail rate for the test (is it usually flaky?)
+treeherder-cli --history "mochitest-plain" --history-count 20 --repo autoland --json
 
-# 2. Check run history for a task
+# 2. Compare the failed job against similar past jobs
+treeherder-cli --similar-history <JOB_ID> --similar-count 50 --repo autoland --json
+
+# 3. Check error lines for known bug suggestions
+uvx --from lumberjackth lj errors autoland <JOB_ID>
+
+# 4. Check run history for the specific task
 taskcluster api queue status $TASK_ID | jq '.status.runs[] | {runId, state, reasonResolved}'
 
-# 3. Confirm if failure is intermittent
+# 5. If triage suggests intermittent, confirm in CI
 uv run "$TC" confirm-failures $TASK_ID
 
-# 4. Backfill to find regression range
+# 6. If triage suggests regression, backfill to find the culprit push
 uv run "$TC" backfill $TASK_ID
-
-# 5. Compare logs between runs (save to files first)
-taskcluster task log $TASK_ID > run_latest.log
-taskcluster api queue artifacts $TASK_ID 0 | jq  # check run 0 artifacts
 ```

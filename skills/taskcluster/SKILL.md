@@ -191,13 +191,19 @@ for Firefox CI tasks.
 ### Investigating Intermittent Failures
 
 ```bash
-# 1. Find failed tasks using treeherder skill
-uvx --from lumberjackth lj failures 2012615 -t autoland -p windows11-64-24h2 -n 5
+# 1. Check historical pass/fail rate for the test
+treeherder-cli --history "test_name" --history-count 20 --repo autoland --json
 
-# 2. Confirm if failures are intermittent or real regressions
+# 2. Compare the failed job against similar past jobs
+treeherder-cli --similar-history <JOB_ID> --similar-count 50 --repo autoland --json
+
+# 3. Check error lines for known bug suggestions
+uvx --from lumberjackth lj errors autoland <JOB_ID>
+
+# 4. If triage suggests intermittent, confirm in CI
 uv run "$TC" confirm-failures <TASK_ID>
 
-# 3. If regression, backfill to find the culprit push
+# 5. If triage suggests regression, backfill to find the culprit push
 uv run "$TC" backfill <TASK_ID>
 ```
 
