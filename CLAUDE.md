@@ -127,8 +127,14 @@ uvx --from lumberjackth lj pushes autoland -n 10             # Secondary: push l
 # Lando skill - uses uvx for zero-install execution
 uvx --from lando-cli lando check-job <job_id>
 
-# Taskcluster skill
-uv run ~/.claude/skills/taskcluster/scripts/tc.py status <TASK_ID>
+# Taskcluster skill — native CLI for most ops, tc.py for actions/artifacts
+export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
+taskcluster task status <TASK_ID>                                      # status
+taskcluster task log <TASK_ID>                                         # logs
+taskcluster task def <TASK_ID>                                         # definition
+taskcluster group list --all <TASK_GROUP_ID>                          # list group
+uv run ~/.claude/skills/taskcluster/scripts/tc.py artifacts <TASK_ID> # full artifact JSON
+uv run ~/.claude/skills/taskcluster/scripts/tc.py retrigger <TASK_ID> # in-tree retrigger
 
 # OS Integrations - requires Firefox repo at ~/firefox for mach try
 uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --dry-run
@@ -209,12 +215,12 @@ description: >
 - Available presets: win11-24h2, win11-hw, win10-2009, win11-amd, win11-arm64, b-win2022, win11-source
 
 ### Taskcluster Skill
-- Wraps the official `taskcluster` CLI (no Python dependencies)
-- Query task status, logs, artifacts, and definitions
-- Retrigger, rerun, and cancel tasks
-- Manage task groups (list, status, cancel)
-- Accepts task IDs or full Taskcluster URLs
-- Run with: `uv run ~/.claude/skills/taskcluster/scripts/tc.py <command>`
+- **Always set** `TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com`
+- **Native CLI first**: use `taskcluster task status/log/def/rerun/cancel` and `taskcluster group list/status/cancel` for basic operations
+- **tc.py for the rest**: `artifacts` (full JSON with URLs), `group-status` (structured state counts), and all in-tree actions
+- In-tree actions (`retrigger`, `confirm-failures`, `backfill`, `retrigger-multiple`, `action-list`, `action`) require auth with `hooks:trigger-hook:project-gecko/in-tree-action-*` scope
+- **Never use** `taskcluster task retrigger` for Firefox CI — it clears dependencies; use `uv run tc.py retrigger` instead
+- Intermittent triage order: `treeherder-cli --history` / `--similar-history` → `lj errors` → `tc.py confirm-failures` → `tc.py backfill`
 
 ## Working with Firefox Repository
 
