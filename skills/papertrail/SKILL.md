@@ -1,21 +1,27 @@
 ---
 name: papertrail
 description: |
-  Query and download logs from Papertrail using the paperctl CLI. Use when:
+  Query and download logs from SolarWinds Observability (formerly Papertrail) using the paperctl CLI. Use when:
   (1) Downloading logs from Taskcluster workers or other systems
   (2) Searching for specific log entries across systems
   (3) Investigating CI failures by pulling worker logs
-  (4) Listing available systems or groups in Papertrail
+  (4) Listing available entities (hosts) in SolarWinds Observability
   Triggers: "papertrail", "pull logs", "worker logs", "download logs", "search logs"
 ---
 
-# Papertrail
+# SolarWinds Observability Logs (paperctl)
 
-Query and download logs from Papertrail using `paperctl`.
+Query and download logs from SolarWinds Observability (formerly Papertrail) using `paperctl` v2.0.
 
 ## Prerequisites
 
-Requires `PAPERTRAIL_API_TOKEN` environment variable or `~/.config/paperctl/config.toml`.
+Requires `SWO_API_TOKEN` environment variable or `~/.config/paperctl/config.toml`.
+
+Initialize config interactively:
+
+```bash
+paperctl config init
+```
 
 ## Commands
 
@@ -75,15 +81,36 @@ Save search results to file:
 paperctl search "error" --since -1h --file errors.txt
 ```
 
-### List systems
+### List entities (hosts)
 
 ```bash
-paperctl systems list
+paperctl entities list
+paperctl entities list --type Host --output json
+paperctl entities list --name web-1
+```
+
+### Show entity details
+
+```bash
+paperctl entities show <entity-id>
+paperctl entities show <entity-id> --output json
+```
+
+### List available entity types
+
+```bash
+paperctl entities list-types
+```
+
+### View configuration
+
+```bash
+paperctl config show
 ```
 
 ## Query syntax
 
-Papertrail search uses text matching with boolean operators. No regex or wildcards.
+SWO search uses text matching with boolean operators. No regex or wildcards.
 
 | Operator | Example |
 |----------|---------|
@@ -136,3 +163,16 @@ paperctl search "error" --since -1h --file errors.txt
 ```bash
 paperctl pull vm-abc123 --since "2026-01-29T10:00:00" --until "2026-01-29T11:00:00" --output incident.txt
 ```
+
+## Migration from v1.x
+
+v2.0 switched from Papertrail API to SolarWinds Observability API:
+
+| v1.x | v2.0 |
+|------|------|
+| `PAPERTRAIL_API_TOKEN` | `SWO_API_TOKEN` |
+| `paperctl systems list` | `paperctl entities list` |
+| `paperctl groups list` | Removed (not in SWO API) |
+| `paperctl archives list` | Removed (not in SWO API) |
+| `--group` option on search | Removed |
+| System IDs (integers) | Entity IDs (strings) |
