@@ -46,6 +46,53 @@ uv run "$WII" sbom gecko-t/win11-64-24h2
 uv run "$WII" vm-info <VM_NAME> <RESOURCE_GROUP>
 ```
 
+## Batch Analysis (Sheriff Workflow)
+
+When investigating image upgrades, analyze all failures at once:
+
+```bash
+# Batch compare all failed tasks in a task group
+uv run investigate.py batch-compare U0vOaaW-T-i5nN79edugYA
+
+# Filter to specific alpha pool
+uv run investigate.py batch-compare U0vOaaW-T-i5nN79edugYA \
+  --alpha-pool gecko-t/win11-64-24h2-alpha
+
+# Find tasks that likely failed due to image changes
+uv run investigate.py find-image-regressions U0vOaaW-T-i5nN79edugYA
+```
+
+### Image Regression Detection
+
+The `find-image-regressions` command identifies failures that are likely caused by image changes:
+
+| Signal | Meaning |
+|--------|---------|
+| Task on alpha pool | Using new/staging image |
+| Different image versions | Alpha has different version than production |
+| `likelyImageRegression: true` | High confidence this is image-related |
+
+### Example Output
+
+```json
+{
+  "taskGroupId": "U0vOaaW-T-i5nN79edugYA",
+  "likelyImageRegressions": 3,
+  "regressions": [
+    {
+      "taskId": "Xcac5C8gRqiOT13YsVRX8A",
+      "taskLabel": "mochitest-chrome-1proc",
+      "alphaPool": "gecko-t/win11-64-24h2-alpha",
+      "alphaImageVersion": "1.0.9",
+      "productionPool": "gecko-t/win11-64-24h2",
+      "productionImageVersion": "1.0.8",
+      "versionDiffers": true,
+      "likelyImageRegression": true
+    }
+  ]
+}
+```
+
 ## Investigation Workflow
 
 ### 1. Initial Task Analysis
