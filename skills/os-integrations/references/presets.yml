@@ -30,6 +30,20 @@ presets:
           - "test-windows11-64-24h2/opt-xpcshell"
           - "test-windows11-64-24h2-devedition/opt-xpcshell"
 
+  win11-25h2:
+    description: "Windows 11 25H2 testing (redirects 24H2 tasks to 25H2 alpha pools)"
+    query: "-xq 'test-windows11-64'"
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2=gecko-t/win11-64-25h2-alpha
+      - win11-64-24h2-gpu=gecko-t/win11-64-25h2-gpu-alpha
+      - win11-64-24h2-source=gecko-t/win11-64-25h2-source-alpha
+      - win11-64-24h2-large=gecko-t/win11-64-25h2-large-alpha
+      - win11-64-24h2-webgpu=gecko-t/win11-64-25h2-webgpu-alpha
+    use_os_integration: true
+
   win11-hw:
     description: "Windows 11 hardware testing"
     query: "-xq 'test-windows11-64'"

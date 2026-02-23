@@ -105,6 +105,7 @@ Use `-t` to filter to specific test suites:
 ## Available Presets
 
 - `win11-24h2` - Windows 11 24H2 standard
+- `win11-25h2` - Windows 11 25H2 (redirects 24H2 tasks to 25H2 alpha pools)
 - `win11-hw` - Windows 11 hardware workers
 - `win10-2009` - Windows 10 2009
 - `win11-amd` - Windows 11 AMD configuration
