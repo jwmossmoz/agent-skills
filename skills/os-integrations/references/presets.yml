@@ -30,6 +30,19 @@ presets:
           - "test-windows11-64-24h2/opt-xpcshell"
           - "test-windows11-64-24h2-devedition/opt-xpcshell"
 
+  win11-25h2-gpu-webgpu:
+    description: "Windows 11 25H2 GPU and WebGPU testing"
+    worker_types:
+      - win11-64-24h2-gpu
+      - win11-64-24h2-webgpu
+    flags:
+      - "--all-tasks"
+      - "--no-artifact"
+    worker_overrides:
+      - win11-64-24h2-gpu=gecko-t/win11-64-25h2-gpu
+      - win11-64-24h2-webgpu=gecko-t/win11-64-25h2-webgpu
+    use_os_integration: false
+
   win11-25h2:
     description: "Windows 11 25H2 testing (redirects 24H2 tasks to 25H2 alpha pools)"
     query: "-xq 'test-windows11-64'"

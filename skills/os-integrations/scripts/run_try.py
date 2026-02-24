@@ -59,6 +59,7 @@ PRESETS_FILE = SCRIPT_DIR.parent / "references" / "presets.yml"
 VALID_PRESETS = [
     "win11-24h2",
     "win11-25h2",
+    "win11-25h2-gpu-webgpu",
     "win11-hw",
     "win10-2009",
     "win11-amd",
@@ -651,25 +652,34 @@ Examples:
     # Handle task discovery
     discovered_labels: list[str] = []
 
-    if args.discover:
-        worker_type = preset_config.get("worker_type")
-        if not worker_type:
-            print(
-                f"Error: Preset '{args.preset}' does not have a worker_type defined.\n"
-                f"Add 'worker_type: <type>' to the preset in presets.yml to enable discovery.",
-                file=sys.stderr,
-            )
-            return 1
+    # worker_types (list) in preset triggers auto-discovery; --discover works with worker_type (singular)
+    worker_types_from_preset: list[str] = preset_config.get("worker_types", [])
+    if isinstance(preset_config.get("worker_type"), str):
+        worker_types_from_preset = worker_types_from_preset or [preset_config["worker_type"]]
 
-        print(f"Discovering tasks for worker type '{worker_type}'...")
+    if args.discover and not worker_types_from_preset:
+        print(
+            f"Error: Preset '{args.preset}' has no worker_type or worker_types defined.\n"
+            f"Add 'worker_types: [<type>, ...]' to the preset in presets.yml to enable discovery.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if worker_types_from_preset:
+        type_str = ", ".join(worker_types_from_preset)
+        print(f"Discovering tasks for worker types: {type_str}...")
         task_graph = fetch_task_graph(branch=args.branch)
         if task_graph is None:
             print("Error: Failed to fetch task graph", file=sys.stderr)
             return 1
 
-        discovered_labels = filter_by_worker_type(task_graph, worker_type)
+        all_labels: set[str] = set()
+        for wt in worker_types_from_preset:
+            all_labels.update(filter_by_worker_type(task_graph, wt))
+        discovered_labels = sorted(all_labels)
+
         if not discovered_labels:
-            print(f"Warning: No tasks found for worker type '{worker_type}'", file=sys.stderr)
+            print(f"Warning: No tasks found for worker types: {type_str}", file=sys.stderr)
         else:
             print(f"Found {len(discovered_labels)} task(s)\n")
 
