@@ -77,6 +77,35 @@ az vm run-command invoke \
 | Production | `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION` |
 | Staging | `RG-TASKCLUSTER-WORKER-MANAGER-STAGING` |
 
+## Creating Debug VMs
+
+Spin up a throwaway VM from a worker pool image for hands-on debugging.
+
+**Constraints:**
+- VM name **must be ≤ 15 characters** (Windows NetBIOS limit)
+- Always confirm `vmSize` from Taskcluster worker manager — never guess. Use the `/taskcluster` skill to look up the worker pool config and extract `vmSize` from `launchConfigs`.
+- Use a simple password (`Password1!`) — these are throwaway VMs
+
+### Create the VM
+
+```bash
+az vm create \
+  --resource-group jmoss-win11 \
+  --name "dbg-abc123" \
+  --image "<image-id>" \
+  --size "<vmSize>" \
+  --admin-username azureuser \
+  --admin-password "Password1!" \
+  --location eastus
+```
+
+### Delete when done
+
+```bash
+az vm delete --resource-group jmoss-win11 \
+  --name "dbg-abc123" --yes
+```
+
 ## Finding VM Names
 
 VM names can be found from:

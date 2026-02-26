@@ -150,6 +150,51 @@ az vm run-command invoke --resource-group RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTI
   --scripts "fltMC"
 ```
 
+## Creating Debug VMs
+
+Spin up a throwaway Azure VM from the same image a worker pool uses.
+
+### Constraints
+
+1. **VM name ≤ 15 characters** — Windows NetBIOS limit. Generate short names (e.g., `dbg-1a2b3c`).
+2. **Confirm vmSize from worker manager** — Never guess. Use the `/taskcluster` skill to look up the worker pool configuration and extract the `vmSize` from `launchConfigs`. Never hardcode or assume a VM size.
+3. **Use a simple password** — These VMs are throwaway. Use `Password1!`.
+
+### Workflow
+
+1. Use the `/taskcluster` skill to get the worker pool config for the target pool (e.g., `gecko-t/win11-64-24h2`). Extract the `vmSize` and image reference from `config.launchConfigs`.
+2. Create the VM (name must be ≤ 15 chars):
+
+```bash
+az vm create \
+  --resource-group jmoss-win11 \
+  --name "dbg-abc123" \
+  --image "<image-id-from-step-1>" \
+  --size "<vmSize-from-step-1>" \
+  --admin-username azureuser \
+  --admin-password "Password1!" \
+  --location eastus
+```
+
+3. Run commands on the VM:
+
+```bash
+az vm run-command invoke \
+  --resource-group jmoss-win11 \
+  --name "dbg-abc123" \
+  --command-id RunPowerShellScript \
+  --scripts "<POWERSHELL_COMMAND>"
+```
+
+4. Delete when done:
+
+```bash
+az vm delete --resource-group jmoss-win11 \
+  --name "dbg-abc123" --yes
+```
+
+See [references/azure-commands.md](references/azure-commands.md) for the full command reference.
+
 ## Common Resource Groups
 
 - **Production:** `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`
