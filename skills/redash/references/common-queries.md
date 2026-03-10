@@ -101,6 +101,107 @@ uv run scripts/query_redash.py --query-id 114867 --format table
 - `architecture` in `baseline_clients_daily` is CPU/hardware arch — Intel Firefox under Rosetta 2 reports `aarch64`
 - Cached results are up to 24 hours old
 
+## Linux Distro Distribution (Daily)
+
+Client count by Firefox distribution channel for Linux users, grouped by `distribution_id` (who packaged Firefox). Useful for seeing which Linux distros are represented in the user population.
+
+```sql
+SELECT
+  distribution_id,
+  COUNT(DISTINCT client_id) AS user_count
+FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND os = 'Linux'
+GROUP BY distribution_id
+ORDER BY user_count DESC
+```
+
+**Caveats:**
+- `distribution_id` reflects how Firefox was packaged, not the OS directly — users who downloaded Firefox from mozilla.org appear as empty/null regardless of distro
+- To isolate a single distro, add `AND distribution_id = '<value>'` (e.g. `'nixos'`, `'canonical'`, `'fedora'`)
+
+## NixOS Firefox Users (Daily)
+
+Count of Firefox clients on NixOS (identified via `distribution_id = 'nixos'`).
+
+```sql
+SELECT
+  COUNT(DISTINCT client_id) AS user_count
+FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND os = 'Linux'
+  AND distribution_id = 'nixos'
+```
+
+**Caveats:**
+- Counts Firefox installed via nixpkgs — effectively the same as NixOS users in practice
+- `normalized_os_version` (kernel version) cannot identify NixOS; `distribution_id` is the only reliable signal in aggregated tables
+
+## EOL OS Firefox Users (Daily)
+
+Client count grouped by EOL operating system: Windows 7, Windows 8.1, and macOS 10.12–10.14.
+
+```sql
+SELECT
+  CASE
+    WHEN os = 'Windows_NT' AND os_version = '6.1'         THEN 'Windows 7'
+    WHEN os = 'Windows_NT' AND os_version = '6.3'         THEN 'Windows 8.1'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '16.') THEN 'macOS 10.12 Sierra'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '17.') THEN 'macOS 10.13 High Sierra'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '18.') THEN 'macOS 10.14 Mojave'
+  END AS os_label,
+  COUNT(DISTINCT client_id) AS user_count
+FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND (
+    (os = 'Windows_NT' AND os_version IN ('6.1', '6.3'))
+    OR
+    (os = 'Darwin' AND (
+      STARTS_WITH(os_version, '16.')
+      OR STARTS_WITH(os_version, '17.')
+      OR STARTS_WITH(os_version, '18.')
+    ))
+  )
+GROUP BY os_label
+ORDER BY os_label
+```
+
+**Notes:**
+- macOS `os_version` is the Darwin kernel version — 16.x = 10.12 Sierra, 17.x = 10.13 High Sierra, 18.x = 10.14 Mojave
+- Windows `os_version` is the NT version — 6.1 = Windows 7, 6.3 = Windows 8.1
+- Use `LIKE` instead of `STARTS_WITH` if running outside of BigQuery
+
+## EOL OS Firefox Users on ESR 115 (Daily)
+
+Same as above but filtered to clients running Firefox ESR 115. Useful for tracking users on EOL platforms who are still on the ESR 115 extended support release.
+
+```sql
+SELECT
+  CASE
+    WHEN os = 'Windows_NT' AND os_version = '6.1'         THEN 'Windows 7'
+    WHEN os = 'Windows_NT' AND os_version = '6.3'         THEN 'Windows 8.1'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '16.') THEN 'macOS 10.12 Sierra'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '17.') THEN 'macOS 10.13 High Sierra'
+    WHEN os = 'Darwin' AND STARTS_WITH(os_version, '18.') THEN 'macOS 10.14 Mojave'
+  END AS os_label,
+  COUNT(DISTINCT client_id) AS user_count
+FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+WHERE submission_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+  AND normalized_channel = 'esr'
+  AND STARTS_WITH(app_version, '115.')
+  AND (
+    (os = 'Windows_NT' AND os_version IN ('6.1', '6.3'))
+    OR
+    (os = 'Darwin' AND (
+      STARTS_WITH(os_version, '16.')
+      OR STARTS_WITH(os_version, '17.')
+      OR STARTS_WITH(os_version, '18.')
+    ))
+  )
+GROUP BY os_label
+ORDER BY os_label
+```
+
 ## Task Group Cost by Pusher
 
 Cost breakdown per task group for a specific user. Replace `{start_date}` and `{user_email}` with actual values.
