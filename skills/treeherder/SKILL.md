@@ -97,6 +97,7 @@ uvx --from lumberjackth lj --json jobs autoland --push-id 12345
 | Download artifacts | treeherder-cli | `treeherder-cli abc123 --download-artifacts` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
 | Performance/resource data | treeherder-cli | `treeherder-cli abc123 --perf --json` |
+| Check known intermittent bugs for failures | REST API | See "Bug Suggestions for Failing Jobs" below |
 | List recent pushes | lumberjackth | `lj pushes autoland -n 10` |
 | Filter by result/state/tier | lumberjackth | `lj jobs autoland --push-id 123 --result testfailed --tier 1` |
 | Get single job details | lumberjackth | `lj job autoland "guid" --logs` |
@@ -104,6 +105,89 @@ uvx --from lumberjackth lj --json jobs autoland --push-id 12345
 | Error lines + bug suggestions | lumberjackth | `lj errors autoland 545896732` |
 | Performance alerts | lumberjackth | `lj perf-alerts -r autoland` |
 | List repositories | lumberjackth | `lj repos` |
+
+## Bug Suggestions for Failing Jobs
+
+Neither CLI tool supports bulk querying of known intermittent bugs for failing jobs. Use the Treeherder REST API directly to check whether test failures have associated Bugzilla bugs.
+
+### Workflow
+
+1. Get failing job IDs from `treeherder-cli` JSON output
+2. Query the bug suggestions endpoint for each job
+3. Aggregate results to identify known intermittents vs novel failures
+
+### API Endpoint
+
+```
+GET https://treeherder.mozilla.org/api/project/{repo}/jobs/{job_id}/bug_suggestions/
+```
+
+Returns an array of failure lines with matched Bugzilla bugs:
+```json
+[
+  {
+    "search": "TEST-UNEXPECTED-FAIL | test.js | Test timed out",
+    "path_end": "path/to/test.js",
+    "bugs": {
+      "open_recent": [
+        {"id": 1940606, "status": "REOPENED", "summary": "Intermittent test.js | ...", "keywords": ["intermittent-failure"]}
+      ],
+      "all_others": [...]
+    },
+    "failure_new_in_rev": false
+  }
+]
+```
+
+### Example Script
+
+```python
+import urllib.request, json
+
+headers = {'User-Agent': 'Mozilla/5.0'}
+repo = "try"
+job_id = 553921053
+
+url = f"https://treeherder.mozilla.org/api/project/{repo}/jobs/{job_id}/bug_suggestions/"
+req = urllib.request.Request(url, headers=headers)
+with urllib.request.urlopen(req) as resp:
+    suggestions = json.loads(resp.read())
+
+for s in suggestions:
+    test = s.get('path_end', '')
+    open_bugs = s['bugs'].get('open_recent', [])
+    all_other = s['bugs'].get('all_others', [])
+    if open_bugs or all_other:
+        print(f"{test}: known bugs")
+        for b in open_bugs + all_other:
+            print(f"  Bug {b['id']} [{b['status']}] {b['summary'][:100]}")
+    else:
+        print(f"{test}: NO known bugs")
+```
+
+### Bulk Query Pattern
+
+When checking many failing jobs (e.g., validating a new worker image), combine with `treeherder-cli --json` output:
+
+```bash
+# 1. Get failing jobs as JSON
+treeherder-cli REVISION --repo try --platform "25h2" --json > failures.json
+
+# 2. Extract job IDs and query bug_suggestions for each
+python3 bulk_bug_check.py failures.json
+```
+
+Deduplicate by `job_type_name` to avoid querying the same test suite multiple times across retries. A `User-Agent` header is required for all API requests.
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `path_end` | Test file path (use as the test identifier) |
+| `bugs.open_recent` | Open bugs with recent activity (most relevant) |
+| `bugs.all_others` | Older or resolved bugs |
+| `failure_new_in_rev` | Whether this failure first appeared in this revision |
+| `keywords` | Look for `intermittent-failure` to confirm known intermittents |
 
 ## Prerequisites
 
