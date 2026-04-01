@@ -26,7 +26,8 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://sql.telemetry.mozilla.org"
-DATA_SOURCE_ID = 63  # Telemetry (BigQuery)
+DATA_SOURCE_ID_BIGQUERY = 63  # Telemetry (BigQuery)
+DATA_SOURCE_ID_DEFAULT = DATA_SOURCE_ID_BIGQUERY
 
 
 def get_api_key() -> str:
@@ -38,7 +39,17 @@ def get_api_key() -> str:
     return api_key
 
 
-def run_query(api_key: str, sql: str, max_wait: int = 300) -> dict:
+def list_data_sources(api_key: str) -> list:
+    """List all available Redash data sources."""
+    req = urllib.request.Request(
+        f"{BASE_URL}/api/data_sources",
+        headers={"Authorization": f"Key {api_key}"},
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read().decode())
+
+
+def run_query(api_key: str, sql: str, data_source_id: int = DATA_SOURCE_ID_DEFAULT, max_wait: int = 300) -> dict:
     """
     Execute a SQL query against Redash and wait for results.
 
@@ -51,7 +62,7 @@ def run_query(api_key: str, sql: str, max_wait: int = 300) -> dict:
         Query result data
     """
     data = json.dumps({
-        "data_source_id": DATA_SOURCE_ID,
+        "data_source_id": data_source_id,
         "query": sql,
         "max_age": 0,
     }).encode()
@@ -148,12 +159,24 @@ Examples:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--sql",
-        help="SQL query to execute against BigQuery via Redash",
+        help="SQL query to execute via Redash",
     )
     group.add_argument(
         "--query-id",
         type=int,
         help="Fetch cached results from existing Redash query ID",
+    )
+    group.add_argument(
+        "--list-data-sources",
+        action="store_true",
+        help="List available Redash data sources and their IDs",
+    )
+
+    parser.add_argument(
+        "--data-source-id",
+        type=int,
+        default=DATA_SOURCE_ID_DEFAULT,
+        help=f"Redash data source ID (default: {DATA_SOURCE_ID_DEFAULT} = BigQuery)",
     )
 
     parser.add_argument(
@@ -177,12 +200,20 @@ Examples:
 
     api_key = get_api_key()
 
+    if args.list_data_sources:
+        sources = list_data_sources(api_key)
+        print(f"{'ID':<6} {'Type':<20} Name")
+        print("-" * 60)
+        for s in sorted(sources, key=lambda x: x["id"]):
+            print(f"{s['id']:<6} {s['type']:<20} {s['name']}")
+        return
+
     if args.query_id:
         print(f"Fetching cached results for query {args.query_id}...", file=sys.stderr)
         result = get_existing_query_results(api_key, args.query_id)
     else:
         print(f"Executing query...", file=sys.stderr)
-        result = run_query(api_key, args.sql)
+        result = run_query(api_key, args.sql, data_source_id=args.data_source_id)
 
     rows = result["query_result"]["data"]["rows"]
     columns = [c["name"] for c in result["query_result"]["data"]["columns"]]
