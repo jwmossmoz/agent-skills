@@ -227,3 +227,108 @@ GROUP BY tags.created_for_user,
 |-----------|---------|-------------|
 | `{start_date}` | `2026-02-01` | Filter tasks submitted on or after this date |
 | `{user_email}` | `jdoe@mozilla.com` | The pusher's email address |
+
+## FXCI Worker Pool Queue Time (Historical)
+
+Historical queue-time summary for a specific Taskcluster worker pool using FXCI task data in BigQuery. This is the right query shape for questions about why a worker pool is showing high queue time or queue time max.
+
+```bash
+uv run scripts/query_redash.py --sql "
+WITH base AS (
+  SELECT
+    tr.task_id,
+    tr.run_id,
+    tr.state,
+    tr.reason_resolved,
+    tr.scheduled,
+    tr.started,
+    tr.resolved,
+    tr.worker_group,
+    tr.worker_id,
+    t.task_queue_id,
+    t.tags.project AS project,
+    t.tags.created_for_user AS created_for_user,
+    t.tags.label AS label
+  FROM \`moz-fx-data-shared-prod.fxci.task_runs\` tr
+  JOIN \`moz-fx-data-shared-prod.fxci.tasks\` t USING (task_id)
+  WHERE tr.submission_date BETWEEN DATE '{start_date}' - 1 AND DATE '{end_date}' + 1
+    AND t.submission_date BETWEEN DATE '{start_date}' - 1 AND DATE '{end_date}' + 1
+    AND tr.scheduled >= TIMESTAMP('{start_date} 00:00:00+00')
+    AND tr.scheduled < TIMESTAMP('{end_date} 00:00:00+00')
+    AND t.task_queue_id = '{task_queue_id}'
+)
+SELECT
+  COUNT(*) AS total_rows,
+  COUNTIF(started IS NOT NULL) AS started_rows,
+  APPROX_QUANTILES(
+    IF(started IS NOT NULL, TIMESTAMP_DIFF(started, scheduled, MILLISECOND), NULL),
+    100
+  )[OFFSET(50)] AS median_queue_ms,
+  APPROX_QUANTILES(
+    IF(started IS NOT NULL, TIMESTAMP_DIFF(started, scheduled, MILLISECOND), NULL),
+    100
+  )[OFFSET(90)] AS p90_queue_ms,
+  MAX(IF(started IS NOT NULL, TIMESTAMP_DIFF(started, scheduled, MILLISECOND), NULL)) AS max_queue_ms,
+  COUNTIF(state = 'exception' AND reason_resolved = 'deadline-exceeded') AS expired_rows
+FROM base
+"
+```
+
+**Parameters:**
+| Parameter | Example | Description |
+|-----------|---------|-------------|
+| `{start_date}` | `2026-04-14` | Inclusive UTC day start |
+| `{end_date}` | `2026-04-15` | Exclusive UTC day end |
+| `{task_queue_id}` | `provisioner/worker-type` | Full Taskcluster queue ID |
+
+**Notes:**
+- `queue time` is `started - scheduled` for tasks that actually started.
+- `queue time max` is the max of that same value within the selected UTC scheduled window.
+- Use a wider `submission_date` partition filter than the UTC window. Filtering only on a single `submission_date` can undercount runs near day boundaries.
+- This query is for historical analysis. For current pending/claimed counts, running/stopping workers, and provisioning errors, use the Taskcluster skill instead of Redash.
+
+## FXCI Worker Pool Queue Time by Project or Task Group
+
+Use this when the summary says queue time is high and you need to identify whether the backlog is coming from `try`, `autoland`, or a few large task groups.
+
+```bash
+uv run scripts/query_redash.py --sql "
+WITH base AS (
+  SELECT
+    tr.task_id,
+    tr.run_id,
+    tr.scheduled,
+    tr.started,
+    t.task_queue_id,
+    t.task_group_id,
+    t.tags.project AS project,
+    t.tags.created_for_user AS created_for_user,
+    t.tags.label AS label
+  FROM \`moz-fx-data-shared-prod.fxci.task_runs\` tr
+  JOIN \`moz-fx-data-shared-prod.fxci.tasks\` t USING (task_id)
+  WHERE tr.submission_date BETWEEN DATE '{start_date}' - 1 AND DATE '{end_date}' + 1
+    AND t.submission_date BETWEEN DATE '{start_date}' - 1 AND DATE '{end_date}' + 1
+    AND tr.scheduled >= TIMESTAMP('{start_date} 00:00:00+00')
+    AND tr.scheduled < TIMESTAMP('{end_date} 00:00:00+00')
+    AND tr.started IS NOT NULL
+    AND t.task_queue_id = '{task_queue_id}'
+)
+SELECT
+  project,
+  task_group_id,
+  created_for_user,
+  COUNT(*) AS started_rows,
+  APPROX_QUANTILES(TIMESTAMP_DIFF(started, scheduled, MILLISECOND), 100)[OFFSET(50)] AS median_queue_ms,
+  APPROX_QUANTILES(TIMESTAMP_DIFF(started, scheduled, MILLISECOND), 100)[OFFSET(90)] AS p90_queue_ms,
+  MAX(TIMESTAMP_DIFF(started, scheduled, MILLISECOND)) AS max_queue_ms
+FROM base
+GROUP BY 1, 2, 3
+ORDER BY max_queue_ms DESC, started_rows DESC
+LIMIT 50
+"
+```
+
+**Interpretation tips:**
+- A few large `try` task groups with very high queue times usually mean bursty low-priority demand.
+- High `autoland` queue times point to broader pool pressure that can affect production traffic.
+- If many groups are bad at once and Taskcluster shows lots of `stopping` workers or provisioning errors, the problem is likely capacity churn rather than a single push.

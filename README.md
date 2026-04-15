@@ -20,7 +20,7 @@ npx skills add mozilla-platform-ops/agent-skills/<skill-name>
 
 | Skill | Description |
 |-------|-------------|
-| [redash](skills/redash/) | Query Mozilla's Redash (sql.telemetry.mozilla.org) for Firefox telemetry data. Covers OS version distribution, DAU/MAU, and architecture breakdown. Requires only a Redash API key. |
+| [redash](skills/redash/) | Query Mozilla's Redash (sql.telemetry.mozilla.org) for Firefox telemetry and FXCI task data. Covers OS version distribution, DAU/MAU, architecture breakdown, worker-pool queue time, and task-level CI analysis. Requires only a Redash API key. |
 
 ## Adding New Skills
 

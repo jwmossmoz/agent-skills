@@ -2,12 +2,13 @@
 name: redash
 description: >
   Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data from BigQuery.
-  Use when querying Firefox user telemetry, OS distribution, architecture breakdown, or
-  running custom SQL against Mozilla's data warehouse. Triggers on "redash", "telemetry
-  query", "sql.telemetry", "BigQuery query", "Firefox data", "client counts",
+  Use when querying Firefox user telemetry, OS distribution, architecture breakdown, FXCI
+  task data, or running custom SQL against Mozilla's data warehouse. Triggers on "redash",
+  "telemetry query", "sql.telemetry", "BigQuery query", "Firefox data", "client counts",
   "user population", "DAU", "MAU", "macOS version", "macOS distribution", "Apple Silicon",
   "aarch64", "x86_64", "architecture distribution", "Windows version", "Windows distribution",
-  "how many users", "what share of users", "what percentage of Firefox users".
+  "how many users", "what share of users", "what percentage of Firefox users", "worker pool",
+  "queue time", "Taskcluster queue", "FXCI task data".
 ---
 
 # Redash Query Tool
@@ -61,6 +62,8 @@ These natural language prompts map to queries in `references/common-queries.md`:
 | "What Windows versions are Firefox Desktop users on?" | `--query-id 65967` (Windows Version Distribution) |
 | "How many Firefox users are on Windows 11?" | `--query-id 65967` |
 | "What does the macOS adoption curve look like over time?" | `--query-id 114866`, look at darwin_version |
+| "Why is a worker pool showing high queue time?" | Use the FXCI worker-pool queue-time query in `references/common-queries.md` |
+| "What task groups are driving queue time for a worker pool?" | Use the FXCI worker-pool queue-time queries in `references/common-queries.md` |
 
 For questions not covered by a documented query, write SQL on the fly using the table references in `references/README.md`.
 
