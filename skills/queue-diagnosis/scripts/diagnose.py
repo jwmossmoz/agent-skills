@@ -25,6 +25,34 @@ from pathlib import Path
 
 REDASH_SCRIPT = Path.home() / ".claude" / "skills" / "redash" / "scripts" / "query_redash.py"
 
+TC_ROOT = "https://firefox-ci-tc.services.mozilla.com"
+TREEHERDER_ROOT = "https://treeherder.mozilla.org"
+
+
+def tc_task_group_url(task_group_id: str) -> str:
+    return f"{TC_ROOT}/tasks/groups/{task_group_id}"
+
+
+def tc_pool_url(pool_id: str) -> str:
+    return f"{TC_ROOT}/worker-manager/{pool_id}"
+
+
+def tc_provisioner_url(pool_id: str) -> str:
+    provisioner, worker_type = pool_id.split("/", 1)
+    return (
+        f"{TC_ROOT}/provisioners/{provisioner}"
+        f"/worker-types/{worker_type}"
+    )
+
+
+def treeherder_task_group_url(
+    project: str, task_group_id: str,
+) -> str:
+    return (
+        f"{TREEHERDER_ROOT}/jobs?repo={project}"
+        f"&taskGroupId={task_group_id}"
+    )
+
 
 def run_tc_command(args: list[str]) -> dict:
     """Run a taskcluster CLI command and return parsed JSON."""
@@ -244,6 +272,63 @@ LIMIT 25
     return run_redash_query(sql)
 
 
+def get_top_task_groups(
+    pool_id: str, start_date: str, end_date: str,
+) -> list[dict]:
+    """Get the largest individual task groups with links."""
+    sql = f"""
+SELECT
+  t.tags.project AS project,
+  t.task_group_id,
+  t.tags.created_for_user AS pusher,
+  COUNT(*) AS total_tasks,
+  COUNTIF(tr.started IS NOT NULL) AS started_tasks,
+  COUNTIF(
+    tr.state = 'exception'
+    AND tr.reason_resolved = 'deadline-exceeded'
+  ) AS expired_tasks,
+  APPROX_QUANTILES(
+    IF(tr.started IS NOT NULL,
+       TIMESTAMP_DIFF(tr.started, tr.scheduled, MILLISECOND), NULL),
+    100
+  )[OFFSET(50)] AS median_queue_ms,
+  MAX(
+    IF(tr.started IS NOT NULL,
+       TIMESTAMP_DIFF(tr.started, tr.scheduled, MILLISECOND), NULL)
+  ) AS max_queue_ms
+FROM `moz-fx-data-shared-prod.fxci.task_runs` tr
+JOIN `moz-fx-data-shared-prod.fxci.tasks` t USING (task_id)
+WHERE tr.submission_date BETWEEN '{start_date}' AND '{end_date}'
+  AND t.submission_date BETWEEN '{start_date}' AND '{end_date}'
+  AND tr.scheduled >= TIMESTAMP('{start_date} 00:00:00+00')
+  AND tr.scheduled < TIMESTAMP('{end_date} 00:00:00+00')
+  AND t.task_queue_id = '{pool_id}'
+GROUP BY 1, 2, 3
+ORDER BY total_tasks DESC
+LIMIT 30
+"""
+    rows = run_redash_query(sql)
+    for row in rows:
+        if "error" in row:
+            break
+        tg = row.get("task_group_id", "")
+        project = row.get("project", "")
+        row["tc_url"] = tc_task_group_url(tg)
+        if project:
+            row["treeherder_url"] = treeherder_task_group_url(
+                project, tg,
+            )
+    return rows
+
+
+def add_pool_links(report: dict, pool_id: str) -> None:
+    """Add a links section with clickable URLs for the pool."""
+    report["links"] = {
+        "worker_pool": tc_pool_url(pool_id),
+        "pending_tasks": tc_provisioner_url(pool_id),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Diagnose worker pool queue backlog",
@@ -296,7 +381,7 @@ def main():
 
     report = {}
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=5) as pool:
         futures = {
             pool.submit(get_pool_status, args.pool_id): "pool_status",
             pool.submit(
@@ -308,6 +393,9 @@ def main():
             pool.submit(
                 get_top_pushers, args.pool_id, pusher_start, end_date,
             ): "top_pushers",
+            pool.submit(
+                get_top_task_groups, args.pool_id, pusher_start, end_date,
+            ): "top_task_groups",
         }
 
         for future in as_completed(futures):
@@ -321,6 +409,7 @@ def main():
 
     report["generated_at"] = now.isoformat()
     report["pool_id"] = args.pool_id
+    add_pool_links(report, args.pool_id)
 
     output = json.dumps(report, indent=2, default=str)
 

@@ -35,9 +35,12 @@ Example:
 uv run scripts/diagnose.py gecko-t/win11-64-25h2
 ```
 
-The script outputs a JSON report with four sections: `pool_status`,
-`queue_times`, `daily_volume`, and `top_pushers`. Read the output and
-present a diagnostic summary to the user.
+The script outputs a JSON report with six sections: `pool_status`,
+`queue_times`, `daily_volume`, `top_pushers`, `top_task_groups`, and
+`links`. Read the output and present a diagnostic summary to the user.
+
+Every claim in the summary must have a clickable link so the user can
+verify it. The report provides these automatically.
 
 ## Interpreting results
 
@@ -82,11 +85,49 @@ Look at `daily_volume` and `top_pushers`:
 
 Structure the summary as:
 
-1. **Current pool state** — pending, running, capacity utilization %
+1. **Current pool state** — pending, running, capacity utilization %. Link to
+   the pool in TC using the `links.worker_pool` URL.
 2. **Queue time impact** — median, p90, p95, max (convert ms to human-readable)
 3. **Root cause** — demand-side, supply-side, or both, with evidence
-4. **Top contributors** — which projects and pushers are driving volume
+4. **Top contributors** — which projects and pushers are driving volume. For
+   each major contributor, include their largest task group links from
+   `top_task_groups`. Each entry has `tc_url` (Taskcluster task group view)
+   and `treeherder_url` (Treeherder job view).
 5. **Trend** — is this getting better or worse (compare daily volumes)
+
+Every top contributor and task group mentioned must have a clickable link.
+The `top_task_groups` section provides both `tc_url` and `treeherder_url`
+for each task group. Present these as markdown links so the user can click
+through and verify.
+
+**Example output format:**
+
+```
+wptsync@mozilla.com — 4,330 tasks across 117 groups (try)
+  Largest group: [TC](https://firefox-ci-tc..../tasks/groups/Q1uV...) |
+  [Treeherder](https://treeherder.mozilla.org/jobs?repo=try&taskGroupId=Q1uV...)
+  641 tasks, median queue 56 min, max 2h 42min
+```
+
+### Drilling deeper with treeherder-cli
+
+Once you've identified a problematic task group, use `treeherder-cli` for
+follow-up investigation when you have the push revision (not the task group
+ID). `treeherder-cli` works with revision hashes, not task group IDs.
+
+```bash
+# Check failures for a specific revision on autoland
+treeherder-cli <revision> --repo autoland --json
+
+# Filter to a specific platform
+treeherder-cli <revision> --repo autoland --platform "windows.*25h2" --json
+
+# Compare two revisions to find what changed
+treeherder-cli <rev1> --compare <rev2> --json
+```
+
+Use this when you need to understand whether a specific push introduced
+failures or regressions, not just that it consumed pool capacity.
 
 ## Authentication
 
