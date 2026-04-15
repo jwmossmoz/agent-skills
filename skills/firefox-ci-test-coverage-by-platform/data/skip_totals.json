@@ -1,0 +1,308 @@
+{
+  "cargo": {
+    "total": 489
+  },
+  "pyproject": {
+    "total": 118
+  },
+  "cppunittest": {
+    "total": 82
+  },
+  "xpcshell": {
+    "total": 4389
+  },
+  "cbindgen": {
+    "total": 74
+  },
+  "mochitest-chrome": {
+    "total": 1166
+  },
+  "python": {
+    "total": 154
+  },
+  "mochitest-plain": {
+    "total": 11421
+  },
+  "mochitest-browser-chrome": {
+    "total": 8382
+  },
+  "assignment-in-preamble": {
+    "total": 1
+  },
+  "invalid": {
+    "total": 2
+  },
+  "missing-include": {
+    "total": 1
+  },
+  "non-double-quote-sections-fix": {
+    "total": 2
+  },
+  "non-double-quote-sections": {
+    "total": 2
+  },
+  "non-idiomatic-fix": {
+    "total": 5
+  },
+  "non-idiomatic": {
+    "total": 5
+  },
+  "skip-if-explicit-or": {
+    "total": 2
+  },
+  "skip-if-not-array": {
+    "total": 1
+  },
+  "unsorted-fix": {
+    "total": 6
+  },
+  "unsorted": {
+    "total": 6
+  },
+  "l10n": {
+    "total": 44
+  },
+  "manifest": {
+    "total": 187
+  },
+  "askama": {
+    "total": 1
+  },
+  "config": {
+    "total": 24
+  },
+  "perftest": {
+    "total": 48
+  },
+  "eval": {
+    "total": 5
+  },
+  "manifest-serviceworker": {
+    "total": 2
+  },
+  "native_messaging": {
+    "total": 6
+  },
+  "fly": {
+    "total": 4
+  },
+  "raptor": {
+    "total": 45
+  },
+  "ares6": {
+    "total": 1
+  },
+  "assorted-dom": {
+    "total": 1
+  },
+  "jetstream2-mobile": {
+    "total": 1
+  },
+  "jetstream2": {
+    "total": 1
+  },
+  "jetstream3-desktop": {
+    "total": 2
+  },
+  "jetstream3-mobile": {
+    "total": 2
+  },
+  "matrix-react-bench": {
+    "total": 1
+  },
+  "motionmark-1-3-desktop": {
+    "total": 2
+  },
+  "motionmark-1-3-mobile": {
+    "total": 2
+  },
+  "speedometer-desktop": {
+    "total": 2
+  },
+  "speedometer-mobile": {
+    "total": 2
+  },
+  "stylebench": {
+    "total": 1
+  },
+  "sunspider": {
+    "total": 1
+  },
+  "twitch-animation": {
+    "total": 1
+  },
+  "unity-webgl-desktop": {
+    "total": 1
+  },
+  "unity-webgl-mobile": {
+    "total": 1
+  },
+  "wasm-godot-baseline": {
+    "total": 1
+  },
+  "wasm-godot-optimizing": {
+    "total": 1
+  },
+  "wasm-godot": {
+    "total": 1
+  },
+  "wasm-misc-baseline": {
+    "total": 1
+  },
+  "wasm-misc-optimizing": {
+    "total": 1
+  },
+  "wasm-misc": {
+    "total": 1
+  },
+  "webaudio": {
+    "total": 1
+  },
+  "youtube-playback": {
+    "total": 17
+  },
+  "idle": {
+    "total": 2
+  },
+  "mochitest-a11y": {
+    "total": 295
+  },
+  "instrumentation": {
+    "total": 2
+  },
+  "comment-example": {
+    "total": 8
+  },
+  "default-skipif": {
+    "total": 6
+  },
+  "default-subsuite": {
+    "total": 2
+  },
+  "default-suppfiles": {
+    "total": 3
+  },
+  "default-tags": {
+    "total": 3
+  },
+  "edit-manifest-after": {
+    "total": 7
+  },
+  "edit-manifest-before": {
+    "total": 7
+  },
+  "filter-example": {
+    "total": 3
+  },
+  "include-example": {
+    "total": 3
+  },
+  "include-invalid": {
+    "total": 1
+  },
+  "missing-path": {
+    "total": 2
+  },
+  "mozmill-example": {
+    "total": 80
+  },
+  "mozmill-restart-example": {
+    "total": 19
+  },
+  "path-example": {
+    "total": 1
+  },
+  "relative-path": {
+    "total": 2
+  },
+  "remove-manifest-after1": {
+    "total": 4
+  },
+  "remove-manifest-after2": {
+    "total": 4
+  },
+  "remove-manifest-after3": {
+    "total": 4
+  },
+  "remove-manifest-before": {
+    "total": 4
+  },
+  "replace-tbd-after": {
+    "total": 5
+  },
+  "replace-tbd-before": {
+    "total": 5
+  },
+  "subsuite": {
+    "total": 6
+  },
+  "bar": {
+    "total": 1
+  },
+  "foo": {
+    "total": 1
+  },
+  "verifydirectory": {
+    "total": 4
+  },
+  "verifydirectory_incomplete": {
+    "total": 3
+  },
+  "verifydirectory_toocomplete": {
+    "total": 5
+  },
+  "level_1": {
+    "total": 2
+  },
+  "level_2": {
+    "total": 2
+  },
+  "level_3": {
+    "total": 2
+  },
+  "level_3_default": {
+    "total": 2
+  },
+  "integration-tests": {
+    "total": 24
+  },
+  "unit-tests": {
+    "total": 92
+  },
+  ".ruff": {
+    "total": 1
+  },
+  "bors": {
+    "total": 2
+  },
+  "servobindings": {
+    "total": 1
+  },
+  "config-lock": {
+    "total": 4
+  },
+  "servo-tidy": {
+    "total": 2
+  },
+  "_jsterm": {
+    "total": 118
+  },
+  "_webconsole_ak": {
+    "total": 90
+  },
+  "_webconsole_lz": {
+    "total": 92
+  },
+  "_webconsole_network": {
+    "total": 16
+  },
+  "_webconsole_object_inspector": {
+    "total": 19
+  },
+  "_webconsole_warning_group": {
+    "total": 9
+  },
+  "stubs": {
+    "total": 1
+  }
+}

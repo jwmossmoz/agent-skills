@@ -1,0 +1,1390 @@
+{
+  "snapshot_date": "2026-04-14",
+  "summary": {
+    "total_skipped_tests": 3413,
+    "skipped_all_platforms": 502,
+    "tier1_affected_skips": 2609
+  },
+  "suites": {
+    "_webconsole_ak": {
+      "total_skipped": 20,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 19,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 18,
+        "win": 1
+      }
+    },
+    "_webconsole_lz": {
+      "total_skipped": 9,
+      "skipped_all_platforms": 2,
+      "tier1_affected": 7,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 6,
+        "mac": 3,
+        "android": 2,
+        "win": 2
+      }
+    },
+    "_webconsole_network": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 1
+      }
+    },
+    "_webconsole_object_inspector": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 1
+      }
+    },
+    "_webconsole_warning_group": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 1,
+        "win": 1,
+        "mac": 1
+      }
+    },
+    "awsy": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "awsy-base": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "awsy-base-dmd": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "awsy-dmd": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "awsy-tp6": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "broken-skip-if": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-jetstream2": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-jetstream3": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-motionmark-1-3": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-speedometer2-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-speedometer3-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-unity-webgl-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-benchmark-wasm": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-custom": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-first-install": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-indexeddb": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-network-bench": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-pageload-benchmark": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-regression-tests": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-responsiveness": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-speculative": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-throttled": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-bytecode": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-essential": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-live": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-live-sheriffed": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6-webextensions": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6m": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6m-essential": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6m-live": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6m-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp6m-webextensions": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-tp7": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-trr-performance": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-trr-performance-m": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-upload": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-video-playback-latency": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-video-playback-latency-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-webcodecs": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-youtube-playback": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-youtube-playback-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-youtube-playback-power": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "browsertime-youtube-playback-power-mobile": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "cppunittest": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 3,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 4,
+        "linux": 3,
+        "win": 4,
+        "mac": 4
+      }
+    },
+    "crashtest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "crashtest-qr": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "default-skipif": {
+      "total_skipped": 6,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 5,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "win": 4,
+        "android": 1,
+        "linux": 2,
+        "mac": 1
+      }
+    },
+    "edit-manifest-after": {
+      "total_skipped": 7,
+      "skipped_all_platforms": 2,
+      "tier1_affected": 7,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 3,
+        "linux": 4,
+        "win": 3,
+        "mac": 6,
+        "windows": 1
+      }
+    },
+    "edit-manifest-before": {
+      "total_skipped": 6,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 6,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 4,
+        "mac": 4,
+        "win": 1
+      }
+    },
+    "eval": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 1,
+        "win": 1,
+        "mac": 1
+      }
+    },
+    "filter-example": {
+      "total_skipped": 3,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 3,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 1,
+        "mac": 3,
+        "win": 1
+      }
+    },
+    "firefox-ui-functional": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "geckoview-junit": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "gtest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "invalid": {
+      "total_skipped": 2,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "jittest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "jittest-all": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "jsreftest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "manifest": {
+      "total_skipped": 22,
+      "skipped_all_platforms": 6,
+      "tier1_affected": 22,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 6,
+        "linux": 14,
+        "win": 12,
+        "mac": 12
+      }
+    },
+    "marionette-integration": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "marionette-unittest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-a11y": {
+      "total_skipped": 7,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 7,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 3,
+        "win": 2,
+        "mac": 5
+      }
+    },
+    "mochitest-browser-a11y": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-browser-chrome": {
+      "total_skipped": 1043,
+      "skipped_all_platforms": 205,
+      "tier1_affected": 943,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 225,
+        "linux": 574,
+        "win": 501,
+        "mac": 464
+      }
+    },
+    "mochitest-browser-chrome-failures": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-browser-media": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-browser-screenshots": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-browser-translations": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-chrome": {
+      "total_skipped": 49,
+      "skipped_all_platforms": 12,
+      "tier1_affected": 41,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 30,
+        "android": 13,
+        "win": 20,
+        "mac": 20
+      }
+    },
+    "mochitest-chrome-gpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-devtools-chrome": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-media": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-plain": {
+      "total_skipped": 1681,
+      "skipped_all_platforms": 198,
+      "tier1_affected": 1084,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "win": 353,
+        "mac": 325,
+        "linux": 411,
+        "android": 795
+      }
+    },
+    "mochitest-plain-gpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-remote": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-valgrind": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-webgl1-core": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-webgl1-ext": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-webgl2-core": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-webgl2-ext": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "mochitest-webgpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "native_messaging": {
+      "total_skipped": 2,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 2,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 2,
+        "linux": 1,
+        "win": 1,
+        "mac": 1
+      }
+    },
+    "non-idiomatic": {
+      "total_skipped": 5,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 4,
+        "mac": 2,
+        "win": 1
+      }
+    },
+    "non-idiomatic-fix": {
+      "total_skipped": 5,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 5,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 2,
+        "linux": 5,
+        "mac": 3,
+        "win": 2
+      }
+    },
+    "perftest": {
+      "total_skipped": 5,
+      "skipped_all_platforms": 5,
+      "tier1_affected": 5,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 5,
+        "linux": 5,
+        "win": 5,
+        "mac": 5
+      }
+    },
+    "python": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "mac": 1,
+        "win": 4
+      }
+    },
+    "reftest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "reftest-qr": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "remove-manifest-after1": {
+      "total_skipped": 3,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 3,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "win": 1,
+        "mac": 3
+      }
+    },
+    "remove-manifest-after2": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 3,
+        "win": 1,
+        "mac": 3
+      }
+    },
+    "remove-manifest-after3": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 3,
+        "win": 1,
+        "mac": 3
+      }
+    },
+    "remove-manifest-before": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 3,
+        "win": 1,
+        "mac": 3
+      }
+    },
+    "replace-tbd-after": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 2,
+        "android": 1,
+        "win": 1,
+        "mac": 2
+      }
+    },
+    "replace-tbd-before": {
+      "total_skipped": 4,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 2,
+        "win": 1,
+        "mac": 2
+      }
+    },
+    "skip-if-explicit-or": {
+      "total_skipped": 2,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "linux": 1
+      }
+    },
+    "stubs": {
+      "total_skipped": 1,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 1,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 1,
+        "win": 1,
+        "mac": 1
+      }
+    },
+    "talos-bcv": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-bcv-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-chrome": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-chrome-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-damp-inspector": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-damp-inspector-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-damp-other": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-damp-other-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-damp-webconsole": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-damp-webconsole-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-dromaeojs": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-dromaeojs-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-g1": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-g1-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-g3": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-g3-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-g4": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-g4-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-g5": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-g5-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-motionmark": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-motionmark-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-other": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-other-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-pdfpaint": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-perf-reftest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-perf-reftest-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-perf-reftest-singletons": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-perf-reftest-singletons-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-realworld-webextensions": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-realworld-webextensions-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-sessionrestore-many-windows": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-sessionrestore-many-windows-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-svgr": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-svgr-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-tabswitch": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-tabswitch-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-tp5o": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-tp5o-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-webgl": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "talos-webgl-profiling": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "talos-xperf": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "telemetry-tests-client": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "test-coverage": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "test-coverage-gpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "test-coverage-wpt": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "test-verify": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "test-verify-gpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    },
+    "test-verify-wpt": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "unit-tests": {
+      "total_skipped": 8,
+      "skipped_all_platforms": 1,
+      "tier1_affected": 4,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 1,
+        "linux": 2,
+        "win": 2,
+        "mac": 2
+      }
+    },
+    "unsorted": {
+      "total_skipped": 6,
+      "skipped_all_platforms": 3,
+      "tier1_affected": 5,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "win": 4,
+        "android": 3,
+        "linux": 4,
+        "mac": 3
+      }
+    },
+    "unsorted-fix": {
+      "total_skipped": 6,
+      "skipped_all_platforms": 3,
+      "tier1_affected": 5,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "android": 3,
+        "linux": 4,
+        "win": 4,
+        "mac": 3
+      }
+    },
+    "web-platform-tests": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-backlog": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-canvas": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-crashtest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-eme": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-print-reftest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-reftest": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-reftest-backlog": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-wdspec": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-webcodecs": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-webgpu": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-webgpu-backlog": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-webgpu-backlog-long": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "web-platform-tests-webgpu-long": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": false,
+      "skips_by_os": {}
+    },
+    "xpcshell": {
+      "total_skipped": 482,
+      "skipped_all_platforms": 56,
+      "tier1_affected": 398,
+      "suite_always_tier2": false,
+      "skips_by_os": {
+        "win": 159,
+        "android": 294,
+        "linux": 88,
+        "mac": 97
+      }
+    },
+    "xpcshell-failures": {
+      "total_skipped": 0,
+      "skipped_all_platforms": 0,
+      "tier1_affected": 0,
+      "suite_always_tier2": true,
+      "skips_by_os": {}
+    }
+  },
+  "always_tier2_suites": [
+    "firefox-ui-functional",
+    "talos-bcv-profiling",
+    "talos-chrome-profiling",
+    "talos-damp-inspector-profiling",
+    "talos-damp-other-profiling",
+    "talos-damp-webconsole-profiling",
+    "talos-dromaeojs-profiling",
+    "talos-g1-profiling",
+    "talos-g3-profiling",
+    "talos-g4-profiling",
+    "talos-g5-profiling",
+    "talos-motionmark",
+    "talos-motionmark-profiling",
+    "talos-other-profiling",
+    "talos-perf-reftest-profiling",
+    "talos-perf-reftest-singletons-profiling",
+    "talos-realworld-webextensions-profiling",
+    "talos-sessionrestore-many-windows-profiling",
+    "talos-svgr-profiling",
+    "talos-tabswitch-profiling",
+    "talos-tp5o-profiling",
+    "talos-webgl-profiling",
+    "test-coverage",
+    "test-coverage-gpu",
+    "test-verify",
+    "test-verify-gpu",
+    "xpcshell-failures"
+  ]
+}
