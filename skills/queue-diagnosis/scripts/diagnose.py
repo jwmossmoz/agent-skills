@@ -89,75 +89,131 @@ def run_redash_query(sql: str) -> list[dict]:
         return [{"error": f"Could not parse output: {result.stdout[:500]}"}]
 
 
-STOPPING_PCT_WARN_THRESHOLD = 30
-OLDEST_STOPPING_AGE_WARN_MINUTES = 60
+STOPPING_PCT_NOTEWORTHY_THRESHOLD = 30
+OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES = 60
+HEADROOM_PCT_WARN_THRESHOLD = 10
 
 
 def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
-    """Compute supply-side health warnings from pool counts and worker list.
+    """Compute supply-side health signals from pool counts and worker list.
 
-    Adds two diagnostic signals:
-    - stopping_pct: fraction of currentCapacity in 'stopping' state. When
-      high, ghost workers may be consuming capacity slots without running
-      tasks, preventing new provisioning.
-    - oldest_stopping_age_minutes: age of the oldest worker stuck in
-      'stopping'. Healthy spot churn clears within ~30 min; values beyond
-      an hour suggest worker-manager can't reap them (e.g., VM gone from
-      Azure but TC still tracking it).
+    Emits two classes of findings:
+    - 'warnings': high-severity issues blocking active demand. Fire only
+      when the pool has pending tasks AND capacity is near-max AND a large
+      share of capacity is stopping. This is the "ghosts are blocking new
+      provisioning" case.
+    - 'notes': informational signals that describe unusual state but are
+      not necessarily urgent. A pool with 0 pending tasks and 100%
+      stopping is likely just draining between shifts, not blocked.
 
-    The caller is expected to surface the 'warnings' list prominently.
+    Also populates the raw diagnostic fields so Claude can reason about
+    them directly:
+    - stopping_pct: fraction of currentCapacity in 'stopping' state
+    - oldest_stopping_age_minutes: age of the oldest stopping worker
+    - capacity_headroom: max_capacity - current_capacity (how many more
+      workers worker-manager could request right now)
     """
     warnings = []
+    notes = []
 
     current = status.get("current_capacity") or 0
     stopping = status.get("stopping") or 0
+    running = status.get("running") or 0
+    pending = status.get("pending_tasks")
+    pending_num = pending if isinstance(pending, int) else 0
+    max_cap = status.get("max_capacity")
+    max_cap_num = max_cap if isinstance(max_cap, int) else None
+
+    stopping_pct = None
     if current > 0:
-        pct = round(stopping / current * 100, 1)
-        status["stopping_pct"] = pct
-        if pct >= STOPPING_PCT_WARN_THRESHOLD:
-            warnings.append(
-                f"stopping workers are {pct}% of capacity "
-                f"({stopping}/{current}); healthy pools are under "
-                f"{STOPPING_PCT_WARN_THRESHOLD}%. Ghost workers may be "
-                f"blocking new provisioning."
+        stopping_pct = round(stopping / current * 100, 1)
+        status["stopping_pct"] = stopping_pct
+
+    headroom = None
+    if max_cap_num is not None:
+        headroom = max_cap_num - current
+        status["capacity_headroom"] = headroom
+        if max_cap_num > 0:
+            headroom_pct = round(headroom / max_cap_num * 100, 1)
+            status["capacity_headroom_pct"] = headroom_pct
+
+    oldest_age = None
+    if "error" not in workers_info:
+        stopping_workers = [
+            w for w in workers_info.get("workers", [])
+            if w.get("state") == "stopping"
+        ]
+        timestamps = sorted(
+            w.get("lastModified", "") for w in stopping_workers
+            if w.get("lastModified")
+        )
+        if timestamps:
+            status["oldest_stopping_lastModified"] = timestamps[0]
+            try:
+                oldest_dt = datetime.fromisoformat(
+                    timestamps[0].replace("Z", "+00:00"),
+                )
+                oldest_age = round(
+                    (datetime.now(timezone.utc) - oldest_dt)
+                    .total_seconds() / 60,
+                    1,
+                )
+                status["oldest_stopping_age_minutes"] = oldest_age
+            except (ValueError, AttributeError):
+                pass
+
+    # High-severity: ghosts blocking active demand
+    blocking = (
+        stopping_pct is not None
+        and stopping_pct >= STOPPING_PCT_NOTEWORTHY_THRESHOLD
+        and pending_num > 0
+        and headroom is not None
+        and max_cap_num
+        and (headroom / max_cap_num * 100) < HEADROOM_PCT_WARN_THRESHOLD
+    )
+    if blocking:
+        warnings.append(
+            f"pool has {pending_num} pending tasks but capacity is "
+            f"{current}/{max_cap_num} ({round(headroom / max_cap_num * 100, 1)}% "
+            f"headroom) and {stopping_pct}% of capacity is in 'stopping'. "
+            f"If those stopping workers are ghosts (VMs gone from cloud), "
+            f"they are blocking new provisioning. Cross-reference TC "
+            f"worker IDs against cloud VMs to confirm."
+        )
+
+    # Informational: unusual state but not urgent
+    if stopping_pct is not None and stopping_pct >= STOPPING_PCT_NOTEWORTHY_THRESHOLD and not blocking:
+        if pending_num == 0 and running == 0:
+            notes.append(
+                f"stopping workers are {stopping_pct}% of capacity "
+                f"({stopping}/{current}) but pool has 0 pending and 0 "
+                f"running. Likely just draining between shifts — not "
+                f"urgent unless demand returns before cleanup completes."
+            )
+        else:
+            notes.append(
+                f"stopping workers are {stopping_pct}% of capacity "
+                f"({stopping}/{current}). High but not currently blocking "
+                f"demand (pending={pending_num}, headroom={headroom})."
             )
 
-    if "error" not in workers_info:
-        workers = workers_info.get("workers", [])
-        stopping_workers = [
-            w for w in workers if w.get("state") == "stopping"
-        ]
-        if stopping_workers:
-            timestamps = sorted(
-                w.get("lastModified", "") for w in stopping_workers
-                if w.get("lastModified")
-            )
-            if timestamps:
-                oldest = timestamps[0]
-                status["oldest_stopping_lastModified"] = oldest
-                try:
-                    oldest_dt = datetime.fromisoformat(
-                        oldest.replace("Z", "+00:00"),
-                    )
-                    now = datetime.now(timezone.utc)
-                    age_min = round(
-                        (now - oldest_dt).total_seconds() / 60, 1,
-                    )
-                    status["oldest_stopping_age_minutes"] = age_min
-                    if age_min >= OLDEST_STOPPING_AGE_WARN_MINUTES:
-                        warnings.append(
-                            f"oldest stopping worker is {age_min} min old "
-                            f"(threshold {OLDEST_STOPPING_AGE_WARN_MINUTES} "
-                            f"min). Stuck stopping workers suggest "
-                            f"worker-manager cannot reap them — check for "
-                            f"VMs gone from the cloud provider while TC "
-                            f"still tracks them."
-                        )
-                except (ValueError, AttributeError):
-                    pass
+    if oldest_age is not None and oldest_age >= OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES:
+        msg = (
+            f"oldest stopping worker is {oldest_age} min old (threshold "
+            f"{OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES} min). Stuck "
+            f"stopping workers usually mean worker-manager cannot reap "
+            f"them — check for VMs gone from the cloud provider while TC "
+            f"still tracks them."
+        )
+        if blocking:
+            warnings.append(msg)
+        else:
+            notes.append(msg)
 
     if warnings:
         status["warnings"] = warnings
+    if notes:
+        status["notes"] = notes
 
 
 def get_pool_status(pool_id: str) -> dict:
@@ -197,8 +253,6 @@ def get_pool_status(pool_id: str) -> dict:
         status["stopping"] = pool_info.get("stoppingCount", 0)
         status["stopped"] = pool_info.get("stoppedCount", 0)
 
-        _add_supply_health_signals(status, workers_info)
-
         config = pool_info.get("config", {})
         launch_configs = config.get("launchConfigs", [{}])
         status["max_capacity"] = config.get("maxCapacity", "unknown")
@@ -225,6 +279,9 @@ def get_pool_status(pool_id: str) -> dict:
                 status["vm_type"] = "Spot"
             else:
                 status["vm_type"] = priority
+
+        # Must run after max_capacity is populated so headroom can be computed
+        _add_supply_health_signals(status, workers_info)
     else:
         # Hardware pools are not managed by worker-manager
         status["managed"] = False

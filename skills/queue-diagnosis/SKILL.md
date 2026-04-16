@@ -60,31 +60,52 @@ outside of this tool.
 
 ### Supply-side problems (infrastructure)
 
-Look at the `pool_status` section (cloud/managed pools only):
+Look at the `pool_status` section (cloud/managed pools only).
 
-- **`warnings` list** — any entries here are supply-side issues the script
-  detected automatically. Always surface these in the summary.
-- **`stopping_pct` > 30%** — stopping workers are consuming capacity slots
-  without running tasks. Normal spot churn is under 10%; 30%+ suggests ghost
-  workers (VMs gone from the cloud but still tracked by TC) are blocking new
-  provisioning.
-- **`oldest_stopping_age_minutes` > 60** — healthy spot churn clears within
-  ~30 min. Values beyond an hour suggest worker-manager cannot reap them.
-  This is a strong signal of a ghost worker problem: the cloud VM is gone
-  but TC still tracks the worker.
-- **High error count relative to running workers** — provisioning failures are
-  preventing scale-up. Check `errors` for patterns (quota exhaustion, image
-  failures, deployment conflicts).
-- **Running workers well below max_capacity despite pending tasks** — Azure
-  can't fulfill requests. Could be regional quota limits, spot VM scarcity, or
-  image issues.
+**`warnings` vs `notes`:**
+- **`warnings`** fires only when stuck workers are actively blocking demand:
+  high stopping_pct AND pending tasks AND near-max capacity. Always surface
+  these prominently — they indicate real supply-side pain.
+- **`notes`** describes unusual state that isn't currently urgent. A pool
+  with 0 pending and 0 running but 100% stopping is draining between
+  shifts, not blocked. Mention it but don't treat it as a crisis.
+
+**Signal fields:**
+- `stopping_pct` — fraction of currentCapacity in 'stopping'. Healthy spot
+  churn is under ~10%; 30%+ is unusual regardless of urgency.
+- `oldest_stopping_age_minutes` — how long the oldest stopping worker has
+  been stuck. Normal spot eviction cleanup is <30 min; >60 min means
+  worker-manager likely can't reap them. This is a strong signal that
+  cloud VMs are gone but TC is still tracking them.
+- `capacity_headroom` / `capacity_headroom_pct` — how many more workers
+  worker-manager could request before hitting maxCapacity. Low headroom
+  with pending tasks is the "can't scale up" signal.
+
+**Other supply-side issues to check:**
+- **High error count relative to running workers** — provisioning failures
+  are preventing scale-up. Check `errors` for patterns (quota exhaustion,
+  image failures, deployment conflicts).
+- **Running workers well below max_capacity despite pending tasks** — cloud
+  provider can't fulfill requests. Could be regional quota limits, spot VM
+  scarcity, or image issues.
 - **OS provisioning timeouts** — the bootstrap script is slow. Often happens
-  under load or in specific Azure regions.
+  under load or in specific regions.
 
-When `warnings` or the two signals above fire together with high pending
-tasks and low running count, the problem is supply-side capacity accounting,
-not demand. Suggest cross-referencing TC worker IDs against actual cloud
-VMs to count ghosts, and escalate to the team that owns worker-manager.
+**When ghosts are suspected**, cross-reference TC worker IDs against actual
+cloud VMs. For Azure pools with resource groups named
+`rg-tc-<provisioner>-<worker-type>`:
+
+```bash
+# Get TC stopping worker IDs
+taskcluster api workerManager listWorkersForWorkerPool <pool-id> |
+  jq -r '.workers[] | select(.state=="stopping") | .workerId' | sort > /tmp/tc.txt
+
+# Get actual Azure VM names
+az vm list --resource-group rg-tc-<pool> --query "[].name" -o tsv | sort > /tmp/az.txt
+
+# Count ghosts (TC workers with no matching Azure VM)
+comm -23 /tmp/tc.txt /tmp/az.txt | wc -l
+```
 
 Common spot pool errors that are NOT problems:
 - "Operation execution has been preempted by a more recent operation" — normal
