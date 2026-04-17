@@ -1,63 +1,97 @@
 ---
 name: daily-log
 description: >
-  Generate a daily work log by scanning Claude Code and Codex session JSONL files.
-  Compile session summaries into a markdown file at ~/moz_artifacts/daily-log-YYYY-MM-DD.md.
-  Use when the user says: "daily log", "end of day log", "what did I do today",
-  "daily summary", "work log", "summarize my sessions", or asks to review their day's work.
+  Generate a daily work log by scanning Claude Code and Codex session JSONL
+  files directly. Compile session summaries into a markdown file at
+  ~/moz_artifacts/daily-log-YYYY-MM-DD.md. Use when the user says: "daily log",
+  "end of day log", "what did I do today", "daily summary", "work log",
+  "summarize my sessions", or asks to review their day's work.
 ---
 
 # Daily Log
 
-Generate a daily work log from Claude Code and Codex session histories.
+Generate a daily work log by scanning session JSONL files from known locations.
+
+## Session file locations
+
+| Agent | Location | Format |
+|-------|----------|--------|
+| Claude Code | `~/.claude/projects/*/` | JSONL files in per-project dirs |
+| Codex | `~/.codex/sessions/YYYY/MM/DD/` | JSONL files with local-time filenames |
 
 ## Workflow
 
 1. Determine the target date (default: today)
-2. Launch two helper subagents in parallel - one for Claude Code sessions, one for Codex sessions
-3. Merge results chronologically and write the output file
+2. Find all session JSONL files modified on the target date
+3. Read each session to extract user prompts and outcomes
+4. Compile the log and write the output file
+5. Refresh the qmd `moz` collection so the new log is searchable
 
-## Step 1: Find session files
+## Step 1: Find session files for the target date
 
-**Claude Code sessions:**
 ```bash
-find ~/.claude/projects -name "*.jsonl" -type f | while read f; do
-  mod=$(stat -f "%Sm" -t "%Y-%m-%d" "$f" 2>/dev/null)
-  if [ "$mod" = "TARGET_DATE" ]; then echo "$f"; fi
-done | sort
-```
-Skip files under `subagents/` directories - only read main session files.
+# Claude Code sessions modified today
+fd -e jsonl --changed-within 1d . ~/.claude/projects/
 
-**Codex sessions:**
-```
-~/.codex/sessions/YYYY/MM/DD/*.jsonl
+# Codex sessions with today's date in the filename (YYYY-MM-DD pattern)
+fd -e jsonl "2026-04-14" ~/.codex/sessions/
 ```
 
-## Step 2: Launch parallel subagents
+For a specific date, adjust the `--changed-within` or filename pattern accordingly.
 
-Launch two `helper` subagents simultaneously via the Task tool:
+Filter out subagent sessions (paths containing `/subagents/`) — only
+summarize top-level sessions.
 
-**Subagent prompt template** (adapt for Claude Code vs Codex):
-> Read each session JSONL file for TARGET_DATE. For each session extract:
-> 1. Start time (from filename or first timestamp)
-> 2. Project/working directory
-> 3. User's initial prompt
-> 4. Key actions (bugs filed, patches submitted, files edited, commands run)
-> 5. Outcome (completed, interrupted, result)
->
-> Return a structured summary per session, ordered chronologically.
+## Step 2: Extract session content
 
-See `references/jsonl-formats.md` for the JSONL structure of each tool.
+Read each JSONL file directly. Each line is a JSON object representing a
+message in the conversation.
+
+### JSONL message structure
+
+See `references/jsonl-formats.md` for detailed field descriptions.
+
+Claude Code lines have `type: "user"` or `type: "assistant"`; Codex lines
+have `type: "response_item"` with `payload.role` of `user` / `assistant` /
+`developer`.
+
+### What to extract
+
+For each session:
+- **First user message**: serves as the session title/topic
+- **User prompts**: scan user-role messages for key requests and decisions
+- **Artifacts**: look for bug IDs, JIRA tickets, commit hashes, file paths,
+  revision numbers, try push links
+- **Outcomes**: check the final assistant messages for results and summaries
+
+For large sessions, read only the first 200 and last 100 lines to get
+the topic and outcome without consuming excessive context.
 
 ## Step 3: Compile the log
 
-Merge both subagent results into a single markdown file. Use the output format in `references/output-format.md`.
+Group sessions by agent. Use the output format in `references/output-format.md`.
+
+Derive session times from:
+- **Claude Code**: file modification time, or timestamps within the JSONL
+- **Codex**: filename contains local time directly
 
 Save to: `~/moz_artifacts/daily-log-YYYY-MM-DD.md`
+
+## Step 4: Refresh the qmd index
+
+After the log file is written, re-index the `moz` qmd collection so the new
+log is queryable immediately:
+
+```bash
+qmd update && qmd embed
+```
+
+Both are incremental — they only scan/embed new or changed chunks, so this
+is cheap even when run at the end of every log generation.
 
 ## Notes
 
 - Focus on user prompts and high-level outcomes, not every tool call
-- Sessions under 3 lines of user interaction can be summarized in one line
+- Sessions under 3 user turns can be summarized in one line
 - If a session was interrupted before meaningful work, note it briefly
 - Combine related sessions (same bug/task across multiple sessions) in the summary
