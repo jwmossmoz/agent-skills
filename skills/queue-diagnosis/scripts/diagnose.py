@@ -233,7 +233,7 @@ def get_pool_status(pool_id: str) -> dict:
         "api", "workerManager", "workerPool", pool_id,
     ])
     errors = run_tc_command([
-        "api", "workerManager", "workerPoolErrors", pool_id,
+        "api", "workerManager", "listWorkerPoolErrors", pool_id,
     ])
     workers_info = run_tc_command([
         "api", "workerManager", "listWorkersForWorkerPool", pool_id,
@@ -287,7 +287,7 @@ def get_pool_status(pool_id: str) -> dict:
         status["managed"] = False
 
     if "error" not in errors:
-        error_list = errors.get("errors", [])
+        error_list = errors.get("workerPoolErrors", [])
         status["error_count"] = len(error_list)
 
         # Summarize error types
