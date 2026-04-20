@@ -39,9 +39,25 @@ Example:
 uv run scripts/diagnose.py gecko-t/win11-64-25h2
 ```
 
-The script outputs a JSON report with six sections: `pool_status`,
-`queue_times`, `daily_volume`, `top_pushers`, `top_task_groups`, and
-`links`. Read the output and present a diagnostic summary to the user.
+The script outputs a JSON report with sections: `pool_status`,
+`queue_times`, `daily_volume`, `top_pushers`, `top_task_groups`,
+`unstarted_task_groups` (only when present), and `links`. Read the output
+and present a diagnostic summary to the user.
+
+`pool_status.errors` is a dict of `{normalized_description: {count,
+sample}}` — use `count` for frequencies and `sample` when quoting the
+actionable text back to the user. `pool_status.oldest_error` and
+`newest_error` bound the reporting window so you can tell if errors are
+ongoing or stale.
+
+`unstarted_task_groups` lists groups with 0 started tasks (still pending
+or scheduled). Surface these separately if present — they can mask real
+supply issues if lumped in with active groups.
+
+If `pool_status.auth_failure` is `true`, the Taskcluster CLI failed to
+authenticate. Tell the user to run `taskcluster signin` and stop — the
+supply-side data in the report is unavailable. Do not confuse this with
+a hardware pool (which sets `managed: false`, not `auth_failure`).
 
 Every claim in the summary must have a clickable link so the user can
 verify it. The report provides these automatically.

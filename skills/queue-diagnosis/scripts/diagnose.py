@@ -17,6 +17,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -54,8 +55,16 @@ def treeherder_task_group_url(
     )
 
 
+AUTH_ERROR_MARKERS = ("401", "AuthenticationFailed", "InsufficientScopes")
+
+
 def run_tc_command(args: list[str]) -> dict:
-    """Run a taskcluster CLI command and return parsed JSON."""
+    """Run a taskcluster CLI command and return parsed JSON.
+
+    Returns {"error": ..., "auth_error": True} on 401/auth failures so
+    callers can surface that distinctly from "pool not managed" (which is
+    a legitimate 404 for hardware pools).
+    """
     result = subprocess.run(
         ["taskcluster", *args],
         capture_output=True,
@@ -63,7 +72,11 @@ def run_tc_command(args: list[str]) -> dict:
         timeout=30,
     )
     if result.returncode != 0:
-        return {"error": result.stderr.strip()}
+        stderr = result.stderr.strip()
+        out = {"error": stderr}
+        if any(m in stderr for m in AUTH_ERROR_MARKERS):
+            out["auth_error"] = True
+        return out
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
@@ -92,6 +105,31 @@ def run_redash_query(sql: str) -> list[dict]:
 STOPPING_PCT_NOTEWORTHY_THRESHOLD = 30
 OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES = 60
 HEADROOM_PCT_WARN_THRESHOLD = 10
+
+# Per-error-instance identifiers that vary across otherwise-identical
+# Azure errors. Stripping these lets similar errors share one bucket
+# instead of exploding into N single-count entries.
+_NORMALIZE_PATTERNS = [
+    (re.compile(r"vm-[a-z0-9]+"), "vm-<ID>"),
+    (re.compile(r"deploy-[a-z0-9]+"), "deploy-<ID>"),
+    (re.compile(r"rg-[a-z0-9-]+"), "rg-<ID>"),
+    (re.compile(r"\d{8}T\d{6}Z"), "<TS>"),
+    (
+        re.compile(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
+            r"[0-9a-f]{4}-[0-9a-f]{12}"
+        ),
+        "<UUID>",
+    ),
+]
+
+
+def _normalize_error(desc: str) -> str:
+    """Strip per-instance identifiers so similar errors share one bucket."""
+    first_line = desc.split("\n")[0]
+    for pattern, replacement in _NORMALIZE_PATTERNS:
+        first_line = pattern.sub(replacement, first_line)
+    return first_line[:200]
 
 
 def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
@@ -244,6 +282,23 @@ def get_pool_status(pool_id: str) -> dict:
         "pending_tasks": pending_info.get("pendingTasks", "unknown"),
     }
 
+    # Fail loud on auth errors rather than silently treating the pool as
+    # unmanaged (a hardware pool returns 404, an expired client returns
+    # 401 — both used to land in the same branch).
+    if any(
+        call.get("auth_error")
+        for call in (pool_info, errors, workers_info)
+    ):
+        status["auth_failure"] = True
+        status["managed"] = None
+        status["error_count"] = "unavailable"
+        status["warnings"] = [
+            "Taskcluster CLI authentication failed (401). Run "
+            "`taskcluster signin` and retry. Supply-side data is "
+            "unavailable until credentials are refreshed."
+        ]
+        return status
+
     if "error" not in pool_info:
         status["managed"] = True
         status["provider_id"] = pool_info.get("providerId", "unknown")
@@ -290,13 +345,26 @@ def get_pool_status(pool_id: str) -> dict:
         error_list = errors.get("workerPoolErrors", [])
         status["error_count"] = len(error_list)
 
-        # Summarize error types
+        timestamps = [
+            err.get("reported") for err in error_list
+            if err.get("reported")
+        ]
+        if timestamps:
+            status["oldest_error"] = min(timestamps)
+            status["newest_error"] = max(timestamps)
+
+        # Bucket by normalized description so per-VM errors collapse into
+        # one row. Keep a full-line sample per bucket — the first 120 chars
+        # used to truncate away the actionable part (e.g. "...is unlicensed").
         error_summary = {}
         for err in error_list:
             desc = err.get("description", "unknown")
-            # Truncate long Azure error messages to the first line
-            short = desc.split("\n")[0][:120]
-            error_summary[short] = error_summary.get(short, 0) + 1
+            key = _normalize_error(desc)
+            bucket = error_summary.setdefault(
+                key,
+                {"count": 0, "sample": desc.split("\n")[0][:500]},
+            )
+            bucket["count"] += 1
         status["errors"] = error_summary
     else:
         # Hardware pools have no worker-manager error tracking
@@ -390,7 +458,12 @@ WHERE tr.submission_date BETWEEN '{start_date}' AND '{end_date}'
 GROUP BY 1, 2
 ORDER BY 1, 2
 """
-    return run_redash_query(sql)
+    rows = run_redash_query(sql)
+    if rows and "error" in rows[0]:
+        return rows
+    # Drop telemetry rows with no project tag — usually a single edge-case
+    # task per day that pollutes the summary without adding signal.
+    return [r for r in rows if r.get("project")]
 
 
 def get_top_pushers(
@@ -559,6 +632,21 @@ def main():
             except Exception as exc:
                 report[key] = {"error": str(exc)}
                 print(f"  {key}: FAILED ({exc})", file=sys.stderr)
+
+    # Separate unstarted task groups so they don't get buried under the
+    # actively-running ones. Unstarted (started=0) groups are typically
+    # pending-or-scheduled, worth a distinct look.
+    groups = report.get("top_task_groups")
+    if isinstance(groups, list):
+        started = [
+            g for g in groups if (g.get("started_tasks") or 0) > 0
+        ]
+        unstarted = [
+            g for g in groups if g.get("started_tasks") == 0
+        ]
+        report["top_task_groups"] = started
+        if unstarted:
+            report["unstarted_task_groups"] = unstarted
 
     report["generated_at"] = now.isoformat()
     report["pool_id"] = args.pool_id
