@@ -96,6 +96,20 @@ Look at the `pool_status` section (cloud/managed pools only).
 - `capacity_headroom` / `capacity_headroom_pct` — how many more workers
   worker-manager could request before hitting maxCapacity. Low headroom
   with pending tasks is the "can't scale up" signal.
+- `effective_capacity_ceiling` / `effective_capacity_pct` — `max_capacity -
+  stopping`. The real ceiling if every stopping worker is a zombie. When
+  `effective_capacity_pct` is well below 100%, the reported capacity is
+  inflated by stuck workers and `current_capacity` alone is misleading.
+  Quote this number when describing pool state, not just `current_capacity`.
+
+**Don't over-index on a single error bucket.** `errors` is sorted by count
+descending — the top entries are the recurring issues, the tail is noise.
+A bucket with count=1 over a multi-day window is usually a one-off event,
+not a pool-wide problem. Also consult `errors_by_region` before blaming a
+region: if errors are spread across all regions roughly in proportion to
+worker distribution, it's background churn, not a regional outage. A
+single-region concentration (>40% from one region) is what justifies
+calling out a region-specific cause.
 
 **Other supply-side issues to check:**
 - **High error count relative to running workers** — provisioning failures

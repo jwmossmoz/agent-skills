@@ -168,12 +168,24 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
         status["stopping_pct"] = stopping_pct
 
     headroom = None
+    effective_ceiling = None
     if max_cap_num is not None:
         headroom = max_cap_num - current
         status["capacity_headroom"] = headroom
         if max_cap_num > 0:
             headroom_pct = round(headroom / max_cap_num * 100, 1)
             status["capacity_headroom_pct"] = headroom_pct
+        # Effective capacity ceiling: what the pool could actually sustain
+        # if every 'stopping' worker is a zombie worker-manager cannot
+        # reap. When this is far below max_capacity, the reported
+        # 'current_capacity' is inflated by ghosts and scale-up looks
+        # throttled even when demand could theoretically be served.
+        effective_ceiling = max_cap_num - stopping
+        status["effective_capacity_ceiling"] = effective_ceiling
+        if max_cap_num > 0:
+            status["effective_capacity_pct"] = round(
+                effective_ceiling / max_cap_num * 100, 1
+            )
 
     oldest_age = None
     if "error" not in workers_info:
@@ -210,10 +222,19 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
         and (headroom / max_cap_num * 100) < HEADROOM_PCT_WARN_THRESHOLD
     )
     if blocking:
+        eff_pct = (
+            round(effective_ceiling / max_cap_num * 100, 1)
+            if effective_ceiling is not None and max_cap_num
+            else None
+        )
         warnings.append(
-            f"pool has {pending_num} pending tasks but capacity is "
-            f"{current}/{max_cap_num} ({round(headroom / max_cap_num * 100, 1)}% "
-            f"headroom) and {stopping_pct}% of capacity is in 'stopping'. "
+            f"pool has {pending_num} pending tasks but reported capacity "
+            f"is {current}/{max_cap_num} "
+            f"({round(headroom / max_cap_num * 100, 1)}% headroom). "
+            f"{stopping_pct}% of that ({stopping}) is in 'stopping', so "
+            f"the effective scale-up ceiling is only "
+            f"{effective_ceiling}/{max_cap_num}"
+            f"{f' ({eff_pct}%)' if eff_pct is not None else ''}. "
             f"If those stopping workers are ghosts (VMs gone from cloud), "
             f"they are blocking new provisioning. Cross-reference TC "
             f"worker IDs against cloud VMs to confirm."
@@ -229,10 +250,18 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
                 f"urgent unless demand returns before cleanup completes."
             )
         else:
+            eff = (
+                f", effective ceiling {effective_ceiling}/{max_cap_num}"
+                if effective_ceiling is not None and max_cap_num
+                else ""
+            )
             notes.append(
                 f"stopping workers are {stopping_pct}% of capacity "
                 f"({stopping}/{current}). High but not currently blocking "
-                f"demand (pending={pending_num}, headroom={headroom})."
+                f"demand (pending={pending_num}, headroom={headroom}"
+                f"{eff}). Real scale-up ceiling is lower than "
+                f"current_capacity suggests — stopping workers inflate the "
+                f"reported count without providing usable capacity."
             )
 
     if oldest_age is not None and oldest_age >= OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES:
@@ -356,7 +385,10 @@ def get_pool_status(pool_id: str) -> dict:
         # Bucket by normalized description so per-VM errors collapse into
         # one row. Keep a full-line sample per bucket — the first 120 chars
         # used to truncate away the actionable part (e.g. "...is unlicensed").
+        # Also count per region so a single-region quota event isn't
+        # mistaken for a pool-wide issue.
         error_summary = {}
+        errors_by_region = {}
         for err in error_list:
             desc = err.get("description", "unknown")
             key = _normalize_error(desc)
@@ -365,7 +397,25 @@ def get_pool_status(pool_id: str) -> dict:
                 {"count": 0, "sample": desc.split("\n")[0][:500]},
             )
             bucket["count"] += 1
-        status["errors"] = error_summary
+            region = err.get("extra", {}).get("workerGroup") or "unknown"
+            errors_by_region[region] = (
+                errors_by_region.get(region, 0) + 1
+            )
+        # Sort by count desc so the recurring patterns lead; isolated
+        # single-event errors fall to the tail where they belong.
+        status["errors"] = dict(
+            sorted(
+                error_summary.items(),
+                key=lambda kv: -kv[1]["count"],
+            )
+        )
+        if errors_by_region:
+            status["errors_by_region"] = dict(
+                sorted(
+                    errors_by_region.items(),
+                    key=lambda kv: -kv[1],
+                )
+            )
     else:
         # Hardware pools have no worker-manager error tracking
         status["error_count"] = "n/a"
