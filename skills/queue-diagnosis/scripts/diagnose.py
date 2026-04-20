@@ -303,30 +303,57 @@ def _add_supply_health_signals(
                 effective_ceiling / max_cap_num * 100, 1
             )
 
+    # Only compute oldest_stopping_age if the paginated worker list is
+    # actually complete. If listWorkersForWorkerPool errored mid-pagination
+    # or returned fewer stopping workers than the pool's stoppingCount,
+    # any "oldest" we report is computed from a subset and is meaningless —
+    # the real oldest could be among the workers we missed. Flag the gap
+    # instead of silently reporting a wrong number.
     oldest_age = None
-    if "error" not in workers_info:
+    stopping_seen = None
+    if "error" in workers_info:
+        notes.append(
+            "worker list fetch errored mid-pagination; "
+            f"oldest_stopping_age skipped ({workers_info.get('error', '')[:160]})."
+        )
+    else:
         stopping_workers = [
             w for w in workers_info.get("workers", [])
             if w.get("state") == "stopping"
         ]
-        timestamps = sorted(
-            w.get("lastModified", "") for w in stopping_workers
-            if w.get("lastModified")
-        )
-        if timestamps:
-            status["oldest_stopping_lastModified"] = timestamps[0]
-            try:
-                oldest_dt = datetime.fromisoformat(
-                    timestamps[0].replace("Z", "+00:00"),
-                )
-                oldest_age = round(
-                    (datetime.now(timezone.utc) - oldest_dt)
-                    .total_seconds() / 60,
-                    1,
-                )
-                status["oldest_stopping_age_minutes"] = oldest_age
-            except (ValueError, AttributeError):
-                pass
+        stopping_seen = len(stopping_workers)
+        status["stopping_workers_seen"] = stopping_seen
+
+        if stopping is not None and stopping_seen < stopping * 0.95:
+            # Allow some slack for in-flight state transitions between the
+            # pool_info call and the worker list call, but a real gap means
+            # pagination is incomplete — refuse to report a misleading age.
+            notes.append(
+                f"paginated worker list only returned {stopping_seen} "
+                f"stopping workers but pool reports {stopping}; "
+                f"oldest_stopping_age skipped because it would be computed "
+                f"from an incomplete sample. Raise the pagination page cap "
+                f"in list_all_workers if this keeps happening."
+            )
+        else:
+            timestamps = sorted(
+                w.get("lastModified", "") for w in stopping_workers
+                if w.get("lastModified")
+            )
+            if timestamps:
+                status["oldest_stopping_lastModified"] = timestamps[0]
+                try:
+                    oldest_dt = datetime.fromisoformat(
+                        timestamps[0].replace("Z", "+00:00"),
+                    )
+                    oldest_age = round(
+                        (datetime.now(timezone.utc) - oldest_dt)
+                        .total_seconds() / 60,
+                        1,
+                    )
+                    status["oldest_stopping_age_minutes"] = oldest_age
+                except (ValueError, AttributeError):
+                    pass
 
     # High-severity: ghosts blocking active demand
     blocking = (
