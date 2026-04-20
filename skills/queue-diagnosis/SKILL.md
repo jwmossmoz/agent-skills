@@ -101,6 +101,14 @@ Look at the `pool_status` section (cloud/managed pools only).
   `effective_capacity_pct` is well below 100%, the reported capacity is
   inflated by stuck workers and `current_capacity` alone is misleading.
   Quote this number when describing pool state, not just `current_capacity`.
+- `azure_ghost_check` — present on Azure pools when the `az` CLI is
+  available. Contains `ghost_count`, `real_stopping_count`,
+  `azure_vms_in_rg`, and `ghost_pct`. A non-zero `ghost_count` is direct
+  proof that worker-manager is tracking phantom workers (TC says
+  'stopping' but no matching VM exists in the Azure resource group).
+  Cite this number in the summary — it's the strongest evidence for the
+  reap-lag story and avoids hedging about whether the stopping cohort
+  might just be slow termination.
 
 **Don't over-index on a single error bucket.** `errors` is sorted by count
 descending — the top entries are the recurring issues, the tail is noise.
@@ -121,21 +129,12 @@ calling out a region-specific cause.
 - **OS provisioning timeouts** — the bootstrap script is slow. Often happens
   under load or in specific regions.
 
-**When ghosts are suspected**, cross-reference TC worker IDs against actual
-cloud VMs. For Azure pools with resource groups named
-`rg-tc-<provisioner>-<worker-type>`:
-
-```bash
-# Get TC stopping worker IDs
-taskcluster api workerManager listWorkersForWorkerPool <pool-id> |
-  jq -r '.workers[] | select(.state=="stopping") | .workerId' | sort > /tmp/tc.txt
-
-# Get actual Azure VM names
-az vm list --resource-group rg-tc-<pool> --query "[].name" -o tsv | sort > /tmp/az.txt
-
-# Count ghosts (TC workers with no matching Azure VM)
-comm -23 /tmp/tc.txt /tmp/az.txt | wc -l
-```
+For Azure pools, the script runs this cross-check automatically when the
+`az` CLI is authenticated (subscription `108d46d5-fe9b-4850-9a7d-8c914aa6c1f0`
+for FXCI). The result appears in `pool_status.azure_ghost_check`. If the
+check is skipped, the dict will contain a `skipped` field explaining why
+(az not installed, auth failed, resource group not found, etc.) — tell
+the user to run `az login` if authentication is the issue.
 
 Common spot pool errors that are NOT problems:
 - "Operation execution has been preempted by a more recent operation" — normal

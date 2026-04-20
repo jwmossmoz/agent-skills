@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -83,6 +84,97 @@ def run_tc_command(args: list[str]) -> dict:
         return {"raw": result.stdout.strip()}
 
 
+def list_all_workers(pool_id: str) -> dict:
+    """Fetch every worker in a pool, following continuationToken pagination.
+
+    The default page size masks the full stopping-worker cohort on busy
+    pools (e.g. a 2000-cap pool returns 1000 per page). The ghost check
+    below needs the complete set, and oldest_stopping_age should also be
+    computed against the whole list.
+    """
+    all_workers: list[dict] = []
+    token: str | None = None
+    for _ in range(20):  # safety cap: 20 pages * 500 = 10k workers
+        args = [
+            "api", "workerManager", "listWorkersForWorkerPool",
+            pool_id, "--limit=500",
+        ]
+        if token:
+            args += ["--continuationToken", token]
+        resp = run_tc_command(args)
+        if "error" in resp:
+            return {"error": resp["error"], "workers": all_workers}
+        all_workers.extend(resp.get("workers", []))
+        token = resp.get("continuationToken")
+        if not token:
+            break
+    return {"workers": all_workers}
+
+
+def check_azure_ghosts(
+    pool_id: str, provider_id: str, workers: list[dict],
+) -> dict | None:
+    """Cross-check TC 'stopping' workers against actual Azure VMs.
+
+    Returns None if the pool is not on Azure or az CLI is unavailable so
+    callers can skip the section silently. For supported pools, returns a
+    dict with ghost_count (TC-tracked workers with no matching Azure VM),
+    which is the strongest signal we have that worker-manager has lost
+    track of reaped VMs and the inflated current_capacity is not real.
+    """
+    if not provider_id or not provider_id.startswith("azure"):
+        return None
+    if not shutil.which("az"):
+        return {
+            "skipped": "az CLI not found on PATH",
+        }
+    rg = f"rg-tc-{pool_id.replace('/', '-')}"
+    try:
+        result = subprocess.run(
+            [
+                "az", "vm", "list",
+                "--resource-group", rg,
+                "--query", "[].name",
+                "-o", "tsv",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired:
+        return {"skipped": "az vm list timed out after 60s"}
+    if result.returncode != 0:
+        return {
+            "skipped": (
+                f"az vm list failed: {result.stderr.strip()[:200]}"
+            ),
+            "resource_group": rg,
+        }
+
+    az_vms = {
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip()
+    }
+    tc_stopping = {
+        w.get("workerId") for w in workers
+        if w.get("state") == "stopping" and w.get("workerId")
+    }
+    ghosts = tc_stopping - az_vms
+    real = tc_stopping & az_vms
+    return {
+        "resource_group": rg,
+        "azure_vms_in_rg": len(az_vms),
+        "tc_stopping_count": len(tc_stopping),
+        "ghost_count": len(ghosts),
+        "real_stopping_count": len(real),
+        "ghost_pct": (
+            round(len(ghosts) / len(tc_stopping) * 100, 1)
+            if tc_stopping else 0
+        ),
+    }
+
+
 def run_redash_query(sql: str) -> list[dict]:
     """Run a SQL query via the Redash skill script and return rows."""
     if not REDASH_SCRIPT.exists():
@@ -132,7 +224,31 @@ def _normalize_error(desc: str) -> str:
     return first_line[:200]
 
 
-def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
+def _format_ghost_fragment(ghost_info: dict | None) -> str:
+    """Render the ghost cross-check result as an inline sentence.
+
+    Returns an empty string when the check was skipped (non-Azure pool,
+    missing az CLI, or auth failure) so the caller can concat safely.
+    """
+    if not ghost_info or ghost_info.get("skipped"):
+        return ""
+    gc = ghost_info.get("ghost_count")
+    if gc is None:
+        return ""
+    return (
+        f" Azure cross-check: {gc} of "
+        f"{ghost_info.get('tc_stopping_count', 0)} stopping workers "
+        f"({ghost_info.get('ghost_pct', 0)}%) have no matching VM in "
+        f"{ghost_info.get('resource_group')} — those are confirmed "
+        f"worker-manager ghosts."
+    )
+
+
+def _add_supply_health_signals(
+    status: dict,
+    workers_info: dict,
+    ghost_info: dict | None = None,
+) -> None:
     """Compute supply-side health signals from pool counts and worker list.
 
     Emits two classes of findings:
@@ -227,6 +343,12 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
             if effective_ceiling is not None and max_cap_num
             else None
         )
+        ghost_frag = _format_ghost_fragment(ghost_info)
+        tail = ghost_frag or (
+            " If those stopping workers are ghosts (VMs gone from cloud), "
+            "they are blocking new provisioning. Cross-reference TC "
+            "worker IDs against cloud VMs to confirm."
+        )
         warnings.append(
             f"pool has {pending_num} pending tasks but reported capacity "
             f"is {current}/{max_cap_num} "
@@ -234,10 +356,8 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
             f"{stopping_pct}% of that ({stopping}) is in 'stopping', so "
             f"the effective scale-up ceiling is only "
             f"{effective_ceiling}/{max_cap_num}"
-            f"{f' ({eff_pct}%)' if eff_pct is not None else ''}. "
-            f"If those stopping workers are ghosts (VMs gone from cloud), "
-            f"they are blocking new provisioning. Cross-reference TC "
-            f"worker IDs against cloud VMs to confirm."
+            f"{f' ({eff_pct}%)' if eff_pct is not None else ''}."
+            f"{tail}"
         )
 
     # Informational: unusual state but not urgent
@@ -255,6 +375,7 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
                 if effective_ceiling is not None and max_cap_num
                 else ""
             )
+            ghost_frag = _format_ghost_fragment(ghost_info)
             notes.append(
                 f"stopping workers are {stopping_pct}% of capacity "
                 f"({stopping}/{current}). High but not currently blocking "
@@ -262,6 +383,7 @@ def _add_supply_health_signals(status: dict, workers_info: dict) -> None:
                 f"{eff}). Real scale-up ceiling is lower than "
                 f"current_capacity suggests — stopping workers inflate the "
                 f"reported count without providing usable capacity."
+                f"{ghost_frag}"
             )
 
     if oldest_age is not None and oldest_age >= OLDEST_STOPPING_AGE_NOTEWORTHY_MINUTES:
@@ -302,9 +424,7 @@ def get_pool_status(pool_id: str) -> dict:
     errors = run_tc_command([
         "api", "workerManager", "listWorkerPoolErrors", pool_id,
     ])
-    workers_info = run_tc_command([
-        "api", "workerManager", "listWorkersForWorkerPool", pool_id,
-    ])
+    workers_info = list_all_workers(pool_id)
 
     status = {
         "pool_id": pool_id,
@@ -364,8 +484,21 @@ def get_pool_status(pool_id: str) -> dict:
             else:
                 status["vm_type"] = priority
 
-        # Must run after max_capacity is populated so headroom can be computed
-        _add_supply_health_signals(status, workers_info)
+        # Cross-check stopping workers against Azure VMs. This is the
+        # authoritative signal for the "inflated capacity" story — if
+        # TC-tracked stopping workers don't exist in Azure, they are
+        # phantom records worker-manager failed to reap.
+        ghost_info = check_azure_ghosts(
+            pool_id,
+            status["provider_id"],
+            workers_info.get("workers", []),
+        )
+        if ghost_info:
+            status["azure_ghost_check"] = ghost_info
+
+        # Must run after max_capacity is populated so headroom can be
+        # computed, and after ghost_info so warnings can cite it.
+        _add_supply_health_signals(status, workers_info, ghost_info)
     else:
         # Hardware pools are not managed by worker-manager
         status["managed"] = False
