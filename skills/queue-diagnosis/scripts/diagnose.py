@@ -248,6 +248,43 @@ def _extract_region(err: dict) -> str:
     return "unknown"
 
 
+def _build_region_health(
+    workers: list[dict], errors_by_region: dict[str, int],
+) -> list[dict]:
+    """Per-region (or per-zone) worker distribution joined with errors.
+
+    Answers 'which regions are landing VMs vs which are returning errors'.
+    A region with non-zero running and zero errors is a safe bet for
+    fallback capacity; a region with many errors and zero running is
+    effectively dead for provisioning right now.
+    """
+    counts: dict[str, dict[str, int]] = {}
+    for w in workers:
+        region = w.get("workerGroup") or "unknown"
+        state = w.get("state") or "unknown"
+        row = counts.setdefault(
+            region,
+            {"running": 0, "stopping": 0, "requested": 0},
+        )
+        if state in row:
+            row[state] += 1
+    regions = set(counts) | set(errors_by_region)
+    rows = []
+    for r in regions:
+        c = counts.get(r, {})
+        rows.append({
+            "region": r,
+            "running": c.get("running", 0),
+            "stopping": c.get("stopping", 0),
+            "requested": c.get("requested", 0),
+            "errors": errors_by_region.get(r, 0),
+        })
+    # Sort by running desc so healthy capacity leads; ties broken by
+    # lower error count.
+    rows.sort(key=lambda x: (-x["running"], x["errors"]))
+    return rows
+
+
 def _format_ghost_fragment(ghost_info: dict | None) -> str:
     """Render the ghost cross-check result as an inline sentence.
 
@@ -562,6 +599,7 @@ def get_pool_status(pool_id: str) -> dict:
         # Hardware pools are not managed by worker-manager
         status["managed"] = False
 
+    errors_by_region: dict[str, int] = {}
     if "error" not in errors:
         error_list = errors.get("workerPoolErrors", [])
         status["error_count"] = len(error_list)
@@ -580,7 +618,6 @@ def get_pool_status(pool_id: str) -> dict:
         # Also count per region so a single-region quota event isn't
         # mistaken for a pool-wide issue.
         error_summary = {}
-        errors_by_region = {}
         for err in error_list:
             desc = err.get("description", "unknown")
             key = _normalize_error(desc)
@@ -613,6 +650,17 @@ def get_pool_status(pool_id: str) -> dict:
         status["error_count"] = "n/a"
         if status.get("managed") is not False:
             status["errors"] = errors
+
+    # Join worker-state distribution with error counts per region so the
+    # report can answer 'which regions are still landing VMs'. Only makes
+    # sense for managed pools with a usable worker list.
+    if status.get("managed") is True and "error" not in workers_info:
+        region_health = _build_region_health(
+            workers_info.get("workers", []),
+            errors_by_region,
+        )
+        if region_health:
+            status["region_health"] = region_health
 
     return status
 

@@ -119,6 +119,18 @@ worker distribution, it's background churn, not a regional outage. A
 single-region concentration (>40% from one region) is what justifies
 calling out a region-specific cause.
 
+**`region_health`** joins per-region worker distribution with per-region
+error counts so you can answer "which regions are still landing VMs?".
+Each row has `region`, `running`, `stopping`, `requested`, and `errors`,
+sorted by `running` descending. Regions with non-zero running and zero
+errors are safe fallback capacity; regions with many errors and zero or
+near-zero running are effectively shut out right now (common on GCP
+during single-zone Spot scarcity). Use this when suggesting which zones
+to prioritize in launchConfigs or when explaining why scale-up is failing.
+Worker fetching is capped at 10k, so on very large pools the running and
+stopping counts may be proportionally undercounted but the ranking is
+still useful.
+
 **Other supply-side issues to check:**
 - **High error count relative to running workers** — provisioning failures
   are preventing scale-up. Check `errors` for patterns (quota exhaustion,
