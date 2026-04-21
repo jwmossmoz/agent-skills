@@ -134,8 +134,9 @@ def check_azure_ghosts(
             [
                 "az", "vm", "list",
                 "--resource-group", rg,
-                "--query", "[].name",
-                "-o", "tsv",
+                "--query",
+                "[].{name:name,time:timeCreated,location:location}",
+                "-o", "json",
             ],
             capture_output=True,
             text=True,
@@ -151,18 +152,20 @@ def check_azure_ghosts(
             "resource_group": rg,
         }
 
-    az_vms = {
-        line.strip()
-        for line in result.stdout.splitlines()
-        if line.strip()
-    }
+    try:
+        vm_records = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        vm_records = []
+
+    az_vms = {v.get("name") for v in vm_records if v.get("name")}
     tc_stopping = {
         w.get("workerId") for w in workers
         if w.get("state") == "stopping" and w.get("workerId")
     }
     ghosts = tc_stopping - az_vms
     real = tc_stopping & az_vms
-    return {
+
+    info = {
         "resource_group": rg,
         "azure_vms_in_rg": len(az_vms),
         "tc_stopping_count": len(tc_stopping),
@@ -172,6 +175,89 @@ def check_azure_ghosts(
             round(len(ghosts) / len(tc_stopping) * 100, 1)
             if tc_stopping else 0
         ),
+    }
+    lifetime = _compute_vm_lifetime(vm_records)
+    if lifetime:
+        info["vm_lifetime"] = lifetime
+    return info
+
+
+_AGE_BUCKETS = [
+    ("lt_30m", 0, 30),
+    ("30m_1h", 30, 60),
+    ("1h_2h", 60, 120),
+    ("2h_4h", 120, 240),
+    ("4h_8h", 240, 480),
+    ("gt_8h", 480, None),
+]
+
+
+def _compute_vm_lifetime(vm_records: list[dict]) -> dict | None:
+    """Bucket live Azure VMs by age so Spot-eviction storms are visible.
+
+    When almost every VM is <1h old and none survive past 2-4h, that's the
+    signature of an eviction storm — VMs are dying young before they can
+    claim tasks, and no amount of scanner tuning will fix it. The fix
+    lives upstream in launchConfig region mix or capacity model.
+    """
+    if not vm_records:
+        return None
+    now = datetime.now(timezone.utc)
+    ages = []
+    per_region: dict[str, list[float]] = {}
+    for v in vm_records:
+        t = v.get("time")
+        if not t:
+            continue
+        try:
+            c = datetime.fromisoformat(t.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            continue
+        age_min = (now - c).total_seconds() / 60
+        ages.append(age_min)
+        loc = v.get("location") or "unknown"
+        per_region.setdefault(loc, []).append(age_min)
+    if not ages:
+        return None
+
+    buckets = {name: 0 for name, _, _ in _AGE_BUCKETS}
+    for a in ages:
+        for name, lo, hi in _AGE_BUCKETS:
+            if a >= lo and (hi is None or a < hi):
+                buckets[name] += 1
+                break
+
+    ages_sorted = sorted(ages)
+    median = ages_sorted[len(ages_sorted) // 2]
+    total = len(ages)
+    young_pct = round(
+        sum(1 for a in ages if a < 60) / total * 100, 1,
+    )
+    over_2h_pct = round(
+        sum(1 for a in ages if a >= 120) / total * 100, 1,
+    )
+
+    regions = []
+    for loc, la in per_region.items():
+        if not la:
+            continue
+        la_sorted = sorted(la)
+        regions.append({
+            "region": loc,
+            "vms": len(la),
+            "survived_over_2h": sum(1 for a in la if a >= 120),
+            "median_age_minutes": round(la_sorted[len(la_sorted) // 2], 1),
+        })
+    regions.sort(key=lambda r: -r["survived_over_2h"])
+
+    return {
+        "total_vms": total,
+        "median_age_minutes": round(median, 1),
+        "oldest_age_minutes": round(max(ages), 1),
+        "pct_under_1h": young_pct,
+        "pct_over_2h": over_2h_pct,
+        "age_buckets": buckets,
+        "per_region": regions,
     }
 
 
@@ -486,6 +572,29 @@ def _add_supply_health_signals(
             warnings.append(msg)
         else:
             notes.append(msg)
+
+    # Spot-eviction storm: when Azure is churning VMs inside an hour,
+    # scanner tuning won't help. The ghost count is a downstream symptom,
+    # not the cause — every new VM becomes a ghost before it can work.
+    lifetime = (ghost_info or {}).get("vm_lifetime") if ghost_info else None
+    if lifetime and lifetime.get("total_vms", 0) >= 50:
+        under_1h = lifetime.get("pct_under_1h", 0)
+        over_2h = lifetime.get("pct_over_2h", 0)
+        if under_1h >= 70 and over_2h <= 15:
+            msg = (
+                f"Azure VM lifetime suggests a Spot-eviction storm: "
+                f"{under_1h}% of {lifetime['total_vms']} live VMs are "
+                f"<1h old, only {over_2h}% survive past 2h (median "
+                f"{lifetime.get('median_age_minutes')} min). VMs are "
+                f"being evicted before they claim tasks — worker-manager "
+                f"scanner throughput cannot fix this. Look at "
+                f"azure_ghost_check.vm_lifetime.per_region for survival "
+                f"by region and prune launchConfigs for hot zones."
+            )
+            if blocking:
+                warnings.append(msg)
+            else:
+                notes.append(msg)
 
     if warnings:
         status["warnings"] = warnings

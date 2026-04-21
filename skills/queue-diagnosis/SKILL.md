@@ -103,12 +103,22 @@ Look at the `pool_status` section (cloud/managed pools only).
   Quote this number when describing pool state, not just `current_capacity`.
 - `azure_ghost_check` — present on Azure pools when the `az` CLI is
   available. Contains `ghost_count`, `real_stopping_count`,
-  `azure_vms_in_rg`, and `ghost_pct`. A non-zero `ghost_count` is direct
-  proof that worker-manager is tracking phantom workers (TC says
-  'stopping' but no matching VM exists in the Azure resource group).
-  Cite this number in the summary — it's the strongest evidence for the
-  reap-lag story and avoids hedging about whether the stopping cohort
-  might just be slow termination.
+  `azure_vms_in_rg`, `ghost_pct`, and `vm_lifetime`. A non-zero
+  `ghost_count` is direct proof that worker-manager is tracking phantom
+  workers (TC says 'stopping' but no matching VM exists in the Azure
+  resource group). Cite this number in the summary.
+- `azure_ghost_check.vm_lifetime` — the critical signal for
+  distinguishing "reaper is stuck" from "Spot is evicting too fast":
+  - `median_age_minutes`, `oldest_age_minutes`, `pct_under_1h`,
+    `pct_over_2h` summarize how long live Azure VMs are surviving.
+  - `age_buckets` breaks the fleet into `lt_30m`, `30m_1h`, `1h_2h`,
+    `2h_4h`, `4h_8h`, `gt_8h`.
+  - `per_region` lists per-region VM counts, median age, and how many
+    survived past 2h — the "healthy regions" vs "eviction zones"
+    split you'd otherwise have to derive by hand.
+  When `pct_under_1h` is high and `pct_over_2h` is near zero, it is a
+  Spot-eviction storm, not a scanner bug — the script surfaces this as
+  a warning/note automatically.
 
 **Don't over-index on a single error bucket.** `errors` is sorted by count
 descending — the top entries are the recurring issues, the tail is noise.
@@ -152,6 +162,73 @@ Common spot pool errors that are NOT problems:
 - "Operation execution has been preempted by a more recent operation" — normal
   spot VM lifecycle
 - Concurrent request conflicts — Azure ARM template race conditions, self-healing
+
+#### Spot-eviction storm vs. reaper lag
+
+A pool with a huge `ghost_count` and pending tasks looks like a
+worker-manager bug, but it is usually not. The two patterns produce the
+same top-line symptoms (high `stopping`, low `effective_capacity_pct`,
+pending tasks) but have completely different fixes. Use
+`azure_ghost_check.vm_lifetime` to tell them apart before blaming
+worker-manager:
+
+- **Spot-eviction storm** (upstream, cloud-side): `pct_under_1h >= 70`
+  and `pct_over_2h <= 15`. VMs are being evicted inside the first hour.
+  Ghost count is a *lagging indicator* of eviction rate — every VM
+  eventually becomes a ghost because Spot kills it before it can work.
+  Scanner tuning does nothing here; the fix is launchConfig region mix
+  (prune hot zones), raising `maxCapacity` to absorb the ghost
+  overhead, or adding non-Spot baseline. Confirm by reading
+  `vm_lifetime.per_region` — healthy regions have non-zero
+  `survived_over_2h`; eviction zones have zero.
+- **Reaper lag** (worker-manager side): VMs survive hours in Azure
+  (`pct_over_2h` is meaningful, e.g. 40%+), but `ghost_count` is also
+  high because TC is tracking many records Azure has deleted. The
+  scanner's deprovision chain is sequential — one resource per ~60 min
+  revisit, so 5 resources ≈ 5 hours per ghost. Confirm by pulling
+  worker-manager logs and counting `setting state to STOPPED`
+  transitions per hour; if arrival rate exceeds reap rate over time,
+  the backlog will grow. If they match, the pool is at an inefficient
+  but stable steady state.
+
+Don't reason from `lastDateActive` being absent in the TC API response
+— that field is not returned by `listWorkersForWorkerPool`, so "every
+worker looks idle" is a quirk of the API, not evidence that workers
+never claimed tasks.
+
+#### Worker-manager log spot-checks (optional)
+
+When the ghost pattern needs to be attributed to a specific side, pull
+worker-manager logs directly. The FXCI cluster is
+`webservices-high-prod` in project `moz-fx-webservices-high-prod`.
+Filter by `jsonPayload.Fields.workerPoolId` (not the top-level
+`jsonPayload.message` contains operator, which won't match the pool
+label).
+
+```bash
+# Reap rate (workers reaching STOPPED) in the last 6h
+gcloud logging read '
+  resource.type="k8s_container"
+  resource.labels.cluster_name="webservices-high-prod"
+  jsonPayload.Logger="taskcluster.worker-manager.provider.azure2"
+  jsonPayload.Fields.workerPoolId="<pool>"
+  jsonPayload.Fields.message="setting state to STOPPED"
+' --project moz-fx-webservices-high-prod --freshness=6h \
+  --format='value(timestamp)' | awk '{print substr($0,1,13)}' | sort | uniq -c
+
+# Per-worker reap trace (one resource per revisit ≈ 60 min gap)
+gcloud logging read '
+  resource.type="k8s_container"
+  resource.labels.cluster_name="webservices-high-prod"
+  jsonPayload.Fields.workerPoolId="<pool>"
+  jsonPayload.message:"<workerId>"
+' --project moz-fx-webservices-high-prod --freshness=24h \
+  --format='value(timestamp,jsonPayload.message)'
+```
+
+The `serviceContext.version` in each log entry shows the deployed
+worker-manager version — useful when checking whether a specific fix
+has rolled out.
 
 ### Demand-side problems (too many tasks)
 
