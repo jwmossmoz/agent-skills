@@ -224,6 +224,30 @@ def _normalize_error(desc: str) -> str:
     return first_line[:200]
 
 
+_GCP_ZONE_RE = re.compile(r"zones/([a-z]+-[a-z0-9]+-?[a-z0-9]*)")
+_AZURE_LOCATION_RE = re.compile(r"Location:\s*([a-z0-9]+)", re.IGNORECASE)
+
+
+def _extract_region(err: dict) -> str:
+    """Pull a region/zone label out of a worker-pool error.
+
+    Azure populates extra.workerGroup; GCP doesn't, so fall back to
+    parsing the description. Zone-exhaustion errors embed the zone as
+    `zones/<zone>`, and some Azure quota errors carry `Location: <region>`.
+    """
+    group = err.get("extra", {}).get("workerGroup")
+    if group:
+        return group
+    desc = err.get("description", "") or ""
+    m = _GCP_ZONE_RE.search(desc)
+    if m:
+        return m.group(1)
+    m = _AZURE_LOCATION_RE.search(desc)
+    if m:
+        return m.group(1).lower()
+    return "unknown"
+
+
 def _format_ghost_fragment(ghost_info: dict | None) -> str:
     """Render the ghost cross-check result as an inline sentence.
 
@@ -565,7 +589,7 @@ def get_pool_status(pool_id: str) -> dict:
                 {"count": 0, "sample": desc.split("\n")[0][:500]},
             )
             bucket["count"] += 1
-            region = err.get("extra", {}).get("workerGroup") or "unknown"
+            region = _extract_region(err)
             errors_by_region[region] = (
                 errors_by_region.get(region, 0) + 1
             )
