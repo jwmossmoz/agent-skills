@@ -30,10 +30,6 @@ REDASH_SCRIPT = Path.home() / ".claude" / "skills" / "redash" / "scripts" / "que
 TC_ROOT = "https://firefox-ci-tc.services.mozilla.com"
 TREEHERDER_ROOT = "https://treeherder.mozilla.org"
 
-# FXCI Azure subscription — used for az ghost cross-check and Spot
-# placement score queries. Both APIs are subscription-scoped.
-AZURE_SUBSCRIPTION_ID = "108d46d5-fe9b-4850-9a7d-8c914aa6c1f0"
-
 
 def tc_task_group_url(task_group_id: str) -> str:
     return f"{TC_ROOT}/tasks/groups/{task_group_id}"
@@ -263,104 +259,6 @@ def _compute_vm_lifetime(vm_records: list[dict]) -> dict | None:
         "age_buckets": buckets,
         "per_region": regions,
     }
-
-
-_PLACEMENT_SCORE_CHUNK = 8
-
-
-def check_spot_placement_scores(
-    provider_id: str,
-    vm_size: str,
-    vm_type: str,
-    subscription_id: str,
-    locations: list[str],
-    desired_count: int,
-) -> dict | None:
-    """Query Azure for Spot allocation-likelihood scores per region.
-
-    The score is forward-looking (High/Medium/Low + isQuotaAvailable) and
-    answers "can I allocate this SKU here right now". It is complementary
-    to vm_lifetime, which is backward-looking. Note: a High score does
-    not promise survival — allocation and eviction are different failure
-    modes, and we've seen pools score High everywhere while measured
-    lifetime is <1h. Use both signals together.
-    """
-    if not provider_id or not provider_id.startswith("azure"):
-        return None
-    if vm_type != "Spot":
-        return None
-    if not vm_size or vm_size == "unknown":
-        return {"skipped": "vm_size not parseable from launchConfig"}
-    if not locations:
-        return {"skipped": "no locations parsed from launchConfigs"}
-    if not shutil.which("az"):
-        return {"skipped": "az CLI not found on PATH"}
-
-    scores: list[dict] = []
-    errors: list[str] = []
-    # API caps at 8 regions per call; chunk when pool spans more.
-    for i in range(0, len(locations), _PLACEMENT_SCORE_CHUNK):
-        chunk = locations[i : i + _PLACEMENT_SCORE_CHUNK]
-        try:
-            result = subprocess.run(
-                [
-                    "az", "compute-recommender", "spot-placement-score",
-                    "-l", chunk[0],
-                    "--subscription", subscription_id,
-                    "--availability-zones", "false",
-                    "--desired-locations", json.dumps(chunk),
-                    "--desired-count", str(desired_count),
-                    "--desired-sizes", json.dumps([{"sku": vm_size}]),
-                    "-o", "json",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-        except subprocess.TimeoutExpired:
-            errors.append(f"timed out for chunk {chunk}")
-            continue
-        if result.returncode != 0:
-            errors.append(
-                f"chunk {chunk[0]}..: {result.stderr.strip()[:180]}"
-            )
-            continue
-        try:
-            payload = json.loads(result.stdout)
-        except json.JSONDecodeError:
-            errors.append(f"non-JSON reply for chunk {chunk[0]}..")
-            continue
-        scores.extend(payload.get("placementScores", []))
-
-    if not scores and errors:
-        return {"skipped": "; ".join(errors)[:300]}
-
-    simplified = [
-        {
-            "region": s.get("region"),
-            "score": s.get("score"),
-            "quota_available": s.get("isQuotaAvailable"),
-        }
-        for s in scores
-    ]
-    simplified.sort(
-        key=lambda x: (
-            {"High": 0, "Medium": 1, "Low": 2}.get(x["score"], 3),
-            x["region"] or "",
-        ),
-    )
-    summary = {
-        "vm_size": vm_size,
-        "desired_count": desired_count,
-        "regions_queried": len(locations),
-        "high": sum(1 for s in simplified if s["score"] == "High"),
-        "medium": sum(1 for s in simplified if s["score"] == "Medium"),
-        "low": sum(1 for s in simplified if s["score"] == "Low"),
-        "per_region": simplified,
-    }
-    if errors:
-        summary["partial_errors"] = errors
-    return summary
 
 
 def run_redash_query(sql: str) -> list[dict]:
@@ -698,30 +596,6 @@ def _add_supply_health_signals(
             else:
                 notes.append(msg)
 
-    # Forward-looking allocation signal: if Azure itself is saying "we
-    # probably can't place this SKU here right now" across most of the
-    # pool's regions, note it. This catches the case before VM lifetime
-    # data has had a chance to show the pattern.
-    placement = status.get("spot_placement_scores")
-    if placement and not placement.get("skipped"):
-        total = placement.get("high", 0) + placement.get("medium", 0) + placement.get("low", 0)
-        if total >= 3:
-            non_high = placement.get("medium", 0) + placement.get("low", 0)
-            if non_high / total >= 0.5:
-                low_ct = placement.get("low", 0)
-                med_ct = placement.get("medium", 0)
-                notes.append(
-                    f"Spot placement score is degraded across this "
-                    f"pool's region mix: {low_ct} Low + {med_ct} "
-                    f"Medium of {total} regions for "
-                    f"{placement.get('vm_size')}. See "
-                    f"spot_placement_scores.per_region. A High score "
-                    f"still doesn't guarantee survival (see "
-                    f"vm_lifetime), but Medium/Low across the majority "
-                    f"means Azure is already telling us allocation is "
-                    f"shaky in these regions."
-                )
-
     if warnings:
         status["warnings"] = warnings
     if notes:
@@ -826,34 +700,6 @@ def get_pool_status(pool_id: str) -> dict:
         )
         if ghost_info:
             status["azure_ghost_check"] = ghost_info
-
-        # Forward-looking "can we allocate this SKU here right now" score.
-        # Complements vm_lifetime which only shows past/present — useful
-        # when we want to predict whether a pool's region mix will keep
-        # getting capacity, not just whether today's VMs survived.
-        lc_locations = sorted({
-            lc.get("location") for lc in launch_configs
-            if lc.get("location")
-        })
-        # Use a realistic per-region batch (~1/10th of maxCapacity, capped
-        # at 50) rather than desired_count=1 — asking "can you give me 1"
-        # almost always returns High and hides real scarcity. A more
-        # typical scale-up slice is closer to "give me 20-50 at once".
-        mc = status.get("max_capacity")
-        if isinstance(mc, int) and mc > 0 and lc_locations:
-            desired = max(5, min(50, mc // max(len(lc_locations), 1)))
-        else:
-            desired = 10
-        placement_info = check_spot_placement_scores(
-            status["provider_id"],
-            status.get("vm_size", "unknown"),
-            status.get("vm_type", "unknown"),
-            AZURE_SUBSCRIPTION_ID,
-            lc_locations,
-            desired,
-        )
-        if placement_info:
-            status["spot_placement_scores"] = placement_info
 
         # Must run after max_capacity is populated so headroom can be
         # computed, and after ghost_info so warnings can cite it.
