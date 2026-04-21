@@ -491,22 +491,30 @@ def get_pool_status(pool_id: str) -> dict:
 
         if launch_configs:
             lc = launch_configs[0]
-            # Azure ARM template pools store VM details in
-            # armDeployment.parameters; non-ARM pools use top-level
-            # hardwareProfile/priority fields.
+            # Azure ARM pools: armDeployment.parameters.
+            # Azure non-ARM: top-level hardwareProfile/priority.
+            # GCP: machineType as a zone path, scheduling.provisioningModel.
             arm_params = (
                 lc.get("armDeployment", {}).get("parameters", {})
             )
+            gcp_machine_type = lc.get("machineType")
+            if gcp_machine_type and "/" in gcp_machine_type:
+                gcp_machine_type = gcp_machine_type.rsplit("/", 1)[-1]
             status["vm_size"] = (
                 arm_params.get("vmSize", {}).get("value")
-                or lc.get("hardwareProfile", {}).get("vmSize", "unknown")
+                or lc.get("hardwareProfile", {}).get("vmSize")
+                or gcp_machine_type
+                or "unknown"
             )
+            gcp_model = lc.get("scheduling", {}).get("provisioningModel")
             priority = (
                 arm_params.get("priority", {}).get("value")
-                or lc.get("priority", "unknown")
+                or lc.get("priority")
+                or gcp_model
+                or "unknown"
             )
             eviction = lc.get("evictionPolicy", "unknown")
-            if priority == "Spot" or eviction == "Delete":
+            if priority in ("Spot", "SPOT") or eviction == "Delete":
                 status["vm_type"] = "Spot"
             else:
                 status["vm_type"] = priority
