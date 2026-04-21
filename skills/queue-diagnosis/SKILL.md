@@ -107,6 +107,20 @@ Look at the `pool_status` section (cloud/managed pools only).
   `ghost_count` is direct proof that worker-manager is tracking phantom
   workers (TC says 'stopping' but no matching VM exists in the Azure
   resource group). Cite this number in the summary.
+- `spot_placement_scores` — present on Azure Spot pools when the `az`
+  CLI is available. Queries `az compute-recommender spot-placement-score`
+  for every region in the pool's launchConfigs and returns
+  `{vm_size, desired_count, regions_queried, high, medium, low,
+  per_region: [{region, score, quota_available}]}`. This is Azure's
+  own forward-looking answer to "can I allocate this SKU here right
+  now" — useful when demand is high and you want to know if a scale-up
+  request would even succeed before worrying about survival.
+  **Important limitation**: a `High` score predicts *allocation*, not
+  *lifetime*. We've observed pools with 11/11 regions scoring High
+  while live VMs die <1h. Treat it as a necessary-but-not-sufficient
+  signal: Medium/Low means allocation is already shaky, but High does
+  not mean the VMs won't be evicted 20 minutes later. Always read it
+  alongside `vm_lifetime`.
 - `azure_ghost_check.vm_lifetime` — the critical signal for
   distinguishing "reaper is stuck" from "Spot is evicting too fast":
   - `median_age_minutes`, `oldest_age_minutes`, `pct_under_1h`,
