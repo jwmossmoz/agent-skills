@@ -16,11 +16,12 @@ Usage:
 
 import argparse
 import json
-import os
 import re
 import shutil
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -327,8 +328,6 @@ def check_spot_eviction_history(
         "| project location, evictionRate=tostring(properties.evictionRate)"
     )
     body = json.dumps({"query": kusto}).encode("utf-8")
-    import urllib.error
-    import urllib.request
     req = urllib.request.Request(
         "https://management.azure.com/providers/Microsoft.ResourceGraph/"
         "resources?api-version=2024-04-01",
@@ -353,7 +352,7 @@ def check_spot_eviction_history(
             "region": r.get("location"),
             "eviction_rate": r.get("evictionRate"),
             "eviction_pct_midpoint": _EVICTION_MIDPOINTS.get(
-                r.get("evictionRate"), None,
+                r.get("evictionRate"),
             ),
         }
         for r in payload.get("data", [])
