@@ -261,6 +261,114 @@ def _compute_vm_lifetime(vm_records: list[dict]) -> dict | None:
     }
 
 
+# Midpoint of each eviction-rate bucket returned by Azure Resource Graph.
+# Used for sorting and for the "live is much worse than historical" check.
+_EVICTION_MIDPOINTS = {
+    "0-5": 2.5,
+    "5-10": 7.5,
+    "10-15": 12.5,
+    "15-20": 17.5,
+    "20+": 25.0,
+}
+
+
+def check_spot_eviction_history(
+    provider_id: str,
+    vm_size: str,
+    vm_type: str,
+    locations: list[str],
+) -> dict | None:
+    """Pull Azure's 28-day trailing Spot eviction rate for this SKU.
+
+    Queries the Azure Resource Graph SpotResources table via the ARG REST
+    API. The `az graph query` CLI wrapper returns 0 rows for reasons that
+    aren't documented (likely CLI-side auth scope), so we call the REST
+    endpoint directly with a token from `az account get-access-token`.
+
+    The data is tenant-level (not subscription-scoped), so it's the same
+    reference table for every Mozilla pool that uses the same VM size.
+    Interpret it alongside vm_lifetime: a region with low historical
+    eviction but low live >2h survival is a *recent* capacity shift, not
+    steady-state scarcity — worth a different recommendation than a
+    region that has always been evicting hard.
+    """
+    if not provider_id or not provider_id.startswith("azure"):
+        return None
+    if vm_type != "Spot":
+        return None
+    if not vm_size or vm_size == "unknown":
+        return {"skipped": "vm_size not parseable from launchConfig"}
+    if not locations:
+        return {"skipped": "no locations parsed from launchConfigs"}
+    if not shutil.which("az"):
+        return {"skipped": "az CLI not found on PATH (needed for auth token)"}
+
+    try:
+        token_res = subprocess.run(
+            [
+                "az", "account", "get-access-token",
+                "--resource", "https://management.azure.com",
+                "--query", "accessToken", "-o", "tsv",
+            ],
+            capture_output=True, text=True, timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        return {"skipped": "az get-access-token timed out"}
+    if token_res.returncode != 0:
+        return {"skipped": f"az get-access-token failed: {token_res.stderr.strip()[:180]}"}
+    token = token_res.stdout.strip()
+    if not token:
+        return {"skipped": "empty access token"}
+
+    kusto = (
+        "SpotResources "
+        "| where type =~ 'microsoft.compute/skuspotevictionrate/location' "
+        f"| where sku.name =~ '{vm_size.lower()}' "
+        "| project location, evictionRate=tostring(properties.evictionRate)"
+    )
+    body = json.dumps({"query": kusto}).encode("utf-8")
+    import urllib.error
+    import urllib.request
+    req = urllib.request.Request(
+        "https://management.azure.com/providers/Microsoft.ResourceGraph/"
+        "resources?api-version=2024-04-01",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        return {"skipped": f"ARG HTTP {e.code}: {e.reason}"}
+    except (urllib.error.URLError, OSError, TimeoutError) as e:
+        return {"skipped": f"ARG request failed: {str(e)[:180]}"}
+
+    wanted = {loc.lower() for loc in locations}
+    rows = [
+        {
+            "region": r.get("location"),
+            "eviction_rate": r.get("evictionRate"),
+            "eviction_pct_midpoint": _EVICTION_MIDPOINTS.get(
+                r.get("evictionRate"), None,
+            ),
+        }
+        for r in payload.get("data", [])
+        if r.get("location") in wanted
+    ]
+    rows.sort(key=lambda r: (-(r["eviction_pct_midpoint"] or 0), r["region"]))
+    missing = sorted(wanted - {r["region"] for r in rows})
+    return {
+        "vm_size": vm_size,
+        "source": "AzureResourceGraph.SpotResources (28-day trailing)",
+        "per_region": rows,
+        "regions_without_data": missing,
+    }
+
+
 def run_redash_query(sql: str) -> list[dict]:
     """Run a SQL query via the Redash skill script and return rows."""
     if not REDASH_SCRIPT.exists():
@@ -596,6 +704,56 @@ def _add_supply_health_signals(
             else:
                 notes.append(msg)
 
+    # Compare live per-region survival to Azure's 28-day historical eviction
+    # rate. Normally-healthy regions (historical 0-5%) showing catastrophic
+    # live survival are a recent capacity shift — different recommendation
+    # than a region that has always been evicting hard.
+    history = status.get("spot_eviction_history")
+    if (
+        lifetime
+        and lifetime.get("per_region")
+        and history
+        and not history.get("skipped")
+    ):
+        hist_by_region = {
+            r["region"]: r for r in history.get("per_region", [])
+        }
+        storm_in_healthy_regions = []
+        for live in lifetime["per_region"]:
+            hist = hist_by_region.get(live["region"])
+            if not hist:
+                continue
+            midpoint = hist.get("eviction_pct_midpoint")
+            if midpoint is None or midpoint > 5.0:
+                continue
+            if live["vms"] < 20:
+                continue
+            survival_pct = (
+                live["survived_over_2h"] / live["vms"] * 100
+                if live["vms"] else 0
+            )
+            if survival_pct < 20:
+                storm_in_healthy_regions.append({
+                    "region": live["region"],
+                    "historical_rate": hist.get("eviction_rate"),
+                    "live_over_2h_pct": round(survival_pct, 1),
+                    "live_vms": live["vms"],
+                })
+        if storm_in_healthy_regions:
+            names = ", ".join(
+                r["region"] for r in storm_in_healthy_regions
+            )
+            notes.append(
+                f"{len(storm_in_healthy_regions)} normally-healthy "
+                f"region(s) are evicting hard right now: {names}. "
+                f"Historical 28-day eviction rate is 0-5% but live VMs "
+                f"are surviving <20% past 2h. This looks like a recent "
+                f"capacity shift, not steady-state — these regions "
+                f"usually recover without launchConfig changes. See "
+                f"spot_eviction_history.per_region for the full "
+                f"historical breakdown."
+            )
+
     if warnings:
         status["warnings"] = warnings
     if notes:
@@ -700,6 +858,22 @@ def get_pool_status(pool_id: str) -> dict:
         )
         if ghost_info:
             status["azure_ghost_check"] = ghost_info
+
+        # 28-day historical Spot eviction rate per region for this SKU.
+        # Reference table, not derived from our workers — lets us tell
+        # "chronically bad region" apart from "recent capacity shift".
+        lc_locations = sorted({
+            lc.get("location") for lc in launch_configs
+            if lc.get("location")
+        })
+        eviction_history = check_spot_eviction_history(
+            status["provider_id"],
+            status.get("vm_size", "unknown"),
+            status.get("vm_type", "unknown"),
+            lc_locations,
+        )
+        if eviction_history:
+            status["spot_eviction_history"] = eviction_history
 
         # Must run after max_capacity is populated so headroom can be
         # computed, and after ghost_info so warnings can cite it.

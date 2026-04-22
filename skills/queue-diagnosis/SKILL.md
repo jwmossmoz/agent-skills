@@ -107,6 +107,20 @@ Look at the `pool_status` section (cloud/managed pools only).
   `ghost_count` is direct proof that worker-manager is tracking phantom
   workers (TC says 'stopping' but no matching VM exists in the Azure
   resource group). Cite this number in the summary.
+- `spot_eviction_history` — Azure's own 28-day trailing Spot eviction
+  rate per region for this pool's VM SKU, pulled from the
+  `SpotResources` Azure Resource Graph table via REST. Contains
+  `vm_size`, `source`, `per_region: [{region, eviction_rate,
+  eviction_pct_midpoint}]` sorted worst-first, and
+  `regions_without_data` for any configured region the table doesn't
+  cover. Eviction rate is a bucket (`0-5`, `5-10`, `10-15`, `15-20`,
+  `20+` — percent-per-hour chance of eviction) so treat it as
+  ordinal, not precise. This is a reference table, not derived from
+  our workers. Use it to tell "chronically bad region" apart from
+  "recent capacity shift": a region with historical 0-5% but live
+  `vm_lifetime` showing <20% past-2h survival is a storm in a
+  normally-healthy region, and the script will surface that as a
+  dedicated note.
 - `azure_ghost_check.vm_lifetime` — the critical signal for
   distinguishing "reaper is stuck" from "Spot is evicting too fast":
   - `median_age_minutes`, `oldest_age_minutes`, `pct_under_1h`,
