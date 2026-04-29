@@ -25,6 +25,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from statistics import median
 
 REDASH_SCRIPT = Path.home() / ".claude" / "skills" / "redash" / "scripts" / "query_redash.py"
 
@@ -790,7 +791,7 @@ def get_pool_status(pool_id: str) -> dict:
     # 401 — both used to land in the same branch).
     if any(
         call.get("auth_error")
-        for call in (pool_info, errors, workers_info)
+        for call in (pending_info, pool_info, errors, workers_info)
     ):
         status["auth_failure"] = True
         status["managed"] = None
@@ -1111,6 +1112,422 @@ LIMIT 30
     return rows
 
 
+def _as_number(value) -> float | None:
+    """Return a numeric value for JSON/Redash scalars, or None."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value) -> int | None:
+    number = _as_number(value)
+    if number is None:
+        return None
+    return int(number)
+
+
+def _pct(part: int | float | None, whole: int | float | None) -> float | None:
+    if part is None or not whole:
+        return None
+    return round(part / whole * 100, 1)
+
+
+def _day_label(value) -> str | None:
+    if value is None:
+        return None
+    # Redash JSON normally returns DATE values as YYYY-MM-DD strings. Keep
+    # only the ISO date prefix if a timestamp-ish string appears.
+    return str(value)[:10]
+
+
+def _queue_minutes(ms) -> float | None:
+    value = _as_number(ms)
+    if value is None:
+        return None
+    return round(value / 60000, 1)
+
+
+def _daily_volume_summary(rows) -> dict:
+    """Summarize daily demand so the report can classify demand spikes."""
+    if not isinstance(rows, list) or not rows:
+        return {}
+    if rows and isinstance(rows[0], dict) and "error" in rows[0]:
+        return {"error": rows[0]["error"]}
+
+    daily_totals: dict[str, int] = {}
+    project_totals_by_day: dict[str, dict[str, int]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        day = _day_label(row.get("day"))
+        if not day:
+            continue
+        count = _as_int(row.get("task_count")) or 0
+        project = row.get("project") or "unknown"
+        daily_totals[day] = daily_totals.get(day, 0) + count
+        projects = project_totals_by_day.setdefault(day, {})
+        projects[project] = projects.get(project, 0) + count
+
+    if not daily_totals:
+        return {}
+
+    latest_day = max(daily_totals)
+    latest_total = daily_totals[latest_day]
+    previous_totals = [
+        total for day, total in daily_totals.items()
+        if day < latest_day
+    ]
+    baseline = int(median(previous_totals)) if previous_totals else None
+    ratio = (
+        round(latest_total / baseline, 2)
+        if baseline and baseline > 0 else None
+    )
+
+    latest_projects = project_totals_by_day.get(latest_day, {})
+    dominant_project = None
+    if latest_projects:
+        project, count = max(
+            latest_projects.items(), key=lambda item: item[1],
+        )
+        dominant_project = {
+            "project": project,
+            "tasks": count,
+            "share_pct": _pct(count, latest_total),
+        }
+
+    return {
+        "latest_day": latest_day,
+        "latest_tasks": latest_total,
+        "baseline_daily_tasks": baseline,
+        "latest_to_baseline_ratio": ratio,
+        "dominant_project": dominant_project,
+        "daily_totals": dict(sorted(daily_totals.items())),
+    }
+
+
+def _top_pushers_summary(rows) -> dict:
+    """Summarize demand concentration among the top pusher query rows."""
+    if not isinstance(rows, list) or not rows:
+        return {}
+    valid = [
+        row for row in rows
+        if isinstance(row, dict) and "error" not in row
+    ]
+    if not valid:
+        error = rows[0].get("error") if isinstance(rows[0], dict) else None
+        return {"error": error} if error else {}
+
+    total_top_tasks = sum(_as_int(r.get("total_tasks")) or 0 for r in valid)
+    top = max(valid, key=lambda r: _as_int(r.get("total_tasks")) or 0)
+    top_tasks = _as_int(top.get("total_tasks")) or 0
+
+    projects: dict[str, int] = {}
+    for row in valid:
+        project = row.get("project") or "unknown"
+        projects[project] = (
+            projects.get(project, 0)
+            + (_as_int(row.get("total_tasks")) or 0)
+        )
+    dominant_project = None
+    if projects:
+        project, count = max(projects.items(), key=lambda item: item[1])
+        dominant_project = {
+            "project": project,
+            "tasks": count,
+            "share_pct": _pct(count, total_top_tasks),
+        }
+
+    return {
+        "top_pusher": top.get("pusher") or "unknown",
+        "top_pusher_project": top.get("project") or "unknown",
+        "top_pusher_tasks": top_tasks,
+        "top_pusher_task_groups": _as_int(top.get("task_groups")),
+        "top_pusher_share_of_top_rows_pct": _pct(
+            top_tasks, total_top_tasks,
+        ),
+        "top_rows_task_total": total_top_tasks,
+        "dominant_project": dominant_project,
+    }
+
+
+def _queue_impact_summary(queue_times: dict) -> dict:
+    if not isinstance(queue_times, dict) or "error" in queue_times:
+        return {"error": queue_times.get("error")} if queue_times else {}
+
+    total = _as_int(queue_times.get("total_runs"))
+    started = _as_int(queue_times.get("started_runs"))
+    expired = _as_int(queue_times.get("expired_count")) or 0
+    return {
+        "total_runs": total,
+        "started_runs": started,
+        "unstarted_runs": (
+            total - started
+            if total is not None and started is not None
+            else None
+        ),
+        "expired_count": expired,
+        "expired_pct": _pct(expired, total),
+        "median_queue_minutes": _queue_minutes(
+            queue_times.get("median_queue_ms"),
+        ),
+        "p90_queue_minutes": _queue_minutes(queue_times.get("p90_queue_ms")),
+        "p95_queue_minutes": _queue_minutes(queue_times.get("p95_queue_ms")),
+        "max_queue_minutes": _queue_minutes(queue_times.get("max_queue_ms")),
+    }
+
+
+def build_diagnosis(report: dict) -> dict:
+    """Classify the backlog using the evidence already in the report.
+
+    This is intentionally heuristic. The goal is not to hide the raw data,
+    but to make the first-pass operational answer explicit: demand burst,
+    infrastructure/supply pressure, mixed, no active backlog, or not enough
+    information. The raw sections remain the source of truth.
+    """
+    status = report.get("pool_status", {})
+    queue_times = report.get("queue_times", {})
+    daily = _daily_volume_summary(report.get("daily_volume"))
+    pushers = _top_pushers_summary(report.get("top_pushers"))
+    impact = _queue_impact_summary(queue_times)
+
+    pending = _as_int(status.get("pending_tasks"))
+    running = _as_int(status.get("running"))
+    current = _as_int(status.get("current_capacity"))
+    max_capacity = _as_int(status.get("max_capacity"))
+    error_count = _as_int(status.get("error_count"))
+    effective_pct = _as_number(status.get("effective_capacity_pct"))
+    stopping_pct = _as_number(status.get("stopping_pct"))
+
+    diagnosis = {
+        "verdict": "inconclusive",
+        "confidence": "low",
+        "active_backlog": bool(pending and pending > 0),
+        "impact": impact,
+        "demand": daily,
+        "top_pushers": pushers,
+        "evidence": [],
+        "next_actions": [],
+    }
+
+    if status.get("auth_failure"):
+        diagnosis.update({
+            "verdict": "auth-blocked",
+            "confidence": "high",
+            "evidence": [
+                "Taskcluster authentication failed, so supply-side pool "
+                "state is unavailable.",
+            ],
+            "next_actions": [
+                "Run `taskcluster signin` and rerun the diagnosis.",
+            ],
+        })
+        return diagnosis
+
+    evidence = diagnosis["evidence"]
+    next_actions = diagnosis["next_actions"]
+    supply_score = 0
+    demand_score = 0
+
+    if pending is not None:
+        evidence.append(f"Current pending tasks: {pending}.")
+
+    if running is not None and current is not None and max_capacity:
+        evidence.append(
+            f"Pool capacity: running={running}, current={current}, "
+            f"max={max_capacity}."
+        )
+
+    warnings = status.get("warnings") or []
+    if warnings:
+        supply_score += 3
+        evidence.extend(warnings[:2])
+
+    ghost_info = status.get("azure_ghost_check")
+    if isinstance(ghost_info, dict) and not ghost_info.get("skipped"):
+        ghost_count = _as_int(ghost_info.get("ghost_count")) or 0
+        ghost_pct = _as_number(ghost_info.get("ghost_pct")) or 0
+        if ghost_count:
+            evidence.append(
+                f"Azure ghost check found {ghost_count} stopping workers "
+                f"without matching VMs ({ghost_pct}%)."
+            )
+            if pending and pending > 0 and ghost_pct >= 20:
+                supply_score += 3
+            else:
+                supply_score += 1
+
+    if (
+        pending and pending > 0
+        and effective_pct is not None
+        and effective_pct < 70
+    ):
+        supply_score += 2
+        evidence.append(
+            f"Effective capacity is only {effective_pct}% of max after "
+            "discounting stopping workers."
+        )
+
+    if pending and pending > 0 and error_count and error_count > 0:
+        error_ratio = _pct(error_count, running or current or max_capacity)
+        if error_count >= 20 or (error_ratio is not None and error_ratio >= 10):
+            supply_score += 2
+        else:
+            supply_score += 1
+        error_suffix = (
+            f" ({error_ratio}% of active capacity)"
+            if error_ratio is not None else ""
+        )
+        evidence.append(
+            f"Worker-manager reports {error_count} provisioning errors"
+            f"{error_suffix}."
+        )
+
+    notes = status.get("notes") or []
+    if any("Spot-eviction storm" in note for note in notes):
+        supply_score += 2
+        evidence.append(
+            "VM lifetime notes indicate a current Spot-eviction storm."
+        )
+    elif stopping_pct is not None and stopping_pct >= 30 and pending:
+        supply_score += 1
+
+    ratio = daily.get("latest_to_baseline_ratio")
+    latest_tasks = daily.get("latest_tasks")
+    baseline = daily.get("baseline_daily_tasks")
+    if ratio and latest_tasks:
+        evidence.append(
+            f"Latest UTC day volume is {latest_tasks} tasks vs median "
+            f"baseline {baseline} ({ratio}x)."
+        )
+        if latest_tasks >= 500 and ratio >= 2:
+            demand_score += 3
+        elif latest_tasks >= 250 and ratio >= 1.5:
+            demand_score += 2
+        elif ratio >= 1.25:
+            demand_score += 1
+
+    dominant_project = daily.get("dominant_project") or {}
+    if (
+        dominant_project.get("share_pct") is not None
+        and dominant_project["share_pct"] >= 60
+        and latest_tasks
+        and latest_tasks >= 500
+    ):
+        demand_score += 1
+        evidence.append(
+            f"{dominant_project['project']} accounts for "
+            f"{dominant_project['share_pct']}% of latest-day pool demand."
+        )
+
+    top_tasks = pushers.get("top_pusher_tasks")
+    top_share = pushers.get("top_pusher_share_of_top_rows_pct")
+    top_rows_total = pushers.get("top_rows_task_total")
+    if top_tasks:
+        evidence.append(
+            f"Top recent pusher is {pushers.get('top_pusher')} "
+            f"({pushers.get('top_pusher_project')}) with {top_tasks} "
+            f"tasks across {pushers.get('top_pusher_task_groups')} groups."
+        )
+        if top_tasks >= 1000 or (
+            top_rows_total
+            and top_rows_total >= 500
+            and top_share is not None
+            and top_share >= 40
+        ):
+            demand_score += 2
+        elif top_tasks >= 500:
+            demand_score += 1
+
+    expired_pct = impact.get("expired_pct")
+    if expired_pct is not None and expired_pct >= 3:
+        evidence.append(
+            f"{impact.get('expired_count')} tasks expired "
+            f"({expired_pct}% of runs), so the queue was not merely slow."
+        )
+
+    diagnosis["scores"] = {
+        "supply": supply_score,
+        "demand": demand_score,
+    }
+
+    if pending == 0:
+        p90 = impact.get("p90_queue_minutes")
+        if p90 and p90 >= 30:
+            diagnosis["verdict"] = "recently-impacted"
+            diagnosis["confidence"] = "medium"
+            next_actions.append(
+                "No active pending backlog now; use queue_times and "
+                "top_task_groups to summarize who was affected."
+            )
+        else:
+            diagnosis["verdict"] = "no-active-backlog"
+            diagnosis["confidence"] = "medium"
+            next_actions.append(
+                "No immediate infrastructure action from this snapshot; "
+                "rerun if pending tasks return."
+            )
+        return diagnosis
+
+    if (
+        (supply_score >= 3 and demand_score >= 2)
+        or (supply_score >= 2 and demand_score >= 3)
+    ):
+        diagnosis["verdict"] = "mixed"
+    elif supply_score >= 3:
+        diagnosis["verdict"] = "supply-side"
+    elif demand_score >= 3:
+        diagnosis["verdict"] = "demand-side"
+    elif supply_score > 0 and demand_score > 0:
+        diagnosis["verdict"] = "mixed"
+    elif pending and pending > 0:
+        diagnosis["verdict"] = "inconclusive-active-backlog"
+
+    if max(supply_score, demand_score) >= 4 or (
+        supply_score >= 3 and demand_score >= 3
+    ):
+        diagnosis["confidence"] = "high"
+    elif max(supply_score, demand_score) >= 2:
+        diagnosis["confidence"] = "medium"
+
+    if supply_score >= 3:
+        next_actions.append(
+            "Treat this as infrastructure/supply pressure first. Inspect "
+            "`pool_status.warnings`, `errors`, `errors_by_region`, and "
+            "`region_health` before blaming developers' pushes."
+        )
+        if isinstance(ghost_info, dict) and ghost_info.get("skipped"):
+            next_actions.append(
+                "Azure ghost check was skipped; run `az login` with FXCI "
+                "access and rerun to verify whether currentCapacity is "
+                "inflated by deleted VMs."
+            )
+        elif isinstance(ghost_info, dict) and ghost_info.get("ghost_count"):
+            next_actions.append(
+                "If ghost workers are high, use the worker-manager log "
+                "spot-checks in SKILL.md to compare ghost arrival rate "
+                "with STOPPED reap rate."
+            )
+    if demand_score >= 3:
+        next_actions.append(
+            "Treat this as a demand burst as well. Use `top_pushers` and "
+            "`top_task_groups` to identify the try pushes or bots driving "
+            "the pool, and include the generated TC/Treeherder links."
+        )
+    if not next_actions:
+        next_actions.append(
+            "Evidence is not decisive. Rerun with a longer `--days` window "
+            "and check worker-manager logs for provisioning or reap-rate "
+            "signals."
+        )
+
+    return diagnosis
+
+
 def add_pool_links(report: dict, pool_id: str) -> None:
     """Add a links section with clickable URLs for the pool."""
     pool_status = report.get("pool_status", {})
@@ -1125,6 +1542,29 @@ def add_pool_links(report: dict, pool_id: str) -> None:
             "(hardware pool). No worker-manager dashboard available."
         )
     report["links"] = links
+
+
+def order_report(report: dict) -> dict:
+    """Keep the JSON report stable, with the diagnosis near the top."""
+    preferred_order = [
+        "generated_at",
+        "pool_id",
+        "diagnosis",
+        "pool_status",
+        "queue_times",
+        "daily_volume",
+        "top_pushers",
+        "top_task_groups",
+        "unstarted_task_groups",
+        "links",
+    ]
+    ordered = {
+        key: report[key] for key in preferred_order
+        if key in report
+    }
+    for key, value in report.items():
+        ordered.setdefault(key, value)
+    return ordered
 
 
 def main():
@@ -1223,6 +1663,8 @@ def main():
     report["generated_at"] = now.isoformat()
     report["pool_id"] = args.pool_id
     add_pool_links(report, args.pool_id)
+    report["diagnosis"] = build_diagnosis(report)
+    report = order_report(report)
 
     output = json.dumps(report, indent=2, default=str)
 

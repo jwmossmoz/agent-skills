@@ -41,8 +41,33 @@ uv run scripts/diagnose.py gecko-t/win11-64-25h2
 
 The script outputs a JSON report with sections: `pool_status`,
 `queue_times`, `daily_volume`, `top_pushers`, `top_task_groups`,
-`unstarted_task_groups` (only when present), and `links`. Read the output
-and present a diagnostic summary to the user.
+`unstarted_task_groups` (only when present), `links`, and `diagnosis`.
+Start with `diagnosis`: it is the script's first-pass classification of
+whether the queue is supply-side infrastructure pressure, demand-side load,
+mixed, recently impacted, currently clear, or inconclusive. Then verify the
+classification against the raw sections before presenting it to the user.
+
+`diagnosis.verdict` is intentionally heuristic:
+
+- `supply-side` — active backlog with infrastructure evidence such as
+  worker-manager warnings, provisioning errors, low effective capacity,
+  Azure ghost workers, or Spot eviction storms.
+- `demand-side` — active backlog primarily explained by task volume spikes,
+  concentrated try/bot pushes, or one project dominating recent demand.
+- `mixed` — both infrastructure pressure and demand spike signals are present.
+- `recently-impacted` — no current pending backlog, but queue-time impact was
+  high in the lookback window.
+- `no-active-backlog` — no pending backlog and no large recent queue-time
+  impact.
+- `inconclusive-active-backlog` — pending tasks exist, but the gathered data
+  does not clearly identify supply or demand as the cause.
+- `auth-blocked` — Taskcluster auth failed; run `taskcluster signin` and
+  rerun before making a supply-side claim.
+
+Use `diagnosis.evidence` and `diagnosis.next_actions` as a checklist, not as
+copy-paste prose. `diagnosis.scores` exposes the internal supply/demand
+heuristic strengths for transparency; treat them as relative signal, not a
+metric. The raw data remains authoritative.
 
 `pool_status.errors` is a dict of `{normalized_description: {count,
 sample}}` — use `count` for frequencies and `sample` when quoting the
