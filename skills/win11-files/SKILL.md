@@ -35,6 +35,9 @@ Indexes: `file_name`, `kb_number`, `build`, `file_version`
 ## Quick Start
 
 ```bash
+# Refresh combined 24H2 + 25H2 database
+uv run ~/.claude/skills/win11-files/scripts/update_db.py
+
 # Search for files (all versions)
 uv run ~/.claude/skills/win11-files/scripts/query.py search ntdll.dll
 
@@ -56,6 +59,40 @@ uv run ~/.claude/skills/win11-files/scripts/query.py stats
 # Custom SQL
 uv run ~/.claude/skills/win11-files/scripts/query.py sql "SELECT DISTINCT file_version FROM files WHERE file_name='kernel32.dll' ORDER BY build"
 ```
+
+## Refresh Data
+
+Update `~/moz_artifacts/win11_files.db` from Microsoft release history and
+support KB file-info CSVs:
+
+```bash
+uv run ~/.claude/skills/win11-files/scripts/update_db.py
+```
+
+Optional paths:
+
+```bash
+uv run ~/.claude/skills/win11-files/scripts/update_db.py --legacy-db ~/moz_artifacts/win11_24h2_files.db --output-db ~/moz_artifacts/win11_files.db
+```
+
+### How 25H2 ingest works
+
+24H2 and 25H2 share the same servicing branch — Microsoft typically ships one
+KB that updates both versions, with build `26100.x` for 24H2 and `26200.x`
+for 25H2. The KB's file-info CSV usually contains a single
+`Windows 11, version 24H2` section because the underlying binaries are
+identical.
+
+The updater fetches each KB's CSV once (cached by KB number), then for each
+release entry it tries to find the matching `Windows 11, version <ver>`
+section. If MS doesn't publish a 25H2-specific section, the parser falls
+back to the 24H2 section. So 25H2 rows reflect what MS actually publishes:
+build `26200.x`, but file_version `10.0.26100.x` whenever the binaries are
+shared. If MS later starts publishing 25H2-specific sections, they'll be
+picked up automatically with no script change.
+
+Some out-of-band (OOB) KBs (e.g. KB5070881, KB5072359, KB5086672) have no
+file-info CSV; the updater logs a warning and skips them.
 
 ## Global Options
 
