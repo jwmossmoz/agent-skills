@@ -22,7 +22,7 @@ These are not the same thing. Pick the right one for the question you're asking.
 
 When a pool's task volume drops sharply but its fixed overhead (image prep, monitoring, idle warming, scaling reactions) stays similar, cost-per-task rises **purely from the math**, not from any real rate change.
 
-**Illustrative example:** suppose pool A's task count falls from 600K → 150K (-75%) as traffic shifts to a replacement pool. Cost-per-task on pool A may rise +50% just from amortizing roughly stable VM overhead over fewer tasks. The daily cost on pool A may have actually fallen — the per-task rate looks worse, but spending is down.
+**Illustrative example:** suppose pool A's task count falls 80% as traffic shifts to a replacement pool. Cost-per-task on pool A may rise significantly just from amortizing roughly stable VM overhead over fewer tasks. The daily cost on pool A may have actually fallen — the per-task rate looks worse, but spending is down.
 
 **Cleaner test:** find a pool with stable volume across the comparison and check its cost/task. If a pool's volume is unchanged and same SKU, a cost/task rise is a real rate signal.
 

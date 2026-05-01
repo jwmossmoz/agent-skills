@@ -9,6 +9,10 @@ Analyze FXCI Azure subscription costs across multiple dimensions, then correlate
 3. **uv** for running scripts
 4. **Redash access** for `taskclusteretl.derived_task_summary` queries (BigQuery)
 
+## Standalone queries
+
+For copy-paste-ready BigQuery SQL (task counts, eviction rates, retry rates, schema samples), see the `../queries/` directory. Each .sql file has inline documentation linking back to the relevant reference below.
+
 ## Reference docs
 
 Read these in priority order when investigating a cost anomaly:

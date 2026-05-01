@@ -54,13 +54,17 @@ curl -s "https://api.github.com/repos/taskcluster/taskcluster/releases?per_page=
 | `retry`, `claim-expired`, `worker-shutdown` | Task retry behavior |
 | `state machine`, `STOPPING`, `STOPPED` | Worker lifecycle state |
 | `idle`, `inactivity`, `timeout` | Idle billing and shutdown behavior |
-| `404`, `not found`, `error handling` | Often where cleanup bugs hide (e.g. issue #8517 was a 404 not handled in deprovisionResource) |
+| `404`, `not found`, `error handling` | Often where cleanup bugs hide — unhandled error responses during resource deletion can leave workers in stuck states |
 
 ### Cross-reference issues alongside PRs
 
 Bugs are often filed before fix PRs land. Check `https://github.com/taskcluster/taskcluster/issues` for issues filed during or after the cost-anomaly window — they may describe symptoms you observed.
 
-Recent precedent (April 2026): issue #8517 was filed when phantom workers were noticed blocking pool capacity; PR #8518 fixed the root cause (unhandled 404 in deprovisionResource). The bug had existed since PR #8059 was merged ~5 months earlier, but was only visible operationally during a high-eviction period.
+**Look at recently-merged fix PRs in particular.** If engineering merged a fix recently, that bug was active during the period the fix was needed. The window between bug introduction and fix is exactly the period where its cost impact would manifest. Examples of this pattern:
+
+- A bug introduced months ago may be operationally invisible until a workload condition triggers it (e.g. a pre-existing cleanup bug only manifests under high eviction rates because cleanup mechanisms keep up at low rates)
+- A fix PR's description usually references the issue and explains the failure mode — that's your starting point
+- Even if the fix is already deployed, the cost data window before the fix deployment is when the bug was actively contributing
 
 ## When TC service changes are the answer (vs fxci-config)
 

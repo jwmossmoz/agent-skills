@@ -37,6 +37,12 @@ Diagnostic toolkit for FXCI Azure CI cost investigations. Covers all 3 CI subscr
 @references/azure-spot-pricing.md
 @references/spot-evictions.md
 
+**Standalone SQL queries** (copy-paste-ready, one file per query):
+- `queries/azure-task-counts.sql`
+- `queries/spot-evictions.sql`
+- `queries/retry-rate.sql`
+- `queries/schema-sample.sql`
+
 ## Prerequisites
 
 - Azure CLI (`az`) authenticated, with read access to the 3 CI subscriptions
