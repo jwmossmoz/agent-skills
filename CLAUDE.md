@@ -120,9 +120,8 @@ uv run ~/.claude/skills/bugzilla/scripts/bz.py search --quicksearch "crash"
 # JIRA skill
 uv run ~/.claude/skills/jira/scripts/extract_jira.py [options]
 
-# Treeherder skill - two CLI tools
-treeherder-cli a13b9fc22101 --json                          # Primary: failure analysis
-uvx --from lumberjackth lj pushes autoland -n 10             # Secondary: push listing, failures-by-bug
+# Treeherder skill - treeherder-cli for failure analysis
+treeherder-cli a13b9fc22101 --json
 
 # Lando skill - uses uvx for zero-install execution
 uvx --from lando-cli lando check-job <job_id>
@@ -202,10 +201,9 @@ description: >
 - Supports creating, modifying, and querying issues with Markdown formatting
 
 ### Treeherder Skill
-- Uses two CLI tools: **treeherder-cli** (primary) and **lumberjackth** (secondary)
-- **treeherder-cli**: Rust CLI for failure analysis, revision comparison, test history, log fetching, artifact downloads. Install with `cargo install --git https://github.com/padenot/treeherder-cli`
-- **lumberjackth**: Python CLI for push listing, failures-by-bug, error suggestions, perf alerts, result/tier/state filtering. Zero-install via `uvx --from lumberjackth lj`
-- Read-only access, no authentication required for either tool
+- Uses **treeherder-cli**: Rust CLI for failure analysis, revision comparison, test history, log fetching, artifact downloads. Install with `cargo install --git https://github.com/padenot/treeherder-cli`
+- For features the CLI does not cover (push listing, failures-by-bug, error-line bug suggestions, perf alerts), call the Treeherder REST API directly
+- Read-only access, no authentication required
 
 ### Lando Skill
 - Uses official `lando-cli` package via uvx

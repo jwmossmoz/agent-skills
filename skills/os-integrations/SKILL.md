@@ -45,7 +45,7 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-bu
 
 ## Watching Test Results
 
-Use `--watch` to automatically monitor test results with lumberjackth after pushing:
+Use `--watch` to automatically monitor test results with treeherder-cli after pushing:
 
 ```bash
 # Push and watch all test results

@@ -315,16 +315,14 @@ Status values:
 
 The API has rate limiting. For bulk operations, add delays between requests.
 
-## CLI Tools
+## CLI Tool
 
-These API endpoints are accessed by the two CLI tools used in this skill:
+- **treeherder-cli** - Rust CLI for failure analysis, comparison, history, logs, and artifacts. See `cli-reference.md`.
 
-- **treeherder-cli** (primary) - Rust CLI for failure analysis, comparison, history, logs, and artifacts. See `cli-reference.md`.
-- **lumberjackth** (secondary) - Python CLI for push listing, failures-by-bug, error suggestions, perf alerts, and result/tier filtering. See `cli-reference.md`.
+For tasks treeherder-cli does not cover (push listing, failures-by-bug, error-line bug suggestions, perf alerts, repository listing), call the REST endpoints documented above directly.
 
 ## External Documentation
 
 - [Treeherder ReadTheDocs](https://treeherder.readthedocs.io/)
 - [treeherder-cli on GitHub](https://github.com/padenot/treeherder-cli)
-- [lumberjackth on PyPI](https://pypi.org/project/lumberjackth/)
 - [Treeherder Source Code](https://github.com/mozilla/treeherder)

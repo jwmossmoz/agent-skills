@@ -1,34 +1,37 @@
 # Sheriff Workflows with Treeherder
 
-This document describes common sheriff workflows using **treeherder-cli** (primary) and **lumberjackth** (secondary).
+This document describes common sheriff workflows using **treeherder-cli** plus direct REST API calls for tasks the CLI does not cover.
 
 ## Quick Reference
 
-| Task | Tool | Command |
-|------|------|---------|
+| Task | Approach | Command |
+|------|----------|---------|
 | Get failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
 | Compare revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
 | Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
-| Compare a failed job with similar jobs | treeherder-cli + API | `treeherder-cli --similar-history 543981186 --repo try --json` |
+| Compare a failed job with similar jobs | treeherder-cli | `treeherder-cli --similar-history 543981186 --repo try --json` |
 | Fetch logs with search | treeherder-cli | `treeherder-cli abc123 --fetch-logs --pattern "ERROR"` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
-| List recent pushes | lumberjackth | `lj pushes autoland -n 10` |
-| Filter by result/tier | lumberjackth | `lj jobs autoland --push-id 123 --result testfailed --tier 1` |
-| Get job details with logs | lumberjackth | `lj job autoland "<guid>" --logs` |
-| Failures by bug ID | lumberjackth | `lj failures 2012615 -t autoland` |
-| Error suggestions | lumberjackth | `lj errors autoland 545896732` |
-| Performance alerts | lumberjackth | `lj perf-alerts -r autoland` |
+| List recent pushes | REST API | `GET /api/project/{repo}/push/?count=10` |
+| Failures by bug ID | REST API | `GET /api/failuresbybug/?bug=2012615` |
+| Error lines + bug suggestions | REST API | `GET /api/project/{repo}/jobs/{id}/bug_suggestions/` |
+| Performance alert summaries | REST API | `GET /api/performance/alertsummary/` |
 
 ## Workflow 1: Investigating Failures on a Push
 
 ### Step 1: Find the revision
 
+Query the push endpoint for recent pushes on a repo:
+
 ```bash
-# List recent pushes on autoland
-uvx --from lumberjackth lj pushes autoland -n 10
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/push/?count=10" \
+  | jq '.results[] | {id, revision, author}'
 
 # Filter by author
-uvx --from lumberjackth lj pushes autoland -a user@mozilla.com
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/push/?count=20&author=user@mozilla.com" \
+  | jq '.results[] | {revision, push_timestamp}'
 ```
 
 ### Step 2: Analyze failures with treeherder-cli
@@ -54,8 +57,10 @@ treeherder-cli a13b9fc22101 --include-intermittent --json
 # Fetch logs and search for patterns
 treeherder-cli a13b9fc22101 --fetch-logs --pattern "ASSERTION|CRASH" --json
 
-# Or use lumberjackth for error lines with bug suggestions
-uvx --from lumberjackth lj errors autoland 545896732
+# Or pull bug suggestions for a specific failed job ID via the REST API
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/545896732/bug_suggestions/" \
+  | jq '.[] | {test: .path_end, bugs: [.bugs.open_recent[]?.id]}'
 ```
 
 ## Workflow 2: Regression Detection
@@ -79,63 +84,68 @@ treeherder-cli --similar-history 543981186 --similar-count 100 --repo autoland -
 
 ## Workflow 3: Monitoring a Try Push
 
-### Watch with treeherder-cli
-
 ```bash
 # Watch for updates, get notified on completion
 treeherder-cli abc123 --repo try --watch --notify
 
-# Shorter polling interval
+# Shorter polling interval (seconds)
 treeherder-cli abc123 --repo try --watch --watch-interval 60
-```
-
-### Watch with lumberjackth (more granular filtering)
-
-```bash
-# Watch with auto-refresh, filtered by result
-uvx --from lumberjackth lj jobs try -r abc123 --result testfailed --watch -i 60
 ```
 
 ## Workflow 4: Investigating Intermittent Failures by Bug
 
-Use lumberjackth for bug-based failure queries:
+The `failuresbybug` endpoint returns occurrences of a bug across recent pushes:
 
 ```bash
-# All failures for a bug in last 7 days
-uvx --from lumberjackth lj failures 2012615
+# All failures for a bug in the last 7 days (default range)
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/failuresbybug/?bug=2012615" \
+  | jq '.[] | {tree, platform, build_type, test_suite, push_time}'
 
-# Filter by repository and platform
-uvx --from lumberjackth lj failures 2012615 -t autoland -p "windows.*24h2"
-
-# Filter by build type
-uvx --from lumberjackth lj failures 2012615 -b asan
+# Filter by repository
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/failuresbybug/?bug=2012615&tree=autoland" \
+  | jq '.'
 
 # Specific date range
-uvx --from lumberjackth lj failures 2012615 -s 2026-01-26 -e 2026-01-28
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/failuresbybug/?bug=2012615&startday=2026-01-26&endday=2026-01-28" \
+  | jq '.'
+```
 
-# JSON output for scripting
-uvx --from lumberjackth lj --json failures 2012615
+Filter by platform or build type with `jq` after the request:
+
+```bash
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/failuresbybug/?bug=2012615&tree=autoland" \
+  | jq '[.[] | select(.platform | test("windows.*24h2"))]'
 ```
 
 ## Workflow 5: Filtering Jobs by Result, State, and Tier
 
-Use lumberjackth for detailed job filtering:
+`treeherder-cli` filters by platform and job-name regex; for filtering by `result`, `state`, or `tier`, query the jobs endpoint directly:
 
 ```bash
-# Only failed tests
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --result testfailed
+# Failed jobs only on a push
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/?push_id=12345&result=testfailed&count=2000" \
+  | jq '.results[] | {id, job_type_name, result, tier}'
 
-# Only build failures
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --result busted
+# Build failures (busted) only
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/?push_id=12345&result=busted&count=2000" \
+  | jq '.results[] | {id, job_type_name, ref_data_name}'
 
-# Running jobs
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --state running
+# Tier 1 failures only
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/?push_id=12345&result=testfailed&tier=1&count=2000" \
+  | jq '.results[] | .job_type_name'
+```
 
-# Tier 1 jobs only (sheriff-managed, require backout on failure)
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --tier 1
+`treeherder-cli` is still the right tool when you start from a revision instead of a push ID:
 
-# Combine filters
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --result testfailed --tier 1 -p "linux.*64"
+```bash
+treeherder-cli abc123 --platform "linux.*64" --filter "mochitest" --json
 ```
 
 ## Workflow 6: Downloading Artifacts
@@ -150,20 +160,23 @@ treeherder-cli a13b9fc22101 --download-artifacts --artifact-pattern "screenshot|
 
 ## Workflow 7: Performance Alerts
 
-Use lumberjackth for performance alert monitoring:
+Use the REST API for performance alert summaries:
 
 ```bash
 # Recent alerts
-uvx --from lumberjackth lj perf-alerts -n 10
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/performance/alertsummary/?limit=10" \
+  | jq '.results[] | {repository, push_timestamp, alerts: [.alerts[].id]}'
 
 # Filter by repository
-uvx --from lumberjackth lj perf-alerts -r autoland -n 10
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/performance/alertsummary/?repository=autoland&limit=10" \
+  | jq '.'
 
-# Filter by framework (1=talos, 10=raptor, 13=browsertime)
-uvx --from lumberjackth lj perf-alerts -f 1 -n 10
-
-# List performance frameworks
-uvx --from lumberjackth lj perf-frameworks
+# List frameworks (talos=1, raptor=10, browsertime=13, awsy=4)
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/performance/framework/" \
+  | jq '.[] | {id, name}'
 ```
 
 Use treeherder-cli for per-job performance data:
@@ -186,16 +199,16 @@ treeherder-cli --use-cache --cache-dir ./logs --pattern "timeout" --json
 
 ## Workflow 9: JSON Output for Scripting
 
-Both tools support JSON output:
+`treeherder-cli` outputs JSON with `--json`; the REST API is JSON natively.
 
 ```bash
-# treeherder-cli always outputs JSON with --json
-treeherder-cli a13b9fc22101 --json
+# Filter and pipe to jq
+treeherder-cli a13b9fc22101 --json | jq '.[] | select(.result == "testfailed") | .job_type_name'
 treeherder-cli a13b9fc22101 --group-by test --json | jq '.[] | .test_name'
 
-# lumberjackth uses --json global flag
-uvx --from lumberjackth lj --json pushes autoland -n 5
-uvx --from lumberjackth lj --json jobs autoland --push-id 12345 --result testfailed | jq '.[].job_type_name'
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/?push_id=12345&result=testfailed&count=2000" \
+  | jq '.results[].job_type_name'
 ```
 
 ## Workflow 10: Compare a Failed Try Job with Similar Jobs

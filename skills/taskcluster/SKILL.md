@@ -198,7 +198,9 @@ treeherder-cli --history "test_name" --history-count 20 --repo autoland --json
 treeherder-cli --similar-history <JOB_ID> --similar-count 50 --repo autoland --json
 
 # 3. Check error lines for known bug suggestions
-uvx --from lumberjackth lj errors autoland <JOB_ID>
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/<JOB_ID>/bug_suggestions/" \
+  | jq '.[] | {test: .path_end, bugs: [.bugs.open_recent[]?.id]}'
 
 # 4. If triage suggests intermittent, confirm in CI
 uv run "$TC" confirm-failures <TASK_ID>

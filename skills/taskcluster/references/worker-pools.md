@@ -239,7 +239,7 @@ taskcluster api workerManager listWorkersForWorkerPool gecko-t/win11-64-24h2-alp
   jq '[.workers[] | select(.state == "running")] | length'
 
 # Monitor task success rate
-# (Use with treeherder skill or lumberjackth for detailed analysis)
+# (Use the treeherder skill / treeherder-cli for detailed analysis)
 
 # If rollback needed, terminate all workers (will respawn with previous image)
 # (see emergency shutdown example above)
