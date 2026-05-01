@@ -1,10 +1,11 @@
 # Taskcluster Task Counting
 
-When cost increases on a worker pool, the likely explanation is more tasks
-running on that pool. Use the Taskcluster API to count tasks per push and
-identify which test suites are responsible.
+When cost increases on a worker pool, the likely explanation is more tasks running on that pool. Two approaches:
 
-## Approach
+1. **Per-push via TC API** — use this for drilling into a specific push's task list, including chunk counts and test suites. Detailed below.
+2. **Cross-month batch via BigQuery** — use this for monthly/weekly cost analysis. See "BigQuery via Redash" section at the bottom.
+
+## Per-push via TC API approach
 
 1. Use the TC **index API** to find pushes on a given date
 2. Look up an indexed task from the push to get its `taskGroupId`
@@ -101,3 +102,66 @@ In the Firefox repository:
 | talos/raptor | `taskcluster/kinds/test/talos.yml`, `taskcluster/kinds/browsertime/desktop.yml` |
 
 Look for `chunks:` values under the relevant platform key (e.g., `windows11-64-24h2`).
+
+---
+
+## BigQuery via Redash — for cross-month analysis
+
+For analyzing task volumes across a month or comparing months, the TC API approach (push-by-push) is too slow and doesn't aggregate well. Use `taskclusteretl.derived_task_summary` via Redash instead.
+
+### Why this table is useful for cost analysis
+- Pre-aggregated, full task history
+- Includes `provisionerId` + `workerType` (combine for full pool ID matching Azure tags)
+- Includes `project` (branch), `kind`, `platform`, `workerGroup` (region), `execution` (minutes)
+- One row per task run
+
+### Azure-only filter (essential)
+GCP and Azure workers are mixed in this table. Filter to Azure by excluding GCP zone names:
+
+```sql
+WHERE workerGroup NOT LIKE 'us-%'         -- excludes us-central1-*, us-east1-*, etc.
+  AND workerGroup NOT LIKE 'europe-%'      -- excludes europe-west1-*
+  AND workerGroup NOT LIKE 'northamerica-%' -- excludes northamerica-northeast1-*
+```
+
+Azure regions follow names like `eastus2`, `northcentralus`, `centralindia` (no hyphenated zones). GCP zones follow `<region>-<cardinal><number>` like `us-central1-b`. The exclusion filter is more reliable than trying to enumerate all Azure regions.
+
+A small number of non-Azure rows can slip through (releng-hardware at `mdc1`, scriptworker-k8s) — they won't match any Azure pool_id during cost attribution and are silently ignored.
+
+### Standard Azure-only task volume query
+
+```sql
+SELECT
+    DATE(created) AS date,
+    project,
+    provisionerId,
+    workerType,
+    kind,
+    platform,
+    workerGroup,
+    COUNT(*) AS task_count,
+    AVG(execution) AS avg_exec_minutes
+FROM taskclusteretl.derived_task_summary
+WHERE created >= '2026-04-01'
+  AND created < '2026-05-01'
+  AND workerGroup NOT LIKE 'us-%'
+  AND workerGroup NOT LIKE 'europe-%'
+  AND workerGroup NOT LIKE 'northamerica-%'
+GROUP BY 1, 2, 3, 4, 5, 6, 7
+ORDER BY 1, 2, 3, 4
+```
+
+### Joining to Azure cost data
+
+The Azure `worker-pool-id` tag is `provisionerId/workerType`. Use this as the join key when correlating Azure cost (from Cost Management) with task counts (from this BigQuery table).
+
+```python
+pool_id = f"{row['provisionerId']}/{row['workerType']}"
+# matches Azure cost CSV's TagValue
+```
+
+### Caveats
+
+- `created` is the task creation timestamp; use it for "tasks created on this date"
+- `execution` is in minutes per task; `AVG(execution)` can be skewed by deadline-exceeded tasks (~24h/1440min outliers). Use median or filter `execution < 1440` if outliers distort the analysis.
+- A single task can have multiple `runId` values (retries). The query above counts all rows; if you only want unique tasks, filter `runId = 0`.
