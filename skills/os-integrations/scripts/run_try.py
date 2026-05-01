@@ -93,15 +93,15 @@ def get_latest_central_decision_task() -> str | None:
         return None
 
 
-def extract_push_id_from_output(output: str) -> str | None:
-    """Extract push ID from mach try output."""
-    # Look for patterns like "push-id/1234567" or "push-id: 1234567"
-    match = re.search(r"push-id[/=:]?\s*(\d+)", output, re.IGNORECASE)
+def extract_revision_from_output(output: str) -> str | None:
+    """Extract Treeherder revision hash from mach try output."""
+    # Treeherder URL with revision query param
+    match = re.search(r"treeherder\.mozilla\.org\S*[?&]revision=([0-9a-f]{12,40})", output)
     if match:
         return match.group(1)
 
-    # Also try Treeherder URL pattern
-    match = re.search(r"treeherder\.mozilla\.org.*push-id[/=]?(\d+)", output)
+    # Phabricator/Lando 'commit landed' style: "Landed: <hash>"
+    match = re.search(r"\b([0-9a-f]{40})\b", output)
     if match:
         return match.group(1)
 
@@ -167,18 +167,18 @@ def poll_lando_job(job_id: str, interval: int = DEFAULT_LANDO_CHECK_INTERVAL) ->
         time.sleep(interval)
 
 
-def run_lumberjackth_watch(push_id: str, filter_regex: str | None = None) -> None:
-    """Run lumberjackth to watch test results."""
+def run_treeherder_cli_watch(revision: str, filter_regex: str | None = None) -> None:
+    """Run treeherder-cli to watch test results."""
     cmd = [
-        "uvx", "--from", "lumberjackth",
-        "lj", "jobs", "try",
-        "--push-id", push_id,
+        "treeherder-cli",
+        revision,
+        "--repo", "try",
         "--watch",
     ]
     if filter_regex:
-        cmd.extend(["-f", filter_regex])
+        cmd.extend(["--filter", filter_regex])
 
-    print(f"\nWatching tests with lumberjackth...")
+    print(f"\nWatching tests with treeherder-cli...")
     if filter_regex:
         print(f"Filter: {filter_regex}")
     print(f"Command: {' '.join(cmd)}\n")
@@ -580,12 +580,12 @@ Examples:
     parser.add_argument(
         "--watch",
         action="store_true",
-        help="Watch test results with lumberjackth after push (implies --push)",
+        help="Watch test results with treeherder-cli after push (implies --push)",
     )
     parser.add_argument(
         "--watch-filter",
         metavar="REGEX",
-        help="Regex filter for lumberjackth watch (e.g., 'xpcshell|mochitest')",
+        help="Regex filter for treeherder-cli watch (e.g., 'xpcshell|mochitest')",
     )
     parser.add_argument(
         "--watch-lando",
@@ -793,14 +793,14 @@ Examples:
                 print("Warning: Could not extract Lando job ID from output", file=sys.stderr)
                 print("Check manually: curl -s 'https://lando.services.mozilla.com/api/v1/landing_jobs/<ID>' | jq")
 
-        # Handle --watch: launch lumberjackth to monitor test results
+        # Handle --watch: launch treeherder-cli to monitor test results
         if args.watch and returncode == 0:
-            push_id = extract_push_id_from_output(full_output)
-            if push_id:
-                run_lumberjackth_watch(push_id, args.watch_filter)
+            revision = extract_revision_from_output(full_output)
+            if revision:
+                run_treeherder_cli_watch(revision, args.watch_filter)
             else:
-                print("Warning: Could not extract push ID from output", file=sys.stderr)
-                print("Run manually: uvx --from lumberjackth lj jobs try --push-id <ID> --watch")
+                print("Warning: Could not extract revision from output", file=sys.stderr)
+                print("Run manually: treeherder-cli <REVISION> --repo try --watch --notify")
 
     except FileNotFoundError:
         print("Error: Could not execute mach command", file=sys.stderr)

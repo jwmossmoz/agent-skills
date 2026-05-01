@@ -1,7 +1,7 @@
 ---
 name: treeherder
 description: >
-  Query Firefox Treeherder for CI job results using treeherder-cli (primary) and lumberjackth (secondary).
+  Query Firefox Treeherder for CI job results using treeherder-cli.
   Use after commits land to check test/build results.
   Triggers on "treeherder", "job results", "check tests", "ci status".
 ---
@@ -10,22 +10,17 @@ description: >
 
 Query Mozilla Treeherder for CI job results, failure analysis, and performance data.
 
-## Tools
+## Tool
 
-This skill uses two CLI tools:
+This skill uses **treeherder-cli**, a Rust CLI for revision-based failure analysis, comparison, history, log searching, artifact downloads, and watch mode.
 
-| Tool | Role | Install | Strengths |
-|------|------|---------|-----------|
-| **treeherder-cli** | Primary | `cargo install --git https://github.com/padenot/treeherder-cli` | Failure analysis, revision comparison, test history, log fetching, artifact downloads |
-| **lumberjackth** | Secondary | `uvx --from lumberjackth lj` (zero-install) | Push listing, failures-by-bug, error suggestions, perf alerts, result/tier/state filtering |
+```bash
+cargo install --git https://github.com/padenot/treeherder-cli
+```
 
-**Use treeherder-cli** for revision-based failure analysis, comparing revisions, test history, log searching, and artifact downloads.
-
-**Use lumberjackth** for listing pushes, querying failures by bug ID, viewing error lines with bug suggestions, performance alerts, and filtering by result/state/tier.
+For tasks treeherder-cli does not cover (push listing, failures-by-bug, error-line bug suggestions, performance alerts, repository listing), call the Treeherder REST API directly. See `references/api-reference.md`.
 
 ## Quick Start
-
-### treeherder-cli (primary)
 
 ```bash
 # Get failed jobs for a revision
@@ -60,35 +55,10 @@ treeherder-cli a13b9fc22101 --watch --notify
 treeherder-cli a13b9fc22101 --repo try --json
 ```
 
-### lumberjackth (secondary)
+## When to Use Which Approach
 
-```bash
-# List recent pushes
-uvx --from lumberjackth lj pushes autoland -n 10
-
-# Get jobs for a push with result/tier filtering
-uvx --from lumberjackth lj jobs autoland --push-id 12345 --result testfailed --tier 1
-
-# Watch jobs with auto-refresh
-uvx --from lumberjackth lj jobs try -r abc123 -w -i 60
-
-# Query failures by bug ID
-uvx --from lumberjackth lj failures 2012615 -t autoland -p "windows.*24h2"
-
-# Show errors and bug suggestions
-uvx --from lumberjackth lj errors autoland 545896732
-
-# Performance alerts
-uvx --from lumberjackth lj perf-alerts -r autoland -n 10
-
-# JSON output
-uvx --from lumberjackth lj --json jobs autoland --push-id 12345
-```
-
-## When to Use Which Tool
-
-| Task | Tool | Example |
-|------|------|---------|
+| Task | Approach | Example |
+|------|----------|---------|
 | Analyze failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
 | Compare two revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
 | Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
@@ -97,18 +67,15 @@ uvx --from lumberjackth lj --json jobs autoland --push-id 12345
 | Download artifacts | treeherder-cli | `treeherder-cli abc123 --download-artifacts` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
 | Performance/resource data | treeherder-cli | `treeherder-cli abc123 --perf --json` |
-| Check known intermittent bugs for failures | REST API | See "Bug Suggestions for Failing Jobs" below |
-| List recent pushes | lumberjackth | `lj pushes autoland -n 10` |
-| Filter by result/state/tier | lumberjackth | `lj jobs autoland --push-id 123 --result testfailed --tier 1` |
-| Get single job details | lumberjackth | `lj job autoland "guid" --logs` |
-| Failures by bug ID | lumberjackth | `lj failures 2012615 -t autoland` |
-| Error lines + bug suggestions | lumberjackth | `lj errors autoland 545896732` |
-| Performance alerts | lumberjackth | `lj perf-alerts -r autoland` |
-| List repositories | lumberjackth | `lj repos` |
+| List recent pushes | REST API | `GET /api/project/{repo}/push/?count=10` |
+| Failures by bug ID | REST API | `GET /api/failuresbybug/?bug=2012615` |
+| Error lines + bug suggestions | REST API | `GET /api/project/{repo}/jobs/{id}/bug_suggestions/` |
+| Performance alert summaries | REST API | `GET /api/performance/alertsummary/` |
+| List repositories | REST API | `GET /api/repository/` |
 
 ## Bug Suggestions for Failing Jobs
 
-Neither CLI tool supports bulk querying of known intermittent bugs for failing jobs. Use the Treeherder REST API directly to check whether test failures have associated Bugzilla bugs.
+`treeherder-cli` does not bulk-query known intermittent bugs for failing jobs. Use the Treeherder REST API directly to check whether test failures have associated Bugzilla bugs.
 
 ### Workflow
 
@@ -192,13 +159,12 @@ Deduplicate by `job_type_name` to avoid querying the same test suite multiple ti
 ## Prerequisites
 
 - **treeherder-cli**: `cargo install --git https://github.com/padenot/treeherder-cli`
-- **lumberjackth**: No install needed, uses `uvx` for zero-install execution
 
-No authentication required for either tool.
+No authentication required.
 
 ## References
 
-- `references/cli-reference.md` - Complete CLI reference for both tools
+- `references/cli-reference.md` - Complete treeherder-cli reference
 - `references/sheriff-workflows.md` - Sheriff workflow examples
 - `references/api-reference.md` - REST API documentation
 - `references/similar-jobs-comparison.md` - Compare failed jobs using Treeherder's `similar_jobs` API
@@ -207,4 +173,3 @@ No authentication required for either tool.
 
 - **Treeherder**: https://treeherder.mozilla.org/
 - **treeherder-cli**: https://github.com/padenot/treeherder-cli
-- **lumberjackth**: https://pypi.org/project/lumberjackth/

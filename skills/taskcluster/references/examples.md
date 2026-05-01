@@ -224,7 +224,9 @@ treeherder-cli --history "mochitest-plain" --history-count 20 --repo autoland --
 treeherder-cli --similar-history <JOB_ID> --similar-count 50 --repo autoland --json
 
 # 3. Check error lines for known bug suggestions
-uvx --from lumberjackth lj errors autoland <JOB_ID>
+curl -s -A "Mozilla/5.0" \
+  "https://treeherder.mozilla.org/api/project/autoland/jobs/<JOB_ID>/bug_suggestions/" \
+  | jq '.[] | {test: .path_end, bugs: [.bugs.open_recent[]?.id]}'
 
 # 4. Check run history for the specific task
 taskcluster api queue status $TASK_ID | jq '.status.runs[] | {runId, state, reasonResolved}'
