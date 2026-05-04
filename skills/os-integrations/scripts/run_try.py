@@ -81,13 +81,18 @@ LANDO_API_URL = "https://lando.services.mozilla.com/api/v1"
 DEFAULT_LANDO_CHECK_INTERVAL = 90
 
 
-def get_latest_central_decision_task() -> str | None:
-    """Get the latest mozilla-central decision task ID from Taskcluster index."""
+def get_latest_autoland_decision_task() -> str | None:
+    """Get the latest autoland decision task ID from Taskcluster index.
+
+    Autoland is the integration branch where tier 1 tasks are required to be
+    green; using its decision task as the build-reuse source gives a fresher
+    and more representative pre-built task pool than mozilla-central.
+    """
     try:
         options = taskcluster.optionsFromEnvironment()
         options.setdefault("rootUrl", TASKCLUSTER_ROOT_URL)
         index = taskcluster.Index(options)
-        result = index.findTask("gecko.v2.mozilla-central.latest.taskgraph.decision")
+        result = index.findTask("gecko.v2.autoland.latest.taskgraph.decision")
         return result.get("taskId")
     except Exception as e:
         print(f"Warning: Could not fetch latest decision task: {e}", file=sys.stderr)
@@ -346,9 +351,9 @@ def build_command(
         if task_id:
             cmd.extend(["--use-existing-tasks", f"task-id={task_id}"])
         else:
-            latest_task = get_latest_central_decision_task()
+            latest_task = get_latest_autoland_decision_task()
             if latest_task:
-                print(f"Using latest mozilla-central decision task: {latest_task}")
+                print(f"Using latest autoland decision task: {latest_task}")
                 cmd.extend(["--use-existing-tasks", f"task-id={latest_task}"])
             else:
                 print("Warning: Could not find latest decision task, will use most recent try push")
@@ -571,7 +576,7 @@ Examples:
     parser.add_argument(
         "--task-id",
         metavar="TASK_ID",
-        help="Specific decision task ID to reuse builds from (default: latest mozilla-central)",
+        help="Specific decision task ID to reuse builds from (default: latest autoland)",
     )
     parser.add_argument(
         "--fresh-build",

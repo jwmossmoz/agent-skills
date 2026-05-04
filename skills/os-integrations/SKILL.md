@@ -30,7 +30,7 @@ uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -q "test-w
 
 ## Build Behavior
 
-By default, the script reuses builds from the latest mozilla-central decision task (skipping the 45+ minute Firefox build). Use `--fresh-build` to force a full build instead:
+By default, the script reuses builds from the latest autoland decision task (skipping the 45+ minute Firefox build). Autoland is Firefox's integration branch where tier 1 tasks must be green, so its decision tasks have the freshest and most complete pre-built task pool to reuse. Use `--fresh-build` to force a full build instead:
 
 ```bash
 # Default: reuses existing Firefox builds
