@@ -59,6 +59,7 @@ PRESETS_FILE = SCRIPT_DIR.parent / "references" / "presets.yml"
 VALID_PRESETS = [
     "win11-24h2",
     "win11-25h2",
+    "win11-25h2-prod",
     "win11-25h2-gpu-webgpu",
     "win11-hw",
     "win10-2009",

@@ -57,6 +57,14 @@ presets:
       - win11-64-24h2-webgpu=gecko-t/win11-64-25h2-webgpu-alpha
     use_os_integration: true
 
+  win11-25h2-prod:
+    description: "Windows 11 25H2 tier 1 on production pool (post-deploy image validation)"
+    query: '-q "''test-windows11-64-25h2"'
+    flags:
+      - "--no-artifact"
+    worker_overrides: []
+    use_os_integration: false
+
   win11-hw:
     description: "Windows 11 hardware testing"
     query: "-xq 'test-windows11-64'"
