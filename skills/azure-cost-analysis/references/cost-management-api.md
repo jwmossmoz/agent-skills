@@ -98,3 +98,5 @@ snapshot) and split across multiple files — prefer the query API for analysis.
 | Mozilla 0DIN | `e1cb04e4-3788-471a-881f-385e66ad80ab` |
 
 Only FXCI Azure DevTest has cost exports configured.
+
+See `multi-subscription.md` for which subscriptions to use for CI cost analysis (the first 3) and which to exclude.
