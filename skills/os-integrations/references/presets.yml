@@ -64,6 +64,17 @@ presets:
       - "--no-artifact"
     worker_overrides: []
     use_os_integration: false
+    query_sets:
+      full-cloud:
+        description: "All cloud Windows 24H2+25H2 tests (hardware excluded) — full shared-base-image validation"
+        use_existing_tasks: true
+        skip_os_integration: true
+        watch_filter: "test-windows11-(64|32)-(24h2|25h2)|test-windows10-64-2009-qr"
+        queries:
+          - "'test-windows11-64-25h2"
+          - "'test-windows11-32-25h2"
+          - "'test-windows11-64-24h2 !browsertime !hw-ref !talos | xperf"
+          - "'test-windows10-64-2009-qr"
 
   win11-hw:
     description: "Windows 11 hardware testing"
