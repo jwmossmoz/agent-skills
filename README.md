@@ -12,6 +12,7 @@ This repository provides modular skills that enable AI agents to interact with M
 - **lando** - Check Lando landing job status using `lando-cli`
 - **treeherder** - Query Treeherder CI job results using `treeherder-client`
 - **os-integrations** - Run Firefox mach try with alpha worker pool overrides
+- **ci-fix-without-image-change** - Diagnose and fix Firefox CI or worker-pool migration blockers when the worker image must not change
 - **jira** - Create and modify Mozilla JIRA stories
 - **taskcluster** - Query Taskcluster task status, logs, artifacts, and task groups
 - **writing-skills** - Write and maintain Agent Skills with best practices
@@ -50,6 +51,7 @@ ln -s "$AGENT_SKILLS_ROOT/skills/bugzilla" ~/.claude/skills/bugzilla
 ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.claude/skills/lando
 ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
+ln -s "$AGENT_SKILLS_ROOT/skills/ci-fix-without-image-change" ~/.claude/skills/ci-fix-without-image-change
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills

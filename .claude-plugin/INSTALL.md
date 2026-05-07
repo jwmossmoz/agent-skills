@@ -10,6 +10,7 @@ mkdir -p ~/.claude/skills ~/.claude/agents
 ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.claude/skills/lando
 ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
+ln -s "$AGENT_SKILLS_ROOT/skills/ci-fix-without-image-change" ~/.claude/skills/ci-fix-without-image-change
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills

@@ -12,6 +12,7 @@ mkdir -p ~/.codex/skills
 ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.codex/skills/lando
 ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.codex/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.codex/skills/os-integrations
+ln -s "$AGENT_SKILLS_ROOT/skills/ci-fix-without-image-change" ~/.codex/skills/ci-fix-without-image-change
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.codex/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.codex/skills/taskcluster
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.codex/skills/writing-skills
