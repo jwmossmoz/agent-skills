@@ -1,7 +1,8 @@
-# Azure Cost Management REST API
+# Azure Cost Management REST API Fallback
 
-The `az costmanagement` CLI only supports exports, not queries. Use `az rest`
-to call the Cost Management Query API directly.
+Use scheduled exports first for `FXCI Azure DevTest` when they cover the requested period. Use this REST API path as a fallback for non-exported subscriptions, missing/stale/inaccessible exports, forecasts, or quick ad-hoc grouped queries.
+
+The `az costmanagement` CLI only supports exports, not queries. Use `az rest` to call the Cost Management Query API directly.
 
 ## Endpoint
 
@@ -84,7 +85,7 @@ az costmanagement export show --name fxci_daily_actual --scope "subscriptions/{s
 
 The export `deliveryInfo.destination` shows the storage account, container, and
 root folder where CSV snapshots are written. These CSVs are large (200MB+ per
-snapshot) and split across multiple files — prefer the query API for analysis.
+snapshot) and split across multiple files. For FXCI DevTest, prefer the export-first workflow in `cost-exports.md`; for non-exported subscriptions use this API fallback.
 
 ## Subscription IDs
 

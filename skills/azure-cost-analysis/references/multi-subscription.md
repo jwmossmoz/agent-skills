@@ -37,8 +37,13 @@ Watch for shifts in the relative split: if Trusted FXCI grows as a share of tota
 
 ## Querying across all 3 subscriptions
 
+### Export-first rule
+Use scheduled exports first for `FXCI Azure DevTest`. They are already written to `safinopsdata/cost-management/fxci_daily`, and they avoid Cost Management API throttling. Select the latest month-to-date snapshot for each requested month; do not sum all daily snapshots within a month. See `cost-exports.md`.
+
+As of 2026-05-08, `Trusted FXCI Azure DevTest` and `Taskcluster Engineering DevTest` have no scheduled Cost Management exports configured, so use the API or user-provided portal CSVs for those two subscriptions.
+
 ### Cost Management API
-The query API doesn't aggregate across subscriptions in one call. Make 3 calls and sum:
+Use the query API as the fallback path. It doesn't aggregate across subscriptions in one call. Make one call per non-exported subscription and sum:
 
 ```python
 SUBS = {
@@ -51,10 +56,10 @@ for label, sub_id in SUBS.items():
     run_query(sub_id, ...)
 ```
 
-Use the `--subscription` flag on `query_costs.py` to override.
+Use the `--subscription` flag on `query_costs.py` to override. Pace calls because Cost Management rate limits per scope and tenant.
 
 ### Cost exports
-Only `FXCI Azure DevTest` has scheduled cost exports configured. The other two subs require ad-hoc exports from the Azure Portal Cost Analysis or via the API.
+Only `FXCI Azure DevTest` has scheduled cost exports configured. The other two subs require ad-hoc exports from the Azure Portal Cost Analysis or API fallback.
 
 ### CSV exports from the portal
 For diagnostic work, the portal can export per-subscription daily SKU breakdowns:

@@ -10,10 +10,16 @@ This skill operates on Azure cost data and Taskcluster task data. Most of it can
 
 ## Required for cost-by-tag analysis
 
-If using the Cost Management REST API directly:
-- The above + the user must have **Cost Management Reader** role on the subscription
+For `FXCI Azure DevTest`, use the scheduled Cost Management exports first:
+- Access to `safinopsdata` / `cost-management` / `fxci_daily/`
+- Either `Storage Blob Data Reader` for `--auth-mode login`, or permission for Azure CLI to query the storage account key with `--auth-mode key`
+- The relevant month/time window, so the latest month-to-date snapshot can be selected correctly
 
-If using portal CSV exports (alternative path when API is restricted):
+If using the Cost Management REST API directly:
+- The user must have **Cost Management Reader** role on the subscription
+- Use API only as fallback for missing/stale/inaccessible exports, non-exported subscriptions, forecasts, or ad-hoc grouped queries
+
+If using portal CSV exports:
 - **Cost Analysis CSV export** for the time period of interest, downloaded from the Azure Portal
 - Recommended grouping: by Meter, by Resource Location, or by Tag (`worker-pool-id`)
 - Daily granularity is preferred for diagnostic work; monthly for routine trend reviews
@@ -62,6 +68,5 @@ In addition to the above:
 
 ## What the skill does NOT need
 
-- The skill does NOT need raw billing CSVs from cost exports configured in Azure Storage — those are large and split across files. Use the Cost Management API or Portal CSV exports instead.
 - The skill does NOT need credentials for individual VMs.
 - The skill does NOT need access to Mozilla-internal billing dashboards beyond what's listed above.

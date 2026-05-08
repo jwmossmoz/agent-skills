@@ -21,9 +21,10 @@ Read these in priority order when investigating a cost anomaly:
 |---|---|
 | `user-inputs.md` | **Read before starting.** What the user needs to provide depending on access level and investigation scope. |
 | `methodology.md` | **Read first when analyzing.** Daily cost vs cost/task signals, baseline selection, common pitfalls. |
+| `cost-exports.md` | **Use first for FXCI DevTest.** Scheduled export paths, snapshot rules, and API fallback criteria. |
 | `cost-dimensions.md` | You need to slice by SKU, region, or service in addition to worker-pool-id. |
 | `multi-subscription.md` | Investigating cost change across all 3 CI subs (FXCI DevTest, Trusted FXCI, TC Engineering). |
-| `cost-management-api.md` | API reference for the query endpoint. |
+| `cost-management-api.md` | API fallback reference for the query endpoint. |
 | `taskcluster-task-counting.md` | Counting tasks per pool — TC API for one push, BigQuery for batch analysis. |
 | `fxci-config-lookup.md` | Verifying VM SKU/region/weight for a pool, checking git history for cost-relevant changes. |
 | `taskcluster-service-changes.md` | Checking TC service code (worker-manager, worker-scanner) for bugs/changes affecting cost. |
@@ -33,10 +34,10 @@ Read these in priority order when investigating a cost anomaly:
 ## Quick start
 
 ```bash
-# Monthly breakdown by worker pool, FXCI Azure DevTest only
+# API fallback: monthly breakdown by worker pool, FXCI Azure DevTest only
 uv run scripts/query_costs.py --start 2026-01-01 --end 2026-03-31 --granularity monthly --compare-months
 
-# Daily breakdown for one month
+# API fallback: daily breakdown for one month
 uv run scripts/query_costs.py --start 2026-03-01 --end 2026-03-31 --granularity daily
 
 # Compare task counts between two push dates (TC API, single push)
@@ -54,16 +55,16 @@ Out of scope:
 
 ## Where Cost Data Lives
 
-### Cost exports (only one configured)
+### Cost exports
 
 | Export | Subscription | Type | Storage |
 |--------|------|------|---------|
 | `fxci_daily_actual` | FXCI Azure DevTest | ActualCost | `safinopsdata` / `cost-management` / `fxci_daily/` |
 | `fxci_daily_amortized` | FXCI Azure DevTest | AmortizedCost | same storage account |
 
-The `Trusted FXCI Azure DevTest` and `Taskcluster Engineering DevTest` subscriptions have **no cost exports configured**. For ad-hoc analysis on those, use the Cost Management REST API or the Azure Portal Cost Analysis "Download" button.
+Use these scheduled exports first for FXCI DevTest cost analysis. They are daily month-to-date snapshots; select the latest run for the target month/current month and do not sum multiple runs from the same month. See `cost-exports.md`.
 
-The exports produce large CSV files (200MB+ per day snapshot, split across multiple parts). For analysis, querying the Cost Management REST API directly is far more practical — it aggregates server-side.
+The `Trusted FXCI Azure DevTest` and `Taskcluster Engineering DevTest` subscriptions have **no cost exports configured** as of 2026-05-08. For those subscriptions, use the Cost Management REST API or the Azure Portal Cost Analysis "Download" button.
 
 To list exports across subscriptions:
 
