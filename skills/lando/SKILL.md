@@ -1,9 +1,10 @@
 ---
 name: lando
 description: >
-  Check the status of Lando landing jobs using Mozilla's Lando API.
-  Use after submitting try pushes with mach try to verify if your commit has landed.
-  Triggers on "lando status", "landing job", "check landing", "commit landed".
+  Poll Mozilla's public Lando API to check the status of a landing job
+  (submitted, in_progress, landed, failed) and surface the landed commit
+  hash or failure reason. Use after submitting a try push or commit
+  through Lando to verify whether it landed.
 ---
 
 # Lando
@@ -54,6 +55,13 @@ The API returns a JSON object with these key fields:
 ## Prerequisites
 
 None - the API is publicly accessible. No authentication required for read operations.
+
+## Gotchas
+
+- The API is read-only and unauthenticated — no token plumbing needed for status polls.
+- `status` values are lowercase (`landed`, not `Landed`). Match exactly when comparing.
+- Failed jobs put the reason in `error`, not `status`. Always check both fields when reporting back to the user.
+- The polling loop in this doc uses 90s; pick longer intervals for batched dashboards — Lando state doesn't change often.
 
 ## Documentation
 

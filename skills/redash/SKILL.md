@@ -1,14 +1,11 @@
 ---
 name: redash
 description: >
-  Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data from BigQuery.
-  Use when querying Firefox user telemetry, OS distribution, architecture breakdown, FXCI
-  task data, or running custom SQL against Mozilla's data warehouse. Triggers on "redash",
-  "telemetry query", "sql.telemetry", "BigQuery query", "Firefox data", "client counts",
-  "user population", "DAU", "MAU", "macOS version", "macOS distribution", "Apple Silicon",
-  "aarch64", "x86_64", "architecture distribution", "Windows version", "Windows distribution",
-  "how many users", "what share of users", "what percentage of Firefox users", "worker pool",
-  "queue time", "Taskcluster queue", "FXCI task data".
+  Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry from
+  BigQuery via saved query IDs or ad-hoc SQL. Use when the task references
+  a saved query, needs FXCI worker-pool queue-time data, or wants results
+  that can be shared and visualized. DO NOT USE FOR raw bq CLI work without
+  a saved query (use bigquery).
 ---
 
 # Redash Query Tool
@@ -69,3 +66,10 @@ For questions not covered by a documented query, write SQL on the fly using the 
 
 ## Common Queries
 @references/common-queries.md
+
+## Gotchas
+
+- `--query-id N` returns *cached* results from the saved query's last run. Pass `--sql` if you need fresh data or different parameters.
+- Required env: `REDASH_API_KEY` (get one from your Redash profile). Without it the script fails before hitting the API.
+- For one-off analyses, write `--sql` inline rather than creating a saved query — saved queries proliferate, get stale, and clutter the UI for everyone.
+- Redash query IDs in this skill (`65967`, `114866`, `114867`) are stable; if a query disappears, check `references/common-queries.md` for the SQL and re-create.

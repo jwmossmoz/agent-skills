@@ -1,6 +1,10 @@
 ---
 name: bugzilla
-description: Interact with Mozilla Bugzilla (bugzilla.mozilla.org) via REST API. Use when the user asks to search bugs, view bug details, create bugs, update bugs, add comments, or attach files. Triggers on "bugzilla", "bmo", "file a bug", "bug report", "mozilla bug".
+description: >
+  Search, view, create, update, comment on, or attach files to Mozilla
+  Bugzilla (bugzilla.mozilla.org) tickets via the bz.py CLI. Use whenever
+  the task involves a Bugzilla bug — filing a regression, triaging a crash,
+  needinfo'ing a reviewer, or following up on assigned bugs.
 ---
 
 # Bugzilla CLI
@@ -9,11 +13,10 @@ Requires: `export BUGZILLA_API_KEY="your-key"` (get from https://bugzilla.mozill
 
 Read-only ops work without auth.
 
-Use this local skills checkout path for commands in this file:
+Run via the installed skill path:
 
 ```bash
-SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
-BZ="$SKILLS_ROOT/bugzilla/scripts/bz.py"
+BZ=~/.claude/skills/bugzilla/scripts/bz.py
 ```
 
 ## Usage
@@ -57,6 +60,12 @@ uv run "$BZ" needinfo 1234567 --request user@mozilla.com
 # Create
 uv run "$BZ" create --product Firefox --component General --summary "Title" --version unspecified
 ```
+
+## Gotchas
+
+- Read-only ops (`search`, `get`, `whoami`, `products`) work without `BUGZILLA_API_KEY`; write ops (`create`, `update`, `comment`, `attachment`, `needinfo`) need it.
+- `--quicksearch` only honors what BMO's quicksearch grammar supports. For structured filters use `--product`, `--component`, `--status`, `--priority`.
+- `create` requires `--product`, `--component`, `--summary`, and `--version` together — missing any of them produces a confusing 400, not a useful error.
 
 ## References
 

@@ -1,16 +1,11 @@
 ---
 name: worker-image-build
-description: |
-  Build Firefox CI worker images by triggering GitHub Actions workflows in mozilla-platform-ops/worker-images.
-  Supports FXCI Azure workflows for Windows image builds (trusted and untrusted).
-
-  Use when:
-  - User wants to build a worker image
-  - User mentions "FXCI Azure", "worker image build", or specific pool names like "win11-64-24h2-alpha"
-  - User wants to trigger image builds for Windows 10, Windows 11, or Windows Server 2022
-  - User asks to check status of a worker image build
-
-  Triggers: "build image", "worker image", "FXCI Azure", "trigger build", "image build status"
+description: >
+  Trigger GitHub Actions workflows in mozilla-platform-ops/worker-images
+  to build Firefox CI Windows worker images (FXCI Azure trusted and
+  untrusted, win10-2009 / win11-24h2 / win11-a64 / win2022). Use to start
+  an image build or check the status of a triggered run. DO NOT USE FOR
+  debugging an existing image's failures (use worker-image-investigation).
 ---
 
 # Worker Image Build
@@ -115,6 +110,14 @@ gh run view <RUN_ID> --repo mozilla-platform-ops/worker-images --log
 ## More Examples
 
 See [references/examples.md](references/examples.md) for additional command examples.
+
+## Gotchas
+
+- Access is gated by `.github/relsre.json` in mozilla-platform-ops/worker-images — if your gh user isn't on that list, the workflow rejects the trigger immediately.
+- Builds take 30-60 min (Packer). Use `gh run watch` rather than polling `gh run list` in a tight loop.
+- `-alpha` configs build to staging galleries; non-suffixed configs go to production. Always validate image changes through `-alpha` first.
+- `trusted-` prefixed configs require the trusted workflow (`FXCI - Azure - Trusted`); they fail if you trigger them on the untrusted workflow and vice versa.
+- After a successful build, a release-notes PR is opened automatically — don't merge it until the alpha image has been validated through `os-integrations`.
 
 ## Repository
 

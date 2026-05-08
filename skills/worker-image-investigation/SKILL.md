@@ -1,23 +1,22 @@
 ---
 name: worker-image-investigation
 description: >
-  Investigate Taskcluster task failures related to worker images.
-  Compare passing vs failing tasks, extract image versions, find running workers,
-  and debug Windows VMs via Azure CLI. Use when debugging CI failures after
-  image upgrades, investigating intermittent test failures, or comparing
-  worker configurations. Triggers on "image investigation", "worker image",
-  "compare tasks", "why is this failing", "image regression", "worker debug".
+  Investigate Taskcluster task failures caused by worker images — extract
+  image versions, compare passing vs failing tasks, find pass/fail cliffs
+  across branches, debug Azure VMs via `az` CLI, and spin up throwaway
+  debug VMs from the same image a pool uses. Use when a CI failure looks
+  image-related. DO NOT USE FOR triggering a new image build (use
+  worker-image-build).
 ---
 
 # Worker Image Investigation
 
 Investigate Taskcluster task failures by comparing worker images, extracting SBOM info, and debugging Azure VMs.
 
-Use this local skills checkout path for commands in this file:
+Run via the installed skill path:
 
 ```bash
-SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
-WII="$SKILLS_ROOT/worker-image-investigation/scripts/investigate.py"
+WII=~/.claude/skills/worker-image-investigation/scripts/investigate.py
 ```
 
 ## Prerequisites
@@ -268,6 +267,15 @@ curl -sL <SBOM_URL> | iconv -f UTF-16LE -t UTF-8
 - **os-integrations**: Run mach try commands for testing
 - **papertrail**: Worker-side logs forwarded from Azure (in-VM events)
 - **splunk**: Azure VM lifecycle for ephemeral workers
+
+## Gotchas
+
+- Debug VM names must be ≤ 15 chars (Windows NetBIOS limit). Generate short names like `dbg-1a2b3c`.
+- Never hardcode `vmSize` for debug VMs. Pull it from the worker pool config (`launchConfigs` via the taskcluster skill) so you match what real workers use.
+- Some Windows SBOM markdown artifacts are UTF-16LE encoded. If text looks garbled, pipe through `iconv -f UTF-16LE -t UTF-8`.
+- `treeherder-cli --similar-history` takes a Treeherder *job* ID (numeric), not a Taskcluster task ID. Resolve via `/api/project/{repo}/jobs/?task_id=...` before passing it in.
+- For failures that happened *before* a worker claimed the task (claim timeout, no worker, mysterious termination), papertrail and `vm-info` are useless — go straight to `tc-logview` for the worker-manager view.
+- Use `Password1!` for throwaway debug VMs. Don't try to pass complex passwords on the `az vm create` command line; quoting is unforgiving.
 
 ## References
 

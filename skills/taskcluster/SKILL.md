@@ -1,11 +1,12 @@
 ---
 name: taskcluster
 description: >
-  Interact with Mozilla Taskcluster CI using the taskcluster CLI.
-  Query task status, view logs, download artifacts, retrigger tasks, and manage task groups.
-  Use when working with CI tasks from firefox-ci-tc.services.mozilla.com or debugging worker pool issues.
-  For worker pool operations (list workers, terminate workers, bulk task cancellation), use native taskcluster api commands (see references/worker-pools.md).
-  Triggers on "taskcluster", "task status", "task log", "artifacts", "retrigger", "task group", "worker pool".
+  Interact with Mozilla Taskcluster CI: status, logs, artifacts, retriggers,
+  in-tree actions (confirm-failures, backfill, retrigger-multiple), task
+  groups, and worker-pool ops via the native taskcluster CLI plus tc.py.
+  DO NOT USE FOR finding which tasks run on a worker pool (use
+  task-discovery) or worker-manager provisioning logs (use tc-logview, see
+  references/tc-logview.md).
 ---
 
 # Taskcluster
@@ -85,11 +86,10 @@ These use `taskcluster api workerManager` and `taskcluster api queue` directly.
 
 ## Python Helper — tc.py
 
-Use this local skills checkout path:
+Run via the installed skill path:
 
 ```bash
-SKILLS_ROOT=/Users/jwmoss/github_moz/agent-skills/skills
-TC="$SKILLS_ROOT/taskcluster/scripts/tc.py"
+TC=~/.claude/skills/taskcluster/scripts/tc.py
 ```
 
 The helper handles two categories the native CLI doesn't cover well:
@@ -221,6 +221,14 @@ uv run "$TC" backfill <TASK_ID>
 - `references/examples.md` - Common usage patterns and workflows
 - `references/integration.md` - Integration with other Mozilla tools
 - `references/worker-pools.md` - Worker pool management, bulk operations, and emergency shutdown
+
+## Gotchas
+
+- **Never use `taskcluster task retrigger`** for Firefox CI — it clears upstream dependencies and breaks signing/test tasks that need build artifacts. Use `uv run "$TC" retrigger` (in-tree action) instead, which preserves the task graph.
+- Read-only ops (status, logs, artifacts) work unauthenticated; in-tree actions need the `hooks:trigger-hook:project-gecko/in-tree-action-*` scope.
+- Always export `TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com` before running any command — the CLI defaults to community-tc otherwise and you'll get "task not found" for valid Firefox CI task IDs.
+- For worker-manager and worker-scanner service logs (provisioning decisions, lifecycle gaps, scan health), use `tc-logview` — it queries GCP Cloud Logging, not Taskcluster's API. See `references/tc-logview.md`.
+- `taskcluster task rerun` and `tc.py retrigger` are different: `rerun` reuses the same task ID; `retrigger` creates a new task ID via the in-tree action. Pick `retrigger` for a fresh attempt.
 
 ## Documentation
 

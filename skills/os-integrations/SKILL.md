@@ -1,10 +1,11 @@
 ---
 name: os-integrations
 description: >
-  Run Firefox mach try commands with pre-configured flags for os-integration testing
-  on Windows and Linux alpha worker pools. Use when testing Firefox changes against
-  Windows 10, Windows 11, Ubuntu 24.04, hardware workers, ARM64, or AMD configurations.
-  Triggers on "os-integration", "mach try", "windows testing", "linux testing", "alpha image".
+  Run Firefox `mach try` with pre-configured worker pool overrides for
+  alpha-image testing on Windows and Linux pools (win11-24h2, win11-25h2,
+  win11-arm64, win11-amd, win10-2009, b-win2022, win11-source). Use when
+  pushing tests to alpha pools to validate worker images before they ship
+  to production.
 ---
 
 # OS Integrations
@@ -119,6 +120,14 @@ Use `-t` to filter to specific test suites:
 - Firefox repository at `~/firefox`
 - Must be on a feature branch (not main/master)
 - Mozilla Auth0 authentication (for Lando-based pushes)
+
+## Gotchas
+
+- Must be on a feature branch — `mach try` refuses pushes from `main`/`master`.
+- Default reuses builds from the latest autoland decision task (skips a 45-min Firefox build). Use `--fresh-build` only when something changed in the build itself.
+- Lando-based pushes need Mozilla Auth0; the auth prompt opens in the browser if needed.
+- Each preset's worker overrides live in `references/presets.yml` — change them there, not in `run_try.py`.
+- Use `--query-set` (per preset) instead of long `-t` lists when you have a recurring test bundle.
 
 ## Additional Documentation
 

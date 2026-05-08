@@ -1,6 +1,13 @@
 ---
 name: splunk
-description: Query Mozilla Splunk Cloud for Azure activity logs (VM lifecycle, provisioning, deletes) on Taskcluster worker pools. The REST API is disabled at Mozilla, so this skill drives Splunk Web through `browser-harness` against the user's authenticated Chrome tab. Use for VM-side provisioning failures, worker lifespan analysis, cost-surge investigations, and anything in `index=azure_audit`. Triggers on "splunk", "azure audit", "azure activity log", "VM provisioning logs", "worker lifecycle", "azure logs", "OSProvisioningTimedOut".
+description: >
+  Query Mozilla Splunk Cloud for Azure activity logs (VM lifecycle,
+  NIC/disk writes, deletes, OSProvisioningTimedOut) on Taskcluster worker
+  pools — driving Splunk Web through `browser-harness` against an
+  authenticated Chrome tab because the REST API is disabled at Mozilla.
+  Use for VM-side provisioning failures and worker lifespan on
+  `index=azure_audit`. DO NOT USE FOR in-VM logs (use papertrail) or
+  worker-manager service decisions (use tc-logview).
 ---
 
 # Splunk

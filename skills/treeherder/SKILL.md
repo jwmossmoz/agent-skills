@@ -1,9 +1,12 @@
 ---
 name: treeherder
 description: >
-  Query Firefox Treeherder for CI job results using treeherder-cli.
-  Use after commits land to check test/build results.
-  Triggers on "treeherder", "job results", "check tests", "ci status".
+  Query Mozilla Treeherder for CI job results, failure analysis, test
+  history, similar-job comparison, and bug suggestions via treeherder-cli
+  plus the Treeherder REST API for endpoints the CLI doesn't cover (push
+  listing, failures-by-bug, error-line bug suggestions, perf alerts).
+  Use after pushes land or to investigate intermittents and pass/fail
+  cliffs across branches.
 ---
 
 # Treeherder
@@ -168,6 +171,14 @@ No authentication required.
 - `references/sheriff-workflows.md` - Sheriff workflow examples
 - `references/api-reference.md` - REST API documentation
 - `references/similar-jobs-comparison.md` - Compare failed jobs using Treeherder's `similar_jobs` API
+
+## Gotchas
+
+- The Treeherder REST API requires a `User-Agent` header. Bare `urllib`/`curl` calls without one get rate-limited or 403'd.
+- `treeherder-cli` accepts revision SHAs, but `--similar-history` takes a Treeherder *job* ID (numeric), not a Taskcluster task ID. Resolve task → job ID via `/api/project/{repo}/jobs/?task_id=...`.
+- Default repo is `autoland`. Pass `--repo try` (or `mozilla-central`, `mozilla-beta`) when looking elsewhere.
+- For batch bug-suggestion checks across many failing jobs, dedupe by `job_type_name` to avoid hammering the API on retries.
+- Treeherder's `failure_new_in_rev` field tells you whether a failure first appeared in this revision — useful for distinguishing regressions from intermittents that landed earlier.
 
 ## External Documentation
 
