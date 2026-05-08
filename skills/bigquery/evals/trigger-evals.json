@@ -1,0 +1,22 @@
+[
+  {"query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`", "should_trigger": true},
+  {"query": "Use bq to count clients on Windows 11 versions yesterday — sample_id 0 is fine for a quick estimate.", "should_trigger": true},
+  {"query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json", "should_trigger": true},
+  {"query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.", "should_trigger": true},
+  {"query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` — output as a table.", "should_trigger": true},
+  {"query": "I need to write SQL that joins desktop and mobile telemetry — but they're separate namespaces, right? Show me the right approach.", "should_trigger": true},
+  {"query": "What's the cheapest way to count DAU yesterday — should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.", "should_trigger": true},
+  {"query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?", "should_trigger": true},
+  {"query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week — pretty format.", "should_trigger": true},
+  {"query": "Use bq to grab the top 10 macOS versions by client count — make sure to include the partition filter and use sample_id = 0.", "should_trigger": true},
+  {"query": "Pull this saved Redash query and chart it — query ID is 65967, and I want to share the result in an email.", "should_trigger": false},
+  {"query": "Find the Glean probe that measures memory usage on Firefox Desktop — don't know the metric name.", "should_trigger": false},
+  {"query": "Which tasks run on win11-64-25h2 — I need to know for the migration off 24h2.", "should_trigger": false},
+  {"query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.", "should_trigger": false},
+  {"query": "Compare Windows 11 file versions between KB5070881 and KB5072359 — looking at ntdll.dll and tcpip.sys.", "should_trigger": false},
+  {"query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q — image regression after the win11-25h2 bump?", "should_trigger": false},
+  {"query": "Generate a daily log of my Claude Code and Codex sessions today.", "should_trigger": false},
+  {"query": "Search Bugzilla for crash bugs filed in the last week — need to triage them this morning.", "should_trigger": false},
+  {"query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.", "should_trigger": false},
+  {"query": "Spin up a debug VM matching the win11-64-24h2 worker config — I need the same vmSize as production workers use.", "should_trigger": false}
+]

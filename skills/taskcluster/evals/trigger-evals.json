@@ -1,0 +1,22 @@
+[
+  {"query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI — I want to see what's happening right now.", "should_trigger": true},
+  {"query": "Retrigger this failing task — but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`", "should_trigger": true},
+  {"query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.", "should_trigger": true},
+  {"query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.", "should_trigger": true},
+  {"query": "Cancel all tasks in this group, force flag — taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`", "should_trigger": true},
+  {"query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.", "should_trigger": true},
+  {"query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON — I need the URLs and content types, not just names.", "should_trigger": true},
+  {"query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.", "should_trigger": true},
+  {"query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` — full JSON definition please.", "should_trigger": true},
+  {"query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` — action name `confirm-failures`, no input.", "should_trigger": true},
+  {"query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 — give me labels.", "should_trigger": false},
+  {"query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.", "should_trigger": false},
+  {"query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.", "should_trigger": false},
+  {"query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour — looking for ERROR.", "should_trigger": false},
+  {"query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.", "should_trigger": false},
+  {"query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.", "should_trigger": false},
+  {"query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` — is the failure caused by the win11-25h2 image upgrade?", "should_trigger": false},
+  {"query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.", "should_trigger": false},
+  {"query": "Compare two task definitions for the same job_type_name to spot what differs — passing on mozilla-central, failing on autoland.", "should_trigger": false},
+  {"query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.", "should_trigger": false}
+]
