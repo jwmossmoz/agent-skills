@@ -7,6 +7,8 @@ description: >
   debug VMs from the same image a pool uses. Use when a CI failure looks
   image-related. DO NOT USE FOR triggering a new image build (use
   worker-image-build).
+metadata:
+  version: "1.0"
 ---
 
 # Worker Image Investigation

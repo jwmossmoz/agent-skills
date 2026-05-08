@@ -6,6 +6,8 @@ description: >
   description frontmatter, references/, or scripts/ — covers description
   style, gotchas convention, scope-vs tables for log tools, hard-coded
   paths, and mozdata: handoffs.
+metadata:
+  version: "1.0"
 ---
 
 # Writing Skills

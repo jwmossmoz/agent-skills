@@ -7,6 +7,8 @@ description: >
   listing, failures-by-bug, error-line bug suggestions, perf alerts).
   Use after pushes land or to investigate intermittents and pass/fail
   cliffs across branches.
+metadata:
+  version: "1.0"
 ---
 
 # Treeherder

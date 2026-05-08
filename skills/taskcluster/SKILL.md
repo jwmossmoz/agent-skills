@@ -7,6 +7,8 @@ description: >
   DO NOT USE FOR finding which tasks run on a worker pool (use
   task-discovery) or worker-manager provisioning logs (use tc-logview, see
   references/tc-logview.md).
+metadata:
+  version: "1.0"
 ---
 
 # Taskcluster

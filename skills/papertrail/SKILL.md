@@ -6,6 +6,8 @@ description: >
   investigating what a worker process or its OS reported on-host. DO NOT
   USE FOR provisioning failures where no worker started (use tc-logview)
   or Azure-side VM lifecycle events (use splunk).
+metadata:
+  version: "1.0"
 ---
 
 # SolarWinds Observability Logs (paperctl)

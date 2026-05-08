@@ -6,6 +6,8 @@ description: >
   pulling DAU/MAU/Windows-distribution/Glean-metric data into a script. DO
   NOT USE FOR saved/shared queries with visualizations (use redash) or
   finding which probe to query (use mozdata:probe-discovery).
+metadata:
+  version: "1.0"
 ---
 
 # BigQuery

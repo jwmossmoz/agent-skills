@@ -5,6 +5,8 @@ description: >
   and Codex (~/.codex/sessions/) session JSONL files and compiling them
   into ~/moz_artifacts/daily-log-YYYY-MM-DD.md. Use when summarizing a
   day's sessions or reviewing what the user worked on.
+metadata:
+  version: "1.0"
 ---
 
 # Daily Log

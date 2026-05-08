@@ -6,6 +6,8 @@ description: >
   KB releases. Use when investigating which build introduced a file
   version, comparing files between patches, tracking a file's version
   history, or debugging Windows update regressions in CI worker images.
+metadata:
+  version: "1.0"
 ---
 
 # Windows 11 Files

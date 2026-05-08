@@ -6,6 +6,8 @@ description: >
   → ADF conversion is built in. Prefer this skill over the Atlassian MCP
   for JIRA work — it handles RELOPS defaults, sprint queries, comment
   edit/append, and bulk modify with dry-run.
+metadata:
+  version: "1.0"
 ---
 
 # JIRA

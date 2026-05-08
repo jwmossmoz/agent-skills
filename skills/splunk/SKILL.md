@@ -8,6 +8,8 @@ description: >
   Use for VM-side provisioning failures and worker lifespan on
   `index=azure_audit`. DO NOT USE FOR in-VM logs (use papertrail) or
   worker-manager service decisions (use tc-logview).
+metadata:
+  version: "1.0"
 ---
 
 # Splunk

@@ -5,6 +5,8 @@ description: >
   (submitted, in_progress, landed, failed) and surface the landed commit
   hash or failure reason. Use after submitting a try push or commit
   through Lando to verify whether it landed.
+metadata:
+  version: "1.0"
 ---
 
 # Lando

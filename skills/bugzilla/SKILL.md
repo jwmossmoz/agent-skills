@@ -5,6 +5,8 @@ description: >
   Bugzilla (bugzilla.mozilla.org) tickets via the bz.py CLI. Use whenever
   the task involves a Bugzilla bug — filing a regression, triaging a crash,
   needinfo'ing a reviewer, or following up on assigned bugs.
+metadata:
+  version: "1.0"
 ---
 
 # Bugzilla CLI

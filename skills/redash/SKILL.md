@@ -6,6 +6,8 @@ description: >
   a saved query, needs FXCI worker-pool queue-time data, or wants results
   that can be shared and visualized. DO NOT USE FOR raw bq CLI work without
   a saved query (use bigquery).
+metadata:
+  version: "1.0"
 ---
 
 # Redash Query Tool

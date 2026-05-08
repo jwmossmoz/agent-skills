@@ -6,6 +6,8 @@ description: >
   win11-arm64, win11-amd, win10-2009, b-win2022, win11-source). Use when
   pushing tests to alpha pools to validate worker images before they ship
   to production.
+metadata:
+  version: "1.0"
 ---
 
 # OS Integrations

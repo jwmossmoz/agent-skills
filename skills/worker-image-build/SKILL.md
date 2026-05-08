@@ -6,6 +6,8 @@ description: >
   untrusted, win10-2009 / win11-24h2 / win11-a64 / win2022). Use to start
   an image build or check the status of a triggered run. DO NOT USE FOR
   debugging an existing image's failures (use worker-image-investigation).
+metadata:
+  version: "1.0"
 ---
 
 # Worker Image Build

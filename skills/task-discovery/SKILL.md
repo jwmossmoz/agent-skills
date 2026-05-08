@@ -5,6 +5,8 @@ description: >
   worker types — for worker-pool migrations, audits of which tasks run
   on a pool, or building targeted `mach try fuzzy` queries. DO NOT USE
   FOR live task status, retriggers, or task logs (use taskcluster).
+metadata:
+  version: "1.0"
 ---
 
 # Task Discovery
