@@ -8,13 +8,44 @@ This repository provides modular skills that enable AI agents to interact with M
 
 ## Skills
 
-- **bugzilla** - Search, create, and update bugs on Mozilla Bugzilla (bugzilla.mozilla.org)
-- **lando** - Check Lando landing job status using `lando-cli`
-- **treeherder** - Query Treeherder CI job results using `treeherder-client`
-- **os-integrations** - Run Firefox mach try with alpha worker pool overrides
-- **jira** - Create and modify Mozilla JIRA stories
-- **taskcluster** - Query Taskcluster task status, logs, artifacts, and task groups
-- **writing-skills** - Write and maintain Agent Skills with best practices
+### CI and task management
+
+- **taskcluster** — Status, logs, artifacts, retriggers, and in-tree actions for Firefox CI tasks
+- **treeherder** — CI job results, failure analysis, and similar-job comparison via treeherder-cli + REST API
+- **lando** — Poll the Lando API for landing job status
+- **task-discovery** — List tasks assigned to a worker pool (migrations, audits, targeted try pushes)
+- **os-integrations** — Firefox `mach try` with pre-configured alpha worker pool overrides
+
+### Worker images
+
+- **worker-image-build** — Trigger GitHub Actions workflows to build FXCI Windows worker images
+- **worker-image-investigation** — Diagnose image-caused CI failures (cliffs, comparisons, debug VMs)
+
+### Logs
+
+- **papertrail** — In-VM worker logs from SolarWinds Observability via paperctl
+- **splunk** — Azure activity logs (`index=azure_audit`) via browser-harness against Splunk Web
+
+### Issue tracking
+
+- **bugzilla** — Search, view, create, update, and comment on Mozilla Bugzilla bugs
+- **jira** — Search, create, modify, and transition issues in Mozilla JIRA with Markdown→ADF
+
+### Telemetry and data
+
+- **bigquery** — Ad-hoc SQL against Mozilla telemetry tables via the bq CLI
+- **redash** — Saved queries and shareable results from sql.telemetry.mozilla.org
+- **win11-files** — Local SQLite of Windows 11 cumulative-update file information
+
+### Productivity
+
+- **daily-log** — Compile a daily work log from Claude Code and Codex session JSONL files
+
+### Meta
+
+- **writing-skills** — House style for authoring and maintaining the skills in this repo
+
+For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`, `redash` vs `bigquery`, `splunk` vs `papertrail` vs `tc-logview`, `worker-image-build` vs `worker-image-investigation`), see each skill's description and `## Related Skills` section.
 
 ## Subagents
 
@@ -39,27 +70,31 @@ Claude will invoke the appropriate skill and handle all the technical details (d
 
 ### For Installation / Manual Use
 
-#### Claude Code
+#### Claude Code (preferred)
 
-Symlink skills to your Claude Code skills directory and agents to your agents directory:
+Use `npx skills` to install — it manages the canonical location at `~/.agents/skills/` and creates the symlinks Claude Code reads from `~/.claude/skills/`:
+
+```bash
+npx skills add jwmossmoz/agent-skills -g --agent '*' -y
+```
+
+Pass `--skill <name>` to install individual skills. See `.claude-plugin/INSTALL.md` for the full checklist and Codex/OpenCode notes.
+
+#### Manual symlinks (advanced)
+
+If you don't want to use `npx skills`, symlink each skill manually:
 
 ```bash
 AGENT_SKILLS_ROOT="/path/to/agent-skills"
+for d in "$AGENT_SKILLS_ROOT"/skills/*/; do
+  name=$(basename "$d")
+  ln -sf "$d" "$HOME/.claude/skills/$name"
+done
 
-ln -s "$AGENT_SKILLS_ROOT/skills/bugzilla" ~/.claude/skills/bugzilla
-ln -s "$AGENT_SKILLS_ROOT/skills/lando" ~/.claude/skills/lando
-ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
-ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
-ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
-ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
-ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills
-
-ln -s "$AGENT_SKILLS_ROOT/agents/coder.md" ~/.claude/agents/coder.md
-ln -s "$AGENT_SKILLS_ROOT/agents/explorer.md" ~/.claude/agents/explorer.md
-ln -s "$AGENT_SKILLS_ROOT/agents/helper.md" ~/.claude/agents/helper.md
+for f in "$AGENT_SKILLS_ROOT"/agents/*.md; do
+  ln -sf "$f" "$HOME/.claude/agents/$(basename "$f")"
+done
 ```
-
-See `.claude-plugin/INSTALL.md` for the full Claude Code checklist.
 
 #### Codex
 
