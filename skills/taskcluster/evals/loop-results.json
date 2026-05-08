@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "Interact with Mozilla Taskcluster CI: status, logs, artifacts, retriggers, in-tree actions (confirm-failures, backfill, retrigger-multiple), task groups, and worker-pool ops via the native taskcluster CLI plus tc.py. DO NOT USE FOR finding which tasks run on a worker pool (use task-discovery) or worker-manager provisioning logs (use tc-logview, see references/tc-logview.md).",
+  "best_description": "Interact with Mozilla Taskcluster CI: status, logs, artifacts, retriggers, in-tree actions (confirm-failures, backfill, retrigger-multiple), task groups, and worker-pool ops via the native taskcluster CLI plus tc.py. DO NOT USE FOR finding which tasks run on a worker pool (use task-discovery) or worker-manager provisioning logs (use tc-logview, see references/tc-logview.md).",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "Use this skill whenever the user wants to act on a Firefox CI Taskcluster task or task group \u2014 anything addressed by a 22-character task ID (like `bjUM4ECETnioVcU9KH5_qg`) or a firefox-ci-tc.services.mozilla.com URL. Covers: getting task status, viewing or streaming live task logs, listing or downloading task artifacts (including JSON dumps with URLs), fetching task definitions, rerunning, cancelling, or retriggering individual tasks, cancelling whole task groups (including force), and triggering in-tree actions by name such as confirm-failures, backfill, retrigger-multiple, or any custom Treeherder action. Also use for taskcluster-CLI worker-pool ops (list/terminate workers, bulk task cancel).\n\nDo NOT use for: discovering which tasks run on a worker pool (task-discovery), worker-manager or worker-scanner provisioning logs in GCP (tc-logview), in-VM worker-side logs (papertrail), Azure VM lifecycle events (splunk), or building worker images (worker-image-build).",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "Interact with Mozilla Taskcluster CI: status, logs, artifacts, retriggers, in-tree actions (confirm-failures, backfill, retrigger-multiple), task groups, and worker-pool ops via the native taskcluster CLI plus tc.py. DO NOT USE FOR finding which tasks run on a worker pool (use task-discovery) or worker-manager provisioning logs (use tc-logview, see references/tc-logview.md).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` \u2014 full JSON definition please.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 looking for ERROR.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use this skill whenever the user wants to operate on a Taskcluster task or task group on Firefox CI (firefox-ci-tc.services.mozilla.com): get task status, stream live logs, list or download artifacts, fetch task definitions, rerun, cancel, or retrigger tasks, cancel entire task groups, or trigger in-tree actions like confirm-failures, backfill, retrigger-multiple, or any named action. Recognize task IDs (e.g., bjUM4ECETnioVcU9KH5_qg) and task group IDs as strong signals. Also use for worker-pool ops via the taskcluster CLI (list/terminate workers, bulk task cancel). DO NOT USE FOR: discovering which tasks run on a worker pool (use task-discovery), worker-manager/worker-scanner provisioning logs in GCP (use tc-logview), in-VM worker logs (use papertrail), or Azure VM lifecycle (use splunk).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` \u2014 full JSON definition please.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 looking for ERROR.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use this skill when the user wants to do something with a Taskcluster task or task group on Firefox CI: check status, stream/view logs, list or download artifacts, fetch task definitions, rerun, cancel, retrigger, or trigger any in-tree action (confirm-failures, backfill, retrigger-multiple, custom action by name). Also use it for cancelling whole task groups and for worker-pool CLI ops (list/terminate workers, bulk cancel).\n\nStrong triggers: a 22-character task ID or task group ID (e.g. `bjUM4ECETnioVcU9KH5_qg`, `Sn7TZqYVQ3qKnD5n5O7AUg`), a `firefox-ci-tc.services.mozilla.com/tasks/...` URL, or verbs like \"retrigger\", \"rerun\", \"backfill\", \"confirm-failures\", \"cancel group\", \"task log\", \"task artifacts\", \"task status\" applied to a Firefox CI task.\n\nDo NOT use for: discovering which tasks run on a worker pool (task-discovery), worker-manager/scanner logs (tc-logview), in-VM worker logs (papertrail), or Azure VM lifecycle (splunk).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` \u2014 full JSON definition please.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 looking for ERROR.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "Operate the Mozilla Taskcluster CLI against Firefox CI tasks. Trigger this skill for ANY request that names a Taskcluster task ID, task group ID, or firefox-ci-tc URL and asks to: get task status, view or stream task logs, list or download task artifacts, fetch task definitions, rerun, cancel, retrigger, backfill, confirm-failures, retrigger-multiple, or run any in-tree/custom action by name. Also trigger for task-group operations (list, status, cancel-all/force) and worker-pool CLI ops (list/terminate workers, bulk task cancel). Keywords that should fire it: \"task ID\", \"task group\", \"retrigger\", \"rerun\", \"backfill\", \"confirm-failures\", \"in-tree action\", \"task log\", \"task artifacts\", \"task status\", \"cancel group\", plus 22-char IDs like `bjUM4ECETnioVcU9KH5_qg`. Do NOT use for: discovering which tasks run on a worker pool (task-discovery), worker-manager/scanner logs in GCP (tc-logview), in-VM worker logs (papertrail), or Azure VM lifecycle (splunk).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` \u2014 full JSON definition please.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 looking for ERROR.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "Use this skill whenever the user wants to act on a Firefox CI Taskcluster task or task group \u2014 anything addressed by a 22-character task ID (like `bjUM4ECETnioVcU9KH5_qg`) or a firefox-ci-tc.services.mozilla.com URL. Covers: getting task status, viewing or streaming live task logs, listing or downloading task artifacts (including JSON dumps with URLs), fetching task definitions, rerunning, cancelling, or retriggering individual tasks, cancelling whole task groups (including force), and triggering in-tree actions by name such as confirm-failures, backfill, retrigger-multiple, or any custom Treeherder action. Also use for taskcluster-CLI worker-pool ops (list/terminate workers, bulk task cancel).\n\nDo NOT use for: discovering which tasks run on a worker pool (task-discovery), worker-manager or worker-scanner provisioning logs in GCP (tc-logview), in-VM worker-side logs (papertrail), Azure VM lifecycle events (splunk), or building worker images (worker-image-build).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Get me the worker pool config for `gecko-t/win11-64-25h2` so I can check the vmSize and image reference.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run confirm-failures on task `XYZ123abc456` to see if it's an intermittent or a real regression.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "List all failing tasks in task group `Sn7TZqYVQ3qKnD5n5O7AUg` so I can see what's broken across the push.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's `taskcluster task def` for `fuCPrKG2T62-4YH1tWYa7Q` \u2014 full JSON definition please.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 looking for ERROR.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up the Treeherder job for revision a13b9fc22101 and tell me what failed in mochitest-browser-chrome.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up right now? Pending count is 1500 and queue time is climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Check Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Download the artifact list for task `bjUM4ECETnioVcU9KH5_qg` as JSON \u2014 I need the URLs and content types, not just names.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Trigger an in-tree action by name on task `bjUM4ECETnioVcU9KH5_qg` \u2014 action name `confirm-failures`, no input.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Backfill task `XYZ123abc456` to find which push introduced this perma-failure.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Cancel all tasks in this group, force flag \u2014 taskcluster group cancel for `Sn7TZqYVQ3qKnD5n5O7AUg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the status and the live log for task fuCPrKG2T62-4YH1tWYa7Q on Firefox CI \u2014 I want to see what's happening right now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Retrigger this failing task \u2014 but use the in-tree action so dependencies are preserved: `bjUM4ECETnioVcU9KH5_qg`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Build a worker image for win11-64-24h2-alpha through the FXCI Azure GH Actions workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find what worker-manager did with vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f on April 16.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare two task definitions for the same job_type_name to spot what differs \u2014 passing on mozilla-central, failing on autoland.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on the gecko-t/win11-64-25h2 pool? I need to plan a migration from 24h2 \u2014 give me labels.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 is the failure caused by the win11-25h2 image upgrade?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of what I worked on today across Claude Code and Codex sessions.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

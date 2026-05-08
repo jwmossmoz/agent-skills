@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "Investigate Taskcluster task failures caused by worker images \u2014 extract image versions, compare passing vs failing tasks, find pass/fail cliffs across branches, debug Azure VMs via `az` CLI, and spin up throwaway debug VMs from the same image a pool uses. Use when a CI failure looks image-related. DO NOT USE FOR triggering a new image build (use worker-image-build).",
+  "best_description": "Investigate Taskcluster task failures caused by worker images \u2014 extract image versions, compare passing vs failing tasks, find pass/fail cliffs across branches, debug Azure VMs via `az` CLI, and spin up throwaway debug VMs from the same image a pool uses. Use when a CI failure looks image-related. DO NOT USE FOR triggering a new image build (use worker-image-build).",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "ALWAYS USE WHEN the user mentions: SBOM (incl. UTF-16LE markdown artifacts), image version, image bump, \"what changed in the image\", pass/fail cliff, permafail after an image rollout, GenericWorker version, Windows build on a worker, `Get-HotFix`/drivers/filters on a worker VM, a `vm-...` worker name, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`, or running PowerShell/`az vm run-command` against a Taskcluster worker. ALSO USE WHEN comparing two task IDs (passing vs failing) for image differences, identifying the date a `gecko-t/win*` or `b-win*` pool flipped green to red, or spinning up throwaway Azure debug VMs from a pool's image. The right skill any time a CI failure is suspected to be image-, SBOM-, or worker-VM-related \u2014 even when the user only gives a task ID and says \"permafail\" or \"investigate\". DO NOT USE FOR building a new image (use worker-image-build), plain task status/logs (use taskcluster), or Azure VM lifecycle/provisioning logs (use splunk or tc-logview).",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "Investigate Taskcluster task failures caused by worker images \u2014 extract image versions, compare passing vs failing tasks, find pass/fail cliffs across branches, debug Azure VMs via `az` CLI, and spin up throwaway debug VMs from the same image a pool uses. Use when a CI failure looks image-related. DO NOT USE FOR triggering a new image build (use worker-image-build).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 \u2014 pull the vmSize from the worker pool config, name dbg-1a2b3c.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds \u2014 which KB introduced 10.0.26100.4945?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail \u2014 I want the on-host bootstrap output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use for any investigation involving Taskcluster worker images, the Azure VMs running them, or task failures that might be image-related. Triggers: looking up image version / SBOM / Windows build / GenericWorker version for a worker pool or task; comparing two tasks (passing vs failing) for image differences; finding the date/cliff where an image bump caused regressions; running PowerShell or `az` commands against a worker VM (e.g. `vm-xyz` in `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`); checking `Get-HotFix`, hotfixes, drivers, or filesystem filters on a worker; spinning up a throwaway debug VM from a pool's image; decoding UTF-16LE SBOM artifacts. Use whenever a user names a `vm-...` worker, a `gecko-t/win*` or `b-win*` pool, an image version bump, or asks \"what changed in the image\". DO NOT USE FOR triggering a new image build (use worker-image-build).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 \u2014 pull the vmSize from the worker pool config, name dbg-1a2b3c.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds \u2014 which KB introduced 10.0.26100.4945?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail \u2014 I want the on-host bootstrap output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use this skill whenever a user investigates Taskcluster worker images or the Azure VMs running them. Triggers include: looking up image version, SBOM, Windows build, or GenericWorker version on a specific task, worker pool, or VM; comparing two task IDs (passing vs failing) to find image differences; identifying the date or cliff where an image bump caused regressions or a permafail; running PowerShell or `az vm run-command` against a worker VM (e.g. `vm-xxxxxx` in `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`); checking `Get-HotFix`, hotfixes, drivers, or filesystem filters on a worker; spinning up throwaway debug VMs from a pool's image; decoding UTF-16LE SBOM artifacts. Use whenever the user mentions a `vm-...` worker name, a `gecko-t/win*` or `b-win*` pool together with image/version/SBOM/Windows-build concerns, an image bump, or asks \"what changed in the image\". DO NOT trigger a new image build (use worker-image-build).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 \u2014 pull the vmSize from the worker pool config, name dbg-1a2b3c.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds \u2014 which KB introduced 10.0.26100.4945?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail \u2014 I want the on-host bootstrap output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "Investigate Firefox CI worker images and the Azure VMs running them. Use whenever the user wants to: extract image version, SBOM, Windows build, hotfixes, or GenericWorker version from a Taskcluster task, worker pool, or VM; compare two tasks (passing vs failing) to find image differences; identify the date or \"cliff\" where an image bump caused regressions or permafails; run PowerShell or `az vm run-command` against a worker VM; check `Get-HotFix`, drivers, or filesystem filters; spin up throwaway debug VMs from a pool's image; or decode UTF-16LE SBOM artifacts. Strong triggers: any `vm-...` worker name, any `gecko-t/win*` or `b-win*` pool with image/SBOM/Windows-build concerns, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`, \"image bump\", \"permafail after image\", or \"what changed in the image\". Skip if the user wants to BUILD a new image (use worker-image-build), only fetch task status/logs (use taskcluster), or query Azure VM lifecycle/provisioning events (use splunk or tc-logview).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 \u2014 pull the vmSize from the worker pool config, name dbg-1a2b3c.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds \u2014 which KB introduced 10.0.26100.4945?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail \u2014 I want the on-host bootstrap output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "ALWAYS USE WHEN the user mentions: SBOM (incl. UTF-16LE markdown artifacts), image version, image bump, \"what changed in the image\", pass/fail cliff, permafail after an image rollout, GenericWorker version, Windows build on a worker, `Get-HotFix`/drivers/filters on a worker VM, a `vm-...` worker name, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`, or running PowerShell/`az vm run-command` against a Taskcluster worker. ALSO USE WHEN comparing two task IDs (passing vs failing) for image differences, identifying the date a `gecko-t/win*` or `b-win*` pool flipped green to red, or spinning up throwaway Azure debug VMs from a pool's image. The right skill any time a CI failure is suspected to be image-, SBOM-, or worker-VM-related \u2014 even when the user only gives a task ID and says \"permafail\" or \"investigate\". DO NOT USE FOR building a new image (use worker-image-build), plain task status/logs (use taskcluster), or Azure VM lifecycle/provisioning logs (use splunk or tc-logview).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 \u2014 pull the vmSize from the worker pool config, name dbg-1a2b3c.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds \u2014 which KB introduced 10.0.26100.4945?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail \u2014 I want the on-host bootstrap output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Pull SBOM info for gecko-t/win11-64-24h2 \u2014 I think the markdown artifact is UTF-16LE encoded.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION \u2014 Windows build and GenericWorker version.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` \u2014 looks like a permafail after the win11-25h2 image bump landed last week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Build a worker image \u2014 config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

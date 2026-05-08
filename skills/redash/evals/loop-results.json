@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry from BigQuery via saved query IDs or ad-hoc SQL. Use when the task references a saved query, needs FXCI worker-pool queue-time data, or wants results that can be shared and visualized. DO NOT USE FOR raw bq CLI work without a saved query (use bigquery).",
+  "best_description": "Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry from BigQuery via saved query IDs or ad-hoc SQL. Use when the task references a saved query, needs FXCI worker-pool queue-time data, or wants results that can be shared and visualized. DO NOT USE FOR raw bq CLI work without a saved query (use bigquery).",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "TRIGGER on: \"Redash\", \"sql.telemetry.mozilla.org\", numeric query IDs (e.g. \"query 65967\", \"query 114866\"), \"saved query\", \"Redash API\", or requests to set up a dashboard tile. Also trigger on Firefox telemetry breakdowns by macOS or Windows version, CPU architecture (x86_64, aarch64, Apple Silicon, ARM64), DAU/MAU/WAU, client counts, user-population share, or FXCI worker-pool queue times \u2014 these map to known saved queries. Use this skill when the user wants results in CSV/JSON to share, paste, save under ~/moz_artifacts, or visualize. This is the right tool whenever a Redash signal is present, even though both Redash and the bigquery skill ultimately read from BigQuery. Do NOT trigger when the user explicitly asks for raw `bq` CLI work and gives no Redash, query-ID, sql.telemetry, or saved-query hint.",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry from BigQuery via saved query IDs or ad-hoc SQL. Use when the task references a saved query, needs FXCI worker-pool queue-time data, or wants results that can be shared and visualized. DO NOT USE FOR raw bq CLI work without a saved query (use bigquery).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Pull the Taskcluster queue-time data for gecko-t pools from sql.telemetry.mozilla.org for the past 30d",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does the FXCI worker-pool queue-time look like for gecko-t/win11-64-25h2 over the last week? Use the saved query in sql.telemetry.mozilla.org.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to make a chart for an internal review showing Apple Silicon adoption over time. Pull whatever Redash has on Darwin version distribution and dump as CSV.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Show me the macOS adoption curve over the last 6 months from Redash \u2014 looking at darwin_version specifically",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is gecko-t/win11-64-25h2 backed up right now? Pending count is 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare failing task fuCPrKG2T62-4YH1tWYa7Q to a passing one \u2014 is it an image regression?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean metric for browser startup time \u2014 I don't know the right probe name yet.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 checking for ERROR lines.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use this skill whenever the user wants Firefox telemetry data from Mozilla's Redash (sql.telemetry.mozilla.org) \u2014 running saved queries by ID, writing ad-hoc SQL through the Redash API, or fetching cached results to share/visualize. Trigger on: Redash mentions, saved query IDs (e.g. \"query 65967\", \"query 114866\"), sql.telemetry.mozilla.org URLs, \"Redash API\", dashboard tile setup, or telemetry questions about macOS/Windows version distribution, architecture (x86_64 vs aarch64, Apple Silicon), DAU/MAU/client-count breakdowns, FXCI worker-pool queue times, and Firefox user population shares. Also use when the user wants results in CSV/JSON to paste into a doc or save to ~/moz_artifacts. Prefer this over the bigquery skill when the user names Redash, references a query ID, or wants a shareable saved query \u2014 even though both ultimately hit BigQuery. Skip for raw bq CLI work with no Redash context.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "What does the FXCI worker-pool queue-time look like for gecko-t/win11-64-25h2 over the last week? Use the saved query in sql.telemetry.mozilla.org.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull the Taskcluster queue-time data for gecko-t pools from sql.telemetry.mozilla.org for the past 30d",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to make a chart for an internal review showing Apple Silicon adoption over time. Pull whatever Redash has on Darwin version distribution and dump as CSV.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Show me the macOS adoption curve over the last 6 months from Redash \u2014 looking at darwin_version specifically",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is gecko-t/win11-64-25h2 backed up right now? Pending count is 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare failing task fuCPrKG2T62-4YH1tWYa7Q to a passing one \u2014 is it an image regression?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 checking for ERROR lines.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean metric for browser startup time \u2014 I don't know the right probe name yet.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Run Mozilla Redash queries (sql.telemetry.mozilla.org) \u2014 execute saved queries by ID, fetch cached results, or run ad-hoc SQL via the Redash API. Use whenever the user: names \"Redash\" or \"sql.telemetry.mozilla.org\"; references a saved query ID like \"query 65967\" or \"query 114866\"; asks for Firefox telemetry breakdowns of macOS/Windows version distribution, architecture (x86_64, aarch64, Apple Silicon, ARM64), DAU/MAU/WAU, client counts, or user-population share; wants FXCI worker-pool queue-time data; needs results as CSV/JSON to share, paste into a doc, save to ~/moz_artifacts, or wire into a dashboard tile. Prefer this over the bigquery skill any time Redash, a query ID, sql.telemetry, or a shareable saved query is mentioned \u2014 both ultimately hit BigQuery, but Redash is the right entry point here. Skip only when the user explicitly wants raw `bq` CLI work with no Redash signal.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Pull the Taskcluster queue-time data for gecko-t pools from sql.telemetry.mozilla.org for the past 30d",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does the FXCI worker-pool queue-time look like for gecko-t/win11-64-25h2 over the last week? Use the saved query in sql.telemetry.mozilla.org.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to make a chart for an internal review showing Apple Silicon adoption over time. Pull whatever Redash has on Darwin version distribution and dump as CSV.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Show me the macOS adoption curve over the last 6 months from Redash \u2014 looking at darwin_version specifically",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is gecko-t/win11-64-25h2 backed up right now? Pending count is 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare failing task fuCPrKG2T62-4YH1tWYa7Q to a passing one \u2014 is it an image regression?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean metric for browser startup time \u2014 I don't know the right probe name yet.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 checking for ERROR lines.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "Use this skill to query Mozilla Redash (sql.telemetry.mozilla.org) \u2014 the preferred tool any time the user mentions Redash, sql.telemetry, a numeric query ID (e.g. \"query 65967\", \"query 114866\"), the Redash API, or a \"saved query.\" Also use it for Firefox telemetry questions about OS version distribution (macOS, Windows), CPU architecture (x86_64, aarch64, Apple Silicon, ARM64), DAU/MAU/WAU, client counts, user-population share, or FXCI worker-pool queue times. Use it when the user wants results in CSV/JSON to share, paste into a doc, save to ~/moz_artifacts, or wire into a dashboard tile. Prefer this over the bigquery skill whenever there is any Redash signal \u2014 both hit BigQuery underneath, but Redash is the right entry point here. Skip only when the user explicitly demands raw `bq` CLI work with no Redash, query-ID, or saved-query reference.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Pull the Taskcluster queue-time data for gecko-t pools from sql.telemetry.mozilla.org for the past 30d",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does the FXCI worker-pool queue-time look like for gecko-t/win11-64-25h2 over the last week? Use the saved query in sql.telemetry.mozilla.org.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to make a chart for an internal review showing Apple Silicon adoption over time. Pull whatever Redash has on Darwin version distribution and dump as CSV.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Show me the macOS adoption curve over the last 6 months from Redash \u2014 looking at darwin_version specifically",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is gecko-t/win11-64-25h2 backed up right now? Pending count is 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare failing task fuCPrKG2T62-4YH1tWYa7Q to a passing one \u2014 is it an image regression?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean metric for browser startup time \u2014 I don't know the right probe name yet.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 checking for ERROR lines.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "TRIGGER on: \"Redash\", \"sql.telemetry.mozilla.org\", numeric query IDs (e.g. \"query 65967\", \"query 114866\"), \"saved query\", \"Redash API\", or requests to set up a dashboard tile. Also trigger on Firefox telemetry breakdowns by macOS or Windows version, CPU architecture (x86_64, aarch64, Apple Silicon, ARM64), DAU/MAU/WAU, client counts, user-population share, or FXCI worker-pool queue times \u2014 these map to known saved queries. Use this skill when the user wants results in CSV/JSON to share, paste, save under ~/moz_artifacts, or visualize. This is the right tool whenever a Redash signal is present, even though both Redash and the bigquery skill ultimately read from BigQuery. Do NOT trigger when the user explicitly asks for raw `bq` CLI work and gives no Redash, query-ID, sql.telemetry, or saved-query hint.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Pull the Taskcluster queue-time data for gecko-t pools from sql.telemetry.mozilla.org for the past 30d",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does the FXCI worker-pool queue-time look like for gecko-t/win11-64-25h2 over the last week? Use the saved query in sql.telemetry.mozilla.org.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to make a chart for an internal review showing Apple Silicon adoption over time. Pull whatever Redash has on Darwin version distribution and dump as CSV.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Show me the macOS adoption curve over the last 6 months from Redash \u2014 looking at darwin_version specifically",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is gecko-t/win11-64-25h2 backed up right now? Pending count is 1500.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare failing task fuCPrKG2T62-4YH1tWYa7Q to a passing one \u2014 is it an image regression?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean metric for browser startup time \u2014 I don't know the right probe name yet.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f for the last hour \u2014 checking for ERROR lines.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Get me the macOS arch x version distribution from sql.telemetry.mozilla.org and format as CSV so I can paste it into a doc.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I want to set up a dashboard tile showing weekly DAU on Windows 11 \u2014 start by pulling the SQL from query 65967.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Hey what's the share of users on x86_64 vs aarch64 macOS Firefox right now? Want a saved query I can share with the team.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use the Redash API to grab cached results from query 114866 and dump JSON to ~/moz_artifacts/dau.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you check Redash for the macOS DAU breakdown for the last 7 days? Want to see how many clients are on macOS 26.x vs older.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run query 65967 and tell me the top 5 Windows builds by client count this week.",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a custom BigQuery against firefox_desktop.events_stream \u2014 pull events.name = 'browser.engagement.tab_open' for the last 3 days into JSON.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Show me bug suggestions for treeherder job 553921053, repo=try",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha \u2014 non-trusted workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use bq to dry-run this SELECT and check bytes scanned: SELECT count(*) FROM `moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily` WHERE submission_date = '2026-04-15'",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "What's the Windows 11 25H2 build for ntdll.dll in KB5070881? Need the exact file_version.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "List FXCI Azure costs for the last month broken down by resource group, including spot vs on-demand split.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}
