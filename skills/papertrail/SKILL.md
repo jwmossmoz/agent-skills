@@ -13,6 +13,14 @@ description: |
 
 Query and download logs from SolarWinds Observability (formerly Papertrail) using `paperctl` v2.0.
 
+> **Scope vs. [`tc-logview`](https://github.com/taskcluster/tc-logview)**: Papertrail holds
+> in-VM logs forwarded from the worker host (what the worker process and OS reported).
+> `tc-logview` holds Taskcluster's worker-manager and worker-scanner service events in GCP
+> Cloud Logging (provisioning decisions, lifecycle, scan health, Azure-side errors as the
+> service observed them). When a worker never started, never claimed, or vanished mid-task,
+> reach for `tc-logview` first; reach for `paperctl` when the worker came up and you need the
+> on-host story. See the `/taskcluster` skill's `references/tc-logview.md` for the full guide.
+
 ## Prerequisites
 
 Requires `SWO_API_TOKEN` environment variable or `~/.config/paperctl/config.toml`.

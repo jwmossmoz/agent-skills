@@ -124,6 +124,29 @@ uv run "$WII" workers gecko-t/win11-64-24h2
 uv run "$WII" vm-info vm-xyz RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION
 ```
 
+### Worker Manager Service Logs (provisioning + lifecycle)
+
+When a failure looks like it happened *before* the task ever claimed (no worker, claim
+timeout, mysterious termination), check what Taskcluster's worker-manager and worker-scanner
+saw with [`tc-logview`](https://github.com/taskcluster/tc-logview):
+
+```bash
+# Lifecycle for the pool over a window
+tc-logview query -e fx-ci --type worker-removed \
+  --where 'workerPoolId="gecko-t/win11-64-24h2"' --since 24h --json
+
+# Trace one VM end-to-end across worker-manager events
+tc-logview query -e fx-ci --service worker-manager --since 2h \
+  --filter '"vm-abc123"' --raw
+
+# Hunt Azure-side errors (preemption, quota, capacity)
+tc-logview query -e fx-ci --service worker-manager --since 2h \
+  --filter '"OperationPreempted"' --json
+```
+
+Install: `go install github.com/taskcluster/tc-logview@latest`. See the `/taskcluster` skill's
+`references/tc-logview.md` for the full guide.
+
 ### 7. Direct Azure VM Commands
 
 For deeper investigation, use Azure CLI directly:
@@ -240,9 +263,11 @@ curl -sL <SBOM_URL> | iconv -f UTF-16LE -t UTF-8
 
 ## Related Skills
 
-- **taskcluster**: Query task status, logs, artifacts
+- **taskcluster**: Query task status, logs, artifacts; worker-manager service logs via `tc-logview`
 - **treeherder**: Find tasks by revision and job type
 - **os-integrations**: Run mach try commands for testing
+- **papertrail**: Worker-side logs forwarded from Azure (in-VM events)
+- **splunk**: Azure VM lifecycle for ephemeral workers
 
 ## References
 
