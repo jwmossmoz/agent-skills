@@ -45,23 +45,24 @@ uv run "$WII" sbom gecko-t/win11-64-24h2
 
 # Get Windows build and GenericWorker version from Azure VM
 uv run "$WII" vm-info <VM_NAME> <RESOURCE_GROUP>
+
+# Batch compare all failed tasks in a task group
+uv run "$WII" batch-compare U0vOaaW-T-i5nN79edugYA
+
+# Filter to specific alpha pool
+uv run "$WII" batch-compare U0vOaaW-T-i5nN79edugYA \
+  --alpha-pool gecko-t/win11-64-24h2-alpha
+
+# Find tasks that likely failed due to image changes
+uv run "$WII" find-image-regressions U0vOaaW-T-i5nN79edugYA
+
+# Generate sheriff-friendly markdown report
+uv run "$WII" sheriff-report <TASK_ID>
 ```
 
 ## Batch Analysis (Sheriff Workflow)
 
-When investigating image upgrades, analyze all failures at once:
-
-```bash
-# Batch compare all failed tasks in a task group
-uv run investigate.py batch-compare U0vOaaW-T-i5nN79edugYA
-
-# Filter to specific alpha pool
-uv run investigate.py batch-compare U0vOaaW-T-i5nN79edugYA \
-  --alpha-pool gecko-t/win11-64-24h2-alpha
-
-# Find tasks that likely failed due to image changes
-uv run investigate.py find-image-regressions U0vOaaW-T-i5nN79edugYA
-```
+When investigating image upgrades, analyze all failures at once.
 
 ### Image Regression Detection
 
@@ -93,6 +94,46 @@ The `find-image-regressions` command identifies failures that are likely caused 
   ]
 }
 ```
+
+## Sheriff Report
+
+Generate a markdown summary suitable for sharing with sheriffs:
+
+```bash
+uv run investigate.py sheriff-report Xcac5C8gRqiOT13YsVRX8A
+```
+
+### Example Output
+
+```markdown
+## Sheriff Triage Summary
+
+**Task**: `Xcac5C8gRqiOT13YsVRX8A`
+**Test**: `mochitest-chrome-1proc`
+**Status**: failed
+
+### Worker Pool Comparison
+
+| Property | Value |
+|----------|-------|
+| **Failing Pool** | `gecko-t/win11-64-24h2-alpha` |
+| **Failing Image Version** | 1.0.9 |
+| **Production Pool** | `gecko-t/win11-64-24h2` |
+| **Production Image Version** | 1.0.8 |
+| **Version Differs** | Yes |
+
+### Verdict: **IMAGE REGRESSION**
+
+Image version differs between alpha and production pools
+```
+
+### Verdicts
+
+| Verdict | Meaning |
+|---------|---------|
+| **IMAGE REGRESSION** | Alpha has different image version than production |
+| **NEEDS INVESTIGATION** | Same image version - could be code or intermittent |
+| **PRODUCTION FAILURE** | Failure on production pool - likely code issue |
 
 ## Investigation Workflow
 
