@@ -14,6 +14,7 @@ ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.codex/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.codex/skills/os-integrations
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.codex/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.codex/skills/taskcluster
+ln -s "$AGENT_SKILLS_ROOT/skills/skill-checker" ~/.codex/skills/skill-checker
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.codex/skills/writing-skills
 ```
 

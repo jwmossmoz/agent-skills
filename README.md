@@ -43,6 +43,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 ### Meta
 
+- **skill-checker** — Validate Agent Skills with waza, skill-validator, and skill-check
 - **writing-skills** — House style for authoring and maintaining the skills in this repo
 
 For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`, `redash` vs `bigquery`, `splunk` vs `papertrail` vs `tc-logview`, `worker-image-build` vs `worker-image-investigation`), see each skill's description and `## Related Skills` section.
