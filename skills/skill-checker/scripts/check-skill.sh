@@ -117,7 +117,7 @@ waza_summary() {
   local compliance tokens advisory_fail
   compliance=$(grep -E "Compliance Score:" "$WAZA_OUT" | head -1 | sed -E 's/.*Compliance Score:[[:space:]]*([A-Za-z]+).*/\1/')
   tokens=$(grep -E "Token Budget:" "$WAZA_OUT" | head -1 | sed -E 's/.*Token Budget:[[:space:]]*([0-9]+)[[:space:]]*\/[[:space:]]*([0-9]+).*/\1\/\2/')
-  advisory_fail=$(grep -cE "^[[:space:]]+❌[[:space:]]+\[" "$WAZA_OUT" 2>/dev/null || echo 0)
+  advisory_fail=$(grep -cE "^[[:space:]]+❌[[:space:]]+\[" "$WAZA_OUT" 2>/dev/null || true)
   echo "compliance=${compliance:-?} tokens=${tokens:-?} advisory_fails=${advisory_fail:-0}"
 }
 
