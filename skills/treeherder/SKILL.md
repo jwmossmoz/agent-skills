@@ -1,7 +1,7 @@
 ---
 name: treeherder
 description: >
-  Query Firefox Treeherder for CI job results using Mozilla's official treeherder-client library.
+  Use when querying Firefox Treeherder for CI job results using Mozilla's official treeherder-client library.
   Use after commits land to check test/build results.
   Triggers on "treeherder", "job results", "check tests", "ci status".
 ---

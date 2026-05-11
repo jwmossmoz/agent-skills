@@ -91,3 +91,4 @@ uv run bz.py create-image-regression \
 
 - [examples.md](references/examples.md) - Workflow examples and user request mappings
 - [api-reference.md](references/api-reference.md) - REST API endpoints and fields
+- Implementation: [scripts/bz.py](scripts/bz.py), [scripts/pyproject.toml](scripts/pyproject.toml), [scripts/.gitignore](scripts/.gitignore)
