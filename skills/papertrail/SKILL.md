@@ -1,17 +1,26 @@
 ---
 name: papertrail
-description: |
-  Query and download logs from SolarWinds Observability (formerly Papertrail) using the paperctl CLI. Use when:
-  (1) Downloading logs from Taskcluster workers or other systems
-  (2) Searching for specific log entries across systems
-  (3) Investigating CI failures by pulling worker logs
-  (4) Listing available entities (hosts) in SolarWinds Observability
-  Triggers: "papertrail", "pull logs", "worker logs", "download logs", "search logs"
+description: >
+  Query and download in-VM Taskcluster worker logs from SolarWinds
+  Observability (formerly Papertrail) using paperctl v2.0. Use when
+  investigating what a worker process or its OS reported on-host. DO NOT
+  USE FOR provisioning failures where no worker started (use tc-logview)
+  or Azure-side VM lifecycle events (use splunk).
+metadata:
+  version: "1.0"
 ---
 
 # SolarWinds Observability Logs (paperctl)
 
 Query and download logs from SolarWinds Observability (formerly Papertrail) using `paperctl` v2.0.
+
+> **Scope vs. [`tc-logview`](https://github.com/taskcluster/tc-logview)**: Papertrail holds
+> in-VM logs forwarded from the worker host (what the worker process and OS reported).
+> `tc-logview` holds Taskcluster's worker-manager and worker-scanner service events in GCP
+> Cloud Logging (provisioning decisions, lifecycle, scan health, Azure-side errors as the
+> service observed them). When a worker never started, never claimed, or vanished mid-task,
+> reach for `tc-logview` first; reach for `paperctl` when the worker came up and you need the
+> on-host story. See the `/taskcluster` skill's `references/tc-logview.md` for the full guide.
 
 ## Prerequisites
 
@@ -176,3 +185,10 @@ v2.0 switched from Papertrail API to SolarWinds Observability API:
 | `paperctl archives list` | Removed (not in SWO API) |
 | `--group` option on search | Removed |
 | System IDs (integers) | Entity IDs (strings) |
+
+## Gotchas
+
+- SWO search has no regex or wildcards — just text + boolean operators (`AND` / `OR` / `NOT`). Quote exact phrases.
+- v2.0 uses `SWO_API_TOKEN`, not the v1.x `PAPERTRAIL_API_TOKEN`. Old configs will silently fail auth.
+- Partial worker IDs match — `paperctl pull vm-abc123def` will find `vm-abc123def.reddog.microsoft.com`. Don't bother resolving the full hostname.
+- If the worker never came up, papertrail has nothing — switch to `tc-logview` for the worker-manager view, then to `splunk` for Azure-side events.

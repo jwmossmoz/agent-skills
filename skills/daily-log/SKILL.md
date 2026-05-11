@@ -1,11 +1,12 @@
 ---
 name: daily-log
 description: >
-  Generate a daily work log by scanning Claude Code and Codex session JSONL
-  files directly. Compile session summaries into a markdown file at
-  ~/moz_artifacts/daily-log-YYYY-MM-DD.md. Use when the user says: "daily log",
-  "end of day log", "what did I do today", "daily summary", "work log",
-  "summarize my sessions", or asks to review their day's work.
+  Generate a daily work log by scanning Claude Code (~/.claude/projects/)
+  and Codex (~/.codex/sessions/) session JSONL files and compiling them
+  into ~/moz_artifacts/daily-log-YYYY-MM-DD.md. Use when summarizing a
+  day's sessions or reviewing what the user worked on.
+metadata:
+  version: "1.0"
 ---
 
 # Daily Log
@@ -95,3 +96,10 @@ is cheap even when run at the end of every log generation.
 - Sessions under 3 user turns can be summarized in one line
 - If a session was interrupted before meaningful work, note it briefly
 - Combine related sessions (same bug/task across multiple sessions) in the summary
+
+## Gotchas
+
+- Subagent JSONL files (paths containing `/subagents/`) are noise. Skip them — only top-level sessions are worth summarizing.
+- Codex filenames already encode local time; Claude Code session files don't, so use file mtime for ordering Claude sessions.
+- For very large sessions (thousands of lines), read the first 200 + last 100. The first messages give the topic; the last give the outcome. Reading the whole file blows context for no benefit.
+- Always run `qmd update && qmd embed` after writing the log so the new file is searchable; both are incremental and cheap.

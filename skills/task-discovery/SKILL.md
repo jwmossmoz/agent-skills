@@ -1,10 +1,12 @@
 ---
 name: task-discovery
 description: >
-  Discover Firefox CI tasks by worker pool. Query the Taskcluster task graph to find
-  tasks assigned to specific worker types. Use when planning worker pool migrations,
-  crafting mach try pushes, or auditing which tasks run on a pool. Triggers on
-  "discover tasks", "find tasks", "worker pool tasks", "task discovery", "which tasks run on".
+  Query the Taskcluster task graph to list tasks assigned to specific
+  worker types — for worker-pool migrations, audits of which tasks run
+  on a pool, or building targeted `mach try fuzzy` queries. DO NOT USE
+  FOR live task status, retriggers, or task logs (use taskcluster).
+metadata:
+  version: "1.0"
 ---
 
 # Task Discovery
@@ -15,7 +17,7 @@ migrations (e.g., `win11-64-24h2` → `win11-64-25h2`) and crafting precise `mac
 ## Usage
 
 ```bash
-uv run ~/github_moz/agent-skills/skills/task-discovery/scripts/discover.py [options]
+uv run ~/.claude/skills/task-discovery/scripts/discover.py [options]
 ```
 
 ## Output Formats
@@ -76,3 +78,10 @@ mach try fuzzy $(uv run discover.py -w win11-64-24h2-hw -k browsertime -o query)
 | `-k, --kind` | all | Filter to specific kind(s), repeatable |
 | `--timeout` | `120` | HTTP timeout in seconds |
 | `--list-worker-types` | — | List all unique worker types (no `-w` needed) |
+
+## Gotchas
+
+- Default branch is `mozilla-central`. For migration planning, pass `--branch autoland` — autoland is the integration branch upstream of central and reflects newer task graphs first.
+- `-w` is substring match by default. `win11-64-24h2` will pull in `-gpu`, `-hw`, and `-source` variants. Use `--exact` or `--regex` when you don't want them.
+- The decision task graph can be 30+ MB; the 120s timeout default is fine on home internet but can stall on bad links — bump with `--timeout`.
+- `query` output is designed for `mach try fuzzy $(...)` — paste it through xargs/$() rather than copying labels by hand.

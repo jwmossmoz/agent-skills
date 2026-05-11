@@ -1,12 +1,13 @@
 ---
 name: bigquery
 description: >
-  Query Mozilla telemetry data directly from BigQuery using the bq CLI.
-  Use when the user wants to run SQL against Firefox telemetry, analyze Windows version
-  distribution, count DAU/MAU/WAU, query Glean metrics, or investigate user populations.
-  Triggers on "bigquery", "bq", "telemetry query", "DAU", "MAU", "Windows distribution",
-  "macOS distribution", "Darwin version", "Linux distribution", "kernel version",
-  "client count", "user count", "Glean metrics query", "baseline_clients".
+  Run ad-hoc SQL against Mozilla telemetry tables using the bq CLI. Use when
+  the task needs raw BigQuery access — dry-run cost checks, custom SQL,
+  pulling DAU/MAU/Windows-distribution/Glean-metric data into a script. DO
+  NOT USE FOR saved/shared queries with visualizations (use redash) or
+  finding which probe to query (use mozdata:probe-discovery).
+metadata:
+  version: "1.0"
 ---
 
 # BigQuery
@@ -75,6 +76,14 @@ All tables are in the `moz-fx-data-shared-prod` project. Fully qualify as `` `mo
 - **Never join across products by client_id** — each product has its own namespace
 - **Use `events_stream` for events** — never raw `events_v1` (requires UNNEST)
 - **Use `baseline_clients_last_seen` for MAU** — bit patterns, scan 1 day not 28
+
+## Gotchas
+
+- "Access Denied" almost always means the billing project lacks `bigquery.jobs.create`. Switch with `gcloud config set project mozdata` or pass `--project_id=mozdata` per-query.
+- `bq` defaults to legacy SQL. Always pass `--use_legacy_sql=false` — leaving it off silently changes the dialect mid-script.
+- Aggregate tables are 10-100× cheaper than raw. Never query `events_v1` directly; use `events_stream`. Never join across products by `client_id` — each product has its own namespace.
+- For MAU/WAU, use `baseline_clients_last_seen` bit patterns (1-day scan), not 28 days of `baseline_clients_daily` aggregates.
+- `client_id` is not a person. Say "clients" in user-facing text, not "users".
 
 ## References
 

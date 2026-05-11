@@ -1,0 +1,22 @@
+[
+  {"query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName", "should_trigger": true},
+  {"query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days — I want a timeline.", "should_trigger": true},
+  {"query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data — earliest=-7d.", "should_trigger": true},
+  {"query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.", "should_trigger": true},
+  {"query": "I see a spot eviction signature in tc-logview — confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.", "should_trigger": true},
+  {"query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday — by operationName.", "should_trigger": true},
+  {"query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.", "should_trigger": true},
+  {"query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet — pull the full timeline for that VM from -2d to now.", "should_trigger": true},
+  {"query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.", "should_trigger": true},
+  {"query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday — only resultType=Failure", "should_trigger": true},
+  {"query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f — I need the on-host events and the bootstrap script output.", "should_trigger": false},
+  {"query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f — the Taskcluster service view.", "should_trigger": false},
+  {"query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` — was it caused by the image bump?", "should_trigger": false},
+  {"query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.", "should_trigger": false},
+  {"query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.", "should_trigger": false},
+  {"query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` — including the live log.", "should_trigger": false},
+  {"query": "Run a BigQuery query to count Azure costs by RG yesterday — sum cost_usd from billing tables.", "should_trigger": false},
+  {"query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.", "should_trigger": false},
+  {"query": "Get the file_version of ntdll.dll in build 26100.6584 — Windows 11 24H2.", "should_trigger": false},
+  {"query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.", "should_trigger": false}
+]

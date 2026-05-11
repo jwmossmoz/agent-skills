@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "Query Mozilla Splunk Cloud for Azure activity logs (VM lifecycle, NIC/disk writes, deletes, OSProvisioningTimedOut) on Taskcluster worker pools \u2014 driving Splunk Web through `browser-harness` against an authenticated Chrome tab because the REST API is disabled at Mozilla. Use for VM-side provisioning failures and worker lifespan on `index=azure_audit`. DO NOT USE FOR in-VM logs (use papertrail) or worker-manager service decisions (use tc-logview).",
+  "best_description": "Query Mozilla Splunk Cloud for Azure activity logs (VM lifecycle, NIC/disk writes, deletes, OSProvisioningTimedOut) on Taskcluster worker pools \u2014 driving Splunk Web through `browser-harness` against an authenticated Chrome tab because the REST API is disabled at Mozilla. Use for VM-side provisioning failures and worker lifespan on `index=azure_audit`. DO NOT USE FOR in-VM logs (use papertrail) or worker-manager service decisions (use tc-logview).",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "Use this skill whenever the user wants to run a Splunk search, query Mozilla's Splunk Cloud, or look at Azure activity logs for Taskcluster worker VMs. This is THE skill for anything touching `index=azure_audit`, SPL, `tstats`, or the Azure-side view of worker VM lifecycle (creates, deletes, writes, NIC/disk operations, failures).\n\nTrigger on: any mention of Splunk or SPL; queries scoped to a worker resource group like `RG-TC-GECKO-T-*` or `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`; any `vm-...` ID timeline in Azure; Azure outcomes such as `OSProvisioningTimedOut`, `Failed.OperationPreempted`, spot evictions, spot pricing changes, or filters on `operationName`/`resultType`/`resultSignature`; corroborating an Azure-side action after a hint from tc-logview, papertrail, Treeherder, or a bug.\n\nSkip for: in-VM Windows logs (papertrail), worker-manager decisions (tc-logview), task logs/artifacts (taskcluster skill), or BigQuery cost queries.",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "Query Mozilla Splunk Cloud for Azure activity logs (VM lifecycle, NIC/disk writes, deletes, OSProvisioningTimedOut) on Taskcluster worker pools \u2014 driving Splunk Web through `browser-harness` against an authenticated Chrome tab because the REST API is disabled at Mozilla. Use for VM-side provisioning failures and worker lifespan on `index=azure_audit`. DO NOT USE FOR in-VM logs (use papertrail) or worker-manager service decisions (use tc-logview).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet \u2014 pull the full timeline for that VM from -2d to now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data \u2014 earliest=-7d.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` \u2014 including the live log.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` \u2014 was it caused by the image bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use this skill whenever the user wants to query Splunk, run an SPL search, or pull Azure activity log events for Mozilla Taskcluster worker VMs. Triggers on mentions of \"Splunk\", \"SPL\", \"tstats\", `index=azure_audit`, \"azure activity log\", \"azure audit\", or any request to look up VM lifecycle events (creates, deletes, writes, failures) for a worker pool, resource group (e.g. `RG-TC-GECKO-T-WIN11-64-25H2`, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`), or specific VM ID (`vm-...`). Use it to investigate VM-side provisioning failures (`OSProvisioningTimedOut`, `Failed.OperationPreempted`, spot evictions, spot pricing), build VM timelines, confirm what Azure did to a worker, or filter by `operationName`/`resultType`/`resultSignature`. Do NOT use for in-VM Windows logs (use papertrail), worker-manager provisioning decisions (use tc-logview), Taskcluster task logs/artifacts (use taskcluster), or BigQuery cost data.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet \u2014 pull the full timeline for that VM from -2d to now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data \u2014 earliest=-7d.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` \u2014 including the live log.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` \u2014 was it caused by the image bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use this skill to query Splunk \u2014 specifically Mozilla's Splunk Cloud Azure activity log index (`index=azure_audit`) \u2014 for VM lifecycle events on Taskcluster worker pools. Trigger on any mention of Splunk, SPL, `tstats`, `azure_audit`, \"azure activity log\", or \"azure audit\". Also trigger when the user wants to look up Azure-side VM creates/deletes/writes/failures, build a VM timeline, investigate spot evictions, spot pricing, `OSProvisioningTimedOut`, `Failed.OperationPreempted`, or other `resultType`/`resultSignature` outcomes for a worker pool, resource group (e.g. `RG-TC-GECKO-T-...`, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`), or a specific `vm-...` ID. Also trigger when a user wants to confirm in Splunk what Azure did to a worker after seeing a signal in tc-logview, papertrail, or Treeherder. Do NOT use for in-VM Windows logs (papertrail), worker-manager provisioning decisions (tc-logview), Taskcluster task logs/artifacts (taskcluster skill), or BigQuery cost queries.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet \u2014 pull the full timeline for that VM from -2d to now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data \u2014 earliest=-7d.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` \u2014 including the live log.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` \u2014 was it caused by the image bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "Use for any Splunk query against Mozilla's Splunk Cloud, especially the `index=azure_audit` Azure activity log covering Taskcluster worker VM lifecycle. Triggers: \"Splunk\", \"SPL\", \"tstats\", \"azure_audit\", \"azure activity log\", \"azure audit\", searches scoped to a worker resource group (`RG-TC-GECKO-T-*`, `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`) or a `vm-...` ID, and Azure-side outcomes like `OSProvisioningTimedOut`, `Failed.OperationPreempted`, spot evictions, spot pricing changes, VM creates/deletes/writes/failures, `operationName`/`resultType`/`resultSignature` filters, or building a VM timeline. Also triggers when the user wants Splunk to confirm what Azure did to a worker after a hint from tc-logview, papertrail, Treeherder, or a bug report. Do NOT use for in-VM Windows logs (papertrail), worker-manager provisioning decisions (tc-logview), Taskcluster task logs/artifacts (taskcluster skill), or BigQuery cost queries.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet \u2014 pull the full timeline for that VM from -2d to now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data \u2014 earliest=-7d.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` \u2014 including the live log.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` \u2014 was it caused by the image bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "Use this skill whenever the user wants to run a Splunk search, query Mozilla's Splunk Cloud, or look at Azure activity logs for Taskcluster worker VMs. This is THE skill for anything touching `index=azure_audit`, SPL, `tstats`, or the Azure-side view of worker VM lifecycle (creates, deletes, writes, NIC/disk operations, failures).\n\nTrigger on: any mention of Splunk or SPL; queries scoped to a worker resource group like `RG-TC-GECKO-T-*` or `RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION`; any `vm-...` ID timeline in Azure; Azure outcomes such as `OSProvisioningTimedOut`, `Failed.OperationPreempted`, spot evictions, spot pricing changes, or filters on `operationName`/`resultType`/`resultSignature`; corroborating an Azure-side action after a hint from tc-logview, papertrail, Treeherder, or a bug.\n\nSkip for: in-VM Windows logs (papertrail), worker-manager decisions (tc-logview), task logs/artifacts (taskcluster skill), or BigQuery cost queries.",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Splunk job failed with `Failed.OSProvisioningTimedOut` on vm-cykzet \u2014 pull the full timeline for that VM from -2d to now.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Splunk: stats count by operationName resultType resultSignature for the win11-25h2 RG yesterday.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "How long are workers in win11-64-25h2 surviving on average? Use Splunk for VM lifecycle data \u2014 earliest=-7d.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use browser-harness to query Splunk for NIC writes on RG-TC-GECKO-T-WIN11-64-25H2 in the last hour.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why is the queue backed up for win11-25h2? Pending tasks 1500, queue-time climbing.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get task status from Taskcluster for `bjUM4ECETnioVcU9KH5_qg` \u2014 including the live log.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate this failing task: `bjUM4ECETnioVcU9KH5_qg` \u2014 was it caused by the image bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Trigger a worker image build for win11-64-24h2-alpha via the FXCI Azure workflow.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Look in azure_audit for VM creates and deletes in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION yesterday \u2014 by operationName.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What does Splunk show for spot pricing changes on the win11-25h2-gpu pool over the last 24h? Use tstats for speed.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find Azure activity log entries for resource group `RG-TC-GECKO-T-WIN11-64-25H2` yesterday \u2014 only resultType=Failure",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull all Azure activity events from Splunk for VM-A2NWLRI4Q3MTZETCJNFAQAGK2HWSTSQGNO1 over the last 2 days \u2014 I want a timeline.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Search index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 between 2026-04-16 00:50 and 01:30, stats by operationName",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I see a spot eviction signature in tc-logview \u2014 confirm with Splunk that Azure did the delete with resultSignature=Failed.OperationPreempted.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use tc-logview to find worker-manager events on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 the Taskcluster service view.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Get the file_version of ntdll.dll in build 26100.6584 \u2014 Windows 11 24H2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for OSProvisioningTimedOut crashes filed in the last week.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f \u2014 I need the on-host events and the bootstrap script output.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Run a BigQuery query to count Azure costs by RG yesterday \u2014 sum cost_usd from billing tables.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Analyze the Treeherder pass/fail history for job 553921053 on try repo, similar-count 200.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

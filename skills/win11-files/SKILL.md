@@ -1,14 +1,13 @@
 ---
 name: win11-files
 description: >
-  Query Windows 11 cumulative update file information for 24H2 and 25H2. Search
-  for DLLs, drivers, and system files across all patch levels. Compare file
-  versions between builds, track version history, and identify what changed in
-  each update. Use when: (1) investigating which Windows build introduced a file
-  version, (2) comparing file changes between patches, (3) finding DLL/driver
-  versions for specific builds, (4) debugging Windows update regressions,
-  (5) user asks about Windows 11 24H2 or 25H2 files, KB updates, or build
-  versions.
+  Query a local SQLite database of Windows 11 24H2 and 25H2 cumulative-
+  update file information — DLLs, drivers, and system files across all
+  KB releases. Use when investigating which build introduced a file
+  version, comparing files between patches, tracking a file's version
+  history, or debugging Windows update regressions in CI worker images.
+metadata:
+  version: "1.0"
 ---
 
 # Windows 11 Files
@@ -170,3 +169,10 @@ Compare a file across Windows versions (requires combined database):
 ```bash
 uv run ~/.claude/skills/win11-files/scripts/query.py sql "SELECT version, build, file_version FROM files WHERE file_name='ntdll.dll' ORDER BY version, build"
 ```
+
+## Gotchas
+
+- Two databases coexist: `win11_files.db` (combined, has `version` column) and the legacy `win11_24h2_files.db` (no `version`). Scripts pick the combined DB when present; `--version` filters become no-ops on the legacy DB.
+- 25H2 file versions often look like 24H2 (`10.0.26100.x`) because Microsoft ships shared binaries — only the build differs (`26100.x` vs `26200.x`). Don't read identical file versions as "no change".
+- Some out-of-band KBs (e.g. KB5070881, KB5072359, KB5086672) don't publish file-info CSVs and are skipped during ingest with a warning. Check `references/` or the run logs if a KB is missing.
+- `update_db.py` is incremental — re-run it weekly (or after a Patch Tuesday) to pick up new releases. The fetch is cached per-KB so it's cheap.

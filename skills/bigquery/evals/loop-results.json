@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "Run ad-hoc SQL against Mozilla telemetry tables using the bq CLI. Use when the task needs raw BigQuery access \u2014 dry-run cost checks, custom SQL, pulling DAU/MAU/Windows-distribution/Glean-metric data into a script. DO NOT USE FOR saved/shared queries with visualizations (use redash) or finding which probe to query (use mozdata:probe-discovery).",
+  "best_description": "Run ad-hoc SQL against Mozilla telemetry tables using the bq CLI. Use when the task needs raw BigQuery access \u2014 dry-run cost checks, custom SQL, pulling DAU/MAU/Windows-distribution/Glean-metric data into a script. DO NOT USE FOR saved/shared queries with visualizations (use redash) or finding which probe to query (use mozdata:probe-discovery).",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "Run BigQuery SQL against Mozilla telemetry from the terminal. Use whenever the user wants query results \u2014 running a SELECT, doing a dry-run for scan cost, counting clients/DAU/MAU, pulling OS/Windows/macOS/Linux version distributions, extracting Glean metrics, or deciding which telemetry table to actually query for a count. Triggers on `bq`, `mozdata`, `moz-fx-data-shared-prod`, `firefox_desktop.*`, `baseline_clients_daily`, `baseline_clients_last_seen`, `active_users_aggregates_v3`, `events_stream`, partition filters, `sample_id`, or any pasted SQL the user expects executed. Also fires for \"should I use table X or Y?\" and cross-namespace join questions when execution is implied. Skip for saved/visualized/shared queries (use `redash`) or finding a probe with no execution intent (use `mozdata:probe-discovery`).",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "Run ad-hoc SQL against Mozilla telemetry tables using the bq CLI. Use when the task needs raw BigQuery access \u2014 dry-run cost checks, custom SQL, pulling DAU/MAU/Windows-distribution/Glean-metric data into a script. DO NOT USE FOR saved/shared queries with visualizations (use redash) or finding which probe to query (use mozdata:probe-discovery).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week \u2014 pretty format.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q \u2014 image regression after the win11-25h2 bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on win11-64-25h2 \u2014 I need to know for the migration off 24h2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare Windows 11 file versions between KB5070881 and KB5072359 \u2014 looking at ntdll.dll and tcpip.sys.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Execute SQL against Mozilla telemetry from the command line via the `bq` CLI \u2014 actually running the query, not just writing one. Triggers when the user wants results in the terminal: dry-runs to estimate scan cost, ad-hoc counts of clients/DAU/MAU, OS or Windows/macOS/Linux version distributions, Glean metric pulls, joins across telemetry tables, sample_id checks, partition-filter cost optimization, or piping query output into a script. Mentions of \"bq\", \"BigQuery CLI\", \"run this query\", \"dry-run\", `moz-fx-data-shared-prod`, `baseline_clients_daily`, `events_stream`, or `active_users_aggregates_v3` are strong signals. Skip for: saved/shared queries with charts (use redash), finding which probe to instrument or query (use mozdata:probe-discovery), or pure query-authoring guidance without execution (use mozdata:query-writing).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week \u2014 pretty format.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q \u2014 image regression after the win11-25h2 bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on win11-64-25h2 \u2014 I need to know for the migration off 24h2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare Windows 11 file versions between KB5070881 and KB5072359 \u2014 looking at ntdll.dll and tcpip.sys.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use to execute BigQuery SQL against Mozilla telemetry from the terminal via the `bq` CLI. This is the right skill whenever the user wants query results in the shell, not a web chart \u2014 running SELECTs, dry-runs to estimate scan bytes, counting clients/DAU/MAU, pulling OS or Windows/macOS/Linux version breakdowns, Glean metric extracts, joining telemetry tables, sample_id sanity checks, or piping output into a script. Strong signals: \"bq\", \"use bq\", \"run this query\", \"dry-run\", \"mozdata\", \"shared-prod\", `baseline_clients_daily`, `active_users_aggregates_v3`, `events_stream`, or any pasted SQL the user wants executed. Also fires when the user asks which Mozilla telemetry table is cheapest/right for a count and expects you to actually run it. Skip when: results need to be saved/visualized/shared (use redash), the user only wants to find a probe (use mozdata:probe-discovery), or the user wants query authoring help with no execution intent (use mozdata:query-writing).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week \u2014 pretty format.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q \u2014 image regression after the win11-25h2 bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare Windows 11 file versions between KB5070881 and KB5072359 \u2014 looking at ntdll.dll and tcpip.sys.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on win11-64-25h2 \u2014 I need to know for the migration off 24h2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "BigQuery SQL execution via the `bq` CLI. ACTUAL execution \u2014 running, dry-running, counting, pulling rows \u2014 not just authoring or charting. ALWAYS USE WHEN: user types \"bq\", \"use bq\", \"run this\", \"run this query\", \"dry-run\"; pastes a SELECT against `mozdata`/`moz-fx-data-shared-prod`/`firefox_desktop.*`/`telemetry.*`; asks for terminal-output counts of clients/DAU/MAU; pulls OS or Windows/macOS/Linux/Darwin/kernel version distributions; mentions partition filter, `sample_id`, `baseline_clients_daily`, `baseline_clients_last_seen`, `active_users_aggregates_v3`, `events_stream`, or Glean metric extracts; asks which Mozilla telemetry table is cheapest/right for a count; or wants joins across telemetry namespaces actually run. Beats `mozdata:query-writing` whenever the user expects a real result back \u2014 including \"should I use table X or Y?\" framings. Skip only when the user wants saved/visualized/shared queries (use `redash`), or just needs to find a probe with no execution intent (use `mozdata:probe-discovery`).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week \u2014 pretty format.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q \u2014 image regression after the win11-25h2 bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on win11-64-25h2 \u2014 I need to know for the migration off 24h2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare Windows 11 file versions between KB5070881 and KB5072359 \u2014 looking at ntdll.dll and tcpip.sys.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "Run BigQuery SQL against Mozilla telemetry from the terminal. Use whenever the user wants query results \u2014 running a SELECT, doing a dry-run for scan cost, counting clients/DAU/MAU, pulling OS/Windows/macOS/Linux version distributions, extracting Glean metrics, or deciding which telemetry table to actually query for a count. Triggers on `bq`, `mozdata`, `moz-fx-data-shared-prod`, `firefox_desktop.*`, `baseline_clients_daily`, `baseline_clients_last_seen`, `active_users_aggregates_v3`, `events_stream`, partition filters, `sample_id`, or any pasted SQL the user expects executed. Also fires for \"should I use table X or Y?\" and cross-namespace join questions when execution is implied. Skip for saved/visualized/shared queries (use `redash`) or finding a probe with no execution intent (use `mozdata:probe-discovery`).",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "Custom BigQuery: clients_last_seen MAU broken down by os_version_major for Firefox Desktop, last 28 days.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "BigQuery is giving me 'Access Denied'. I'm authed as jmoss@mozilla.com. What's the issue and how do I fix it?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Pull events_stream rows for `browser.engagement.tab_open` over the last 3 days into a JSON file at ~/moz_artifacts/tab_open.json",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Write a query against firefox_desktop_derived.active_users_aggregates_v3 for DAU by country for last week \u2014 pretty format.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run a search in Splunk for VM provisioning failures yesterday on win11-64-25h2 RG.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Investigate failing task fuCPrKG2T62-4YH1tWYa7Q \u2014 image regression after the win11-25h2 bump?",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Which tasks run on win11-64-25h2 \u2014 I need to know for the migration off 24h2.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Compare Windows 11 file versions between KB5070881 and KB5072359 \u2014 looking at ntdll.dll and tcpip.sys.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "Use bq to grab the top 10 macOS versions by client count \u2014 make sure to include the partition filter and use sample_id = 0.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "What's the cheapest way to count DAU yesterday \u2014 should I use baseline_clients_daily or active_users_aggregates_v3? Use bq.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "I need to write SQL that joins desktop and mobile telemetry \u2014 but they're separate namespaces, right? Show me the right approach.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Run this against mozdata: `SELECT os, COUNT(DISTINCT client_id) FROM firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15' GROUP BY os` \u2014 output as a table.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Can you do a dry-run on this and tell me how many bytes it'll scan? `SELECT * FROM moz-fx-data-shared-prod.firefox_desktop.baseline_clients_daily WHERE submission_date = '2026-04-15'`",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Use bq to count clients on Windows 11 versions yesterday \u2014 sample_id 0 is fine for a quick estimate.",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "Find the Glean probe that measures memory usage on Firefox Desktop \u2014 don't know the metric name.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Why does the Airflow DAG `bqetl_events_stream` keep failing? Check the logs.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Search Bugzilla for crash bugs filed in the last week \u2014 need to triage them this morning.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Generate a daily log of my Claude Code and Codex sessions today.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Pull this saved Redash query and chart it \u2014 query ID is 65967, and I want to share the result in an email.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "Spin up a debug VM matching the win11-64-24h2 worker config \u2014 I need the same vmSize as production workers use.",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

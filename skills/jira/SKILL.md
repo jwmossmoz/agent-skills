@@ -1,6 +1,13 @@
 ---
 name: jira
-description: Extract, create, and modify JIRA stories from Mozilla JIRA (mozilla-hub.atlassian.net). Use when the user asks to create JIRA stories, update JIRA issues, search for stories, list epics, add comments, or work with sprints. Supports Markdown formatting in descriptions and comments.
+description: >
+  Search, create, modify, comment, link, or transition issues in Mozilla
+  JIRA (mozilla-hub.atlassian.net) via the extract_jira.py script. Markdown
+  → ADF conversion is built in. Prefer this skill over the Atlassian MCP
+  for JIRA work — it handles RELOPS defaults, sprint queries, comment
+  edit/append, and bulk modify with dry-run.
+metadata:
+  version: "1.0"
 ---
 
 # JIRA
@@ -69,6 +76,13 @@ uv run ~/.claude/skills/jira/scripts/extract_jira.py --create \
 ```
 
 Use `/humanizer` to remove AI writing patterns from story descriptions before submitting.
+
+## Gotchas
+
+- Use Markdown, not Jira wiki markup (`*bold*`, `[text|url]`, `h2.`). The script converts Markdown to ADF; wiki markup renders as raw text.
+- Run `/humanizer` on the description before `--create` — JIRA stories surface to other humans, and AI tells.
+- `JIRA_API_TOKEN` is account-scoped. `JIRA_EMAIL` must match the token owner; mismatched email gives an opaque 401.
+- Default project is RELOPS via this skill. Pass `--jql "project = X AND ..."` to query other projects.
 
 ## Resources
 

@@ -1,0 +1,22 @@
+[
+  {"query": "Investigate task `bjUM4ECETnioVcU9KH5_qg` — looks like a permafail after the win11-25h2 image bump landed last week.", "should_trigger": true},
+  {"query": "Compare passing task `XYZ_PASS_123` and failing task `bjUM4ECETnioVcU9KH5_qg` for image version differences.", "should_trigger": true},
+  {"query": "Find a passing task on mozilla-central for the same job_type as failing autoland task `bjUM4ECETnioVcU9KH5_qg`, then diff their imageVersions.", "should_trigger": true},
+  {"query": "Spin up a throwaway debug VM matching gecko-t/win11-64-25h2 — pull the vmSize from the worker pool config, name dbg-1a2b3c.", "should_trigger": true},
+  {"query": "Run `Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10` on vm-xyz in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION.", "should_trigger": true},
+  {"query": "Pull SBOM info for gecko-t/win11-64-24h2 — I think the markdown artifact is UTF-16LE encoded.", "should_trigger": true},
+  {"query": "Did the win11-64-25h2 image get bumped on April 16? Compare passing vs failing tasks around then to find the cliff.", "should_trigger": true},
+  {"query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.", "should_trigger": true},
+  {"query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.", "should_trigger": true},
+  {"query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION — Windows build and GenericWorker version.", "should_trigger": true},
+  {"query": "Build a worker image — config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.", "should_trigger": false},
+  {"query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.", "should_trigger": false},
+  {"query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail — I want the on-host bootstrap output.", "should_trigger": false},
+  {"query": "Why is the gecko-t/win11-64-25h2 queue backed up? Pending tasks 1500.", "should_trigger": false},
+  {"query": "What tasks run on the gecko-t/win11-64-24h2 pool? Need the full label list for migration planning.", "should_trigger": false},
+  {"query": "Look up Windows 11 25H2 file versions for ntdll.dll across builds — which KB introduced 10.0.26100.4945?", "should_trigger": false},
+  {"query": "Trigger a worker image build for trusted-win11-a64-24h2-builder via the FXCI Azure - Trusted workflow.", "should_trigger": false},
+  {"query": "Search Splunk index=azure_audit for OSProvisioningTimedOut on RG-TC-GECKO-T-WIN11-64-25H2 yesterday.", "should_trigger": false},
+  {"query": "List FXCI Azure costs for the win11-64-25h2 pool last week, broken down by spot vs on-demand.", "should_trigger": false},
+  {"query": "Generate a daily log of my Claude Code sessions today and save to ~/moz_artifacts/.", "should_trigger": false}
+]
