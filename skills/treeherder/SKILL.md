@@ -2,11 +2,10 @@
 name: treeherder
 description: >
   Query Mozilla Treeherder for CI job results, failure analysis, test
-  history, similar-job comparison, and bug suggestions via treeherder-cli
-  plus the Treeherder REST API for endpoints the CLI doesn't cover (push
-  listing, failures-by-bug, error-line bug suggestions, perf alerts).
-  Use after pushes land or to investigate intermittents and pass/fail
-  cliffs across branches.
+  history, similar-job comparison, cross-branch sheriff triage, and bug
+  suggestions via treeherder-cli plus the Treeherder REST API for endpoints
+  the CLI doesn't cover. Use after pushes land or to investigate
+  intermittents and pass/fail cliffs across branches.
 metadata:
   version: "1.0"
 ---
@@ -78,6 +77,22 @@ treeherder-cli a13b9fc22101 --repo try --json
 | Performance alert summaries | REST API | `GET /api/performance/alertsummary/` |
 | List repositories | REST API | `GET /api/repository/` |
 
+## Cross-Branch Failure Search
+
+Use cross-branch checks to decide whether a failure is likely a code regression, image regression, or known intermittent:
+
+1. Resolve the failing task to a Treeherder job ID if needed.
+2. Run `treeherder-cli --similar-history <JOB_ID> --repo autoland --json`.
+3. Repeat for `mozilla-central` or other relevant repositories.
+4. Compare whether the same test is failing on production branches, alpha/staging pools only, or historically intermittent.
+
+| Scenario | Likely cause |
+|----------|--------------|
+| Same test fails on autoland/mozilla-central | Code regression |
+| Test only fails on alpha/staging pools | Image regression |
+| Failures are classified intermittent | Known intermittent |
+| No similar failures found | New issue; investigate further |
+
 ## Bug Suggestions for Failing Jobs
 
 `treeherder-cli` does not bulk-query known intermittent bugs for failing jobs. Use the Treeherder REST API directly to check whether test failures have associated Bugzilla bugs.
@@ -104,7 +119,7 @@ Returns an array of failure lines with matched Bugzilla bugs:
       "open_recent": [
         {"id": 1940606, "status": "REOPENED", "summary": "Intermittent test.js | ...", "keywords": ["intermittent-failure"]}
       ],
-      "all_others": [...]
+      "all_others": []
     },
     "failure_new_in_rev": false
   }
@@ -114,9 +129,10 @@ Returns an array of failure lines with matched Bugzilla bugs:
 ### Example Script
 
 ```python
-import urllib.request, json
+import json
+import urllib.request
 
-headers = {'User-Agent': 'Mozilla/5.0'}
+headers = {"User-Agent": "Mozilla/5.0"}
 repo = "try"
 job_id = 553921053
 
@@ -125,41 +141,22 @@ req = urllib.request.Request(url, headers=headers)
 with urllib.request.urlopen(req) as resp:
     suggestions = json.loads(resp.read())
 
-for s in suggestions:
-    test = s.get('path_end', '')
-    open_bugs = s['bugs'].get('open_recent', [])
-    all_other = s['bugs'].get('all_others', [])
-    if open_bugs or all_other:
-        print(f"{test}: known bugs")
-        for b in open_bugs + all_other:
-            print(f"  Bug {b['id']} [{b['status']}] {b['summary'][:100]}")
-    else:
-        print(f"{test}: NO known bugs")
+for suggestion in suggestions:
+    test = suggestion.get("path_end", "")
+    bugs = suggestion["bugs"].get("open_recent", []) + suggestion["bugs"].get("all_others", [])
+    print(f"{test}: {'known bugs' if bugs else 'NO known bugs'}")
 ```
 
 ### Bulk Query Pattern
 
-When checking many failing jobs (e.g., validating a new worker image), combine with `treeherder-cli --json` output:
+When checking many failing jobs (for example, validating a new worker image), combine with `treeherder-cli --json` output:
 
 ```bash
-# 1. Get failing jobs as JSON
 treeherder-cli REVISION --repo try --platform "25h2" --json > failures.json
-
-# 2. Extract job IDs and query bug_suggestions for each
 python3 bulk_bug_check.py failures.json
 ```
 
 Deduplicate by `job_type_name` to avoid querying the same test suite multiple times across retries. A `User-Agent` header is required for all API requests.
-
-### Key Fields
-
-| Field | Description |
-|-------|-------------|
-| `path_end` | Test file path (use as the test identifier) |
-| `bugs.open_recent` | Open bugs with recent activity (most relevant) |
-| `bugs.all_others` | Older or resolved bugs |
-| `failure_new_in_rev` | Whether this failure first appeared in this revision |
-| `keywords` | Look for `intermittent-failure` to confirm known intermittents |
 
 ## Prerequisites
 
@@ -177,10 +174,10 @@ No authentication required.
 ## Gotchas
 
 - The Treeherder REST API requires a `User-Agent` header. Bare `urllib`/`curl` calls without one get rate-limited or 403'd.
-- `treeherder-cli` accepts revision SHAs, but `--similar-history` takes a Treeherder *job* ID (numeric), not a Taskcluster task ID. Resolve task → job ID via `/api/project/{repo}/jobs/?task_id=...`.
+- `treeherder-cli` accepts revision SHAs, but `--similar-history` takes a Treeherder *job* ID (numeric), not a Taskcluster task ID. Resolve task to job ID via `/api/project/{repo}/jobs/?task_id=...`.
 - Default repo is `autoland`. Pass `--repo try` (or `mozilla-central`, `mozilla-beta`) when looking elsewhere.
 - For batch bug-suggestion checks across many failing jobs, dedupe by `job_type_name` to avoid hammering the API on retries.
-- Treeherder's `failure_new_in_rev` field tells you whether a failure first appeared in this revision — useful for distinguishing regressions from intermittents that landed earlier.
+- Treeherder's `failure_new_in_rev` field tells you whether a failure first appeared in this revision, which is useful for distinguishing regressions from intermittents that landed earlier.
 
 ## External Documentation
 
