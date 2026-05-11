@@ -373,4 +373,6 @@ curl -sL <SBOM_URL> | iconv -f UTF-16LE -t UTF-8
 - SBOM files: Check Azure Shared Image Gallery
 - ronin_puppet: Worker configuration management
 - Azure command examples: [references/azure-commands.md](references/azure-commands.md)
-- Implementation: [scripts/investigate.py](scripts/investigate.py), [scripts/pyproject.toml](scripts/pyproject.toml), [scripts/.python-version](scripts/.python-version), [scripts/.gitignore](scripts/.gitignore)
+- Trigger eval data: [references/trigger-evals.json](references/trigger-evals.json)
+- Loop eval results: [references/loop-results.md](references/loop-results.md)
+- Implementation: [scripts/investigate.py](scripts/investigate.py)

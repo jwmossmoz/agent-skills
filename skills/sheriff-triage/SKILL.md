@@ -97,6 +97,6 @@ and no similar failures found on production branches.
 ## References
 
 - Implementation: [scripts/triage.py](scripts/triage.py)
-- Mozilla Sheriffing Wiki: https://wiki.mozilla.org/Sheriffing
-- Job Visibility Policy: https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy
-- Test Disabling Policy: https://wiki.mozilla.org/Sheriffing/Test_Disabling_Policy
+- Mozilla Sheriffing Wiki on wiki.mozilla.org
+- Job Visibility Policy on wiki.mozilla.org
+- Test Disabling Policy on wiki.mozilla.org

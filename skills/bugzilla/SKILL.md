@@ -1,7 +1,7 @@
 ---
 name: bugzilla
 description: >
-  Search, view, create, update, comment on, or attach files to Mozilla
+  Use when searching, viewing, creating, updating, commenting on, or attaching files to Mozilla
   Bugzilla (bugzilla.mozilla.org) tickets via the bz.py CLI. Use whenever
   the task involves a Bugzilla bug — filing a regression, triaging a crash,
   needinfo'ing a reviewer, or following up on assigned bugs.
@@ -111,4 +111,4 @@ uv run bz.py create-image-regression \
 
 - [examples.md](references/examples.md) - Workflow examples and user request mappings
 - [api-reference.md](references/api-reference.md) - REST API endpoints and fields
-- Implementation: [scripts/bz.py](scripts/bz.py), [scripts/pyproject.toml](scripts/pyproject.toml), [scripts/.gitignore](scripts/.gitignore)
+- Implementation: [scripts/bz.py](scripts/bz.py)
