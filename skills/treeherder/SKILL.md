@@ -1,11 +1,10 @@
 ---
 name: treeherder
 description: >
-  Query Mozilla Treeherder for CI job results, failure analysis, test
-  history, similar-job comparison, cross-branch sheriff triage, and bug
-  suggestions via treeherder-cli plus the Treeherder REST API for endpoints
-  the CLI doesn't cover. Use after pushes land or to investigate
-  intermittents and pass/fail cliffs across branches.
+  Use when querying Mozilla Treeherder for CI job results, failure analysis,
+  test history, similar-job comparison, cross-branch sheriff triage, job
+  classification, and bug suggestions via treeherder-cli plus the Treeherder
+  REST API for endpoints the CLI doesn't cover.
 metadata:
   version: "1.0"
 ---
@@ -71,6 +70,7 @@ treeherder-cli a13b9fc22101 --repo try --json
 | Download artifacts | treeherder-cli | `treeherder-cli abc123 --download-artifacts` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
 | Performance/resource data | treeherder-cli | `treeherder-cli abc123 --perf --json` |
+| Job classification lookup | `scripts/classification.py` | `uv run scripts/classification.py get --task-id TASK_ID` |
 | List recent pushes | REST API | `GET /api/project/{repo}/push/?count=10` |
 | Failures by bug ID | REST API | `GET /api/failuresbybug/?bug=2012615` |
 | Error lines + bug suggestions | REST API | `GET /api/project/{repo}/jobs/{id}/bug_suggestions/` |
@@ -92,6 +92,38 @@ Use cross-branch checks to decide whether a failure is likely a code regression,
 | Test only fails on alpha/staging pools | Image regression |
 | Failures are classified intermittent | Known intermittent |
 | No similar failures found | New issue; investigate further |
+
+## Job Classification API
+
+Query how sheriffs have classified job failures:
+
+```bash
+# Get classification by Taskcluster task ID
+uv run scripts/classification.py get --task-id fuCPrKG2T62-4YH1tWYa7Q
+
+# Include sheriff notes/comments
+uv run scripts/classification.py get --task-id fuCPrKG2T62-4YH1tWYa7Q --include-notes
+
+# Classification summary for all failures in a push
+uv run scripts/classification.py summary --revision abc123 --repo autoland
+
+# JSON output
+uv run scripts/classification.py get --task-id abc123 --json
+```
+
+Classification IDs:
+
+| ID | Classification | Meaning |
+|----|----------------|---------|
+| 1 | not classified | No sheriff has reviewed this yet |
+| 2 | fixed by commit | A subsequent commit fixed the issue |
+| 3 | expected fail | Known expected failure |
+| 4 | intermittent | Known flaky failure |
+| 5 | infra | Infrastructure issue |
+| 6 | intermittent needs filing | Intermittent without a bug |
+| 7 | autoclassified intermittent | Automatically classified flaky failure |
+
+For image investigation, `intermittent` means likely not an image change, `infra` can be image-related, and `not classified` needs investigation.
 
 ## Bug Suggestions for Failing Jobs
 
@@ -170,6 +202,7 @@ No authentication required.
 - `references/sheriff-workflows.md` - Sheriff workflow examples
 - `references/api-reference.md` - REST API documentation
 - `references/similar-jobs-comparison.md` - Compare failed jobs using Treeherder's `similar_jobs` API
+- `scripts/classification.py` - Classification lookup helper
 
 ## Gotchas
 
