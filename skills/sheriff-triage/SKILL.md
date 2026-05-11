@@ -1,7 +1,7 @@
 ---
 name: sheriff-triage
 description: >
-  Comprehensive failure triage tool for sheriffs and image maintainers.
+  Use when performing comprehensive failure triage for sheriffs and image maintainers.
   Automatically determines if a failure is caused by code changes, image changes,
   or is a known intermittent. Combines data from Taskcluster, Treeherder, and
   worker image analysis. Triggers on "triage", "sheriff", "why did this fail",
@@ -96,6 +96,7 @@ and no similar failures found on production branches.
 
 ## References
 
+- Implementation: [scripts/triage.py](scripts/triage.py)
 - Mozilla Sheriffing Wiki: https://wiki.mozilla.org/Sheriffing
 - Job Visibility Policy: https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy
 - Test Disabling Policy: https://wiki.mozilla.org/Sheriffing/Test_Disabling_Policy
