@@ -191,3 +191,5 @@ uv run investigate.py workers gecko-t/win11-64-24h2 | jq '.workers[0].workerId'
 - Worker image configs: `fxci-config/worker-images/`
 - SBOM files: Check Azure Shared Image Gallery
 - ronin_puppet: Worker configuration management
+- Azure command examples: [references/azure-commands.md](references/azure-commands.md)
+- Implementation: [scripts/investigate.py](scripts/investigate.py), [scripts/pyproject.toml](scripts/pyproject.toml), [scripts/.python-version](scripts/.python-version), [scripts/.gitignore](scripts/.gitignore)
