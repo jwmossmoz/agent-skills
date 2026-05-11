@@ -8,16 +8,16 @@ Requires a Firefox checkout (shallow sparse clone is fine) with at minimum:
     for skip-if parsing
 
 Usage:
-    python refresh.py <path-to-firefox-checkout>
+    python3 refresh.py <path-to-firefox-checkout>
 
 Example:
-    python refresh.py /path/to/firefox
+    python3 refresh.py /path/to/firefox
 
 The script will:
   1. Parse tier assignments (handle_tier + kind YAMLs + variants)
   2. Parse skip-if annotations from .toml test manifests
   3. Cross-reference tiers with skips
-  4. Write updated JSON snapshots to the data/ directory
+  4. Write updated JSON snapshots to the assets/ directory
 """
 
 import re
@@ -28,7 +28,7 @@ from collections import defaultdict
 from pathlib import Path
 from datetime import datetime, timezone
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent / "assets"
 
 
 def parse_tier1_platforms_from_source(tc_dir):
