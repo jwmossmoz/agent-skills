@@ -14,6 +14,7 @@ This repository provides modular skills that enable AI agents to interact with M
 - **os-integrations** - Run Firefox mach try with alpha worker pool overrides
 - **jira** - Create and modify Mozilla JIRA stories
 - **taskcluster** - Query Taskcluster task status, logs, artifacts, and task groups
+- **skill-checker** - Validate Agent Skills with waza, skill-validator, and skill-check
 - **writing-skills** - Write and maintain Agent Skills with best practices
 
 ## Subagents
@@ -52,6 +53,7 @@ ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
+ln -s "$AGENT_SKILLS_ROOT/skills/skill-checker" ~/.claude/skills/skill-checker
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills
 
 ln -s "$AGENT_SKILLS_ROOT/agents/coder.md" ~/.claude/agents/coder.md

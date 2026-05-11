@@ -12,6 +12,7 @@ ln -s "$AGENT_SKILLS_ROOT/skills/treeherder" ~/.claude/skills/treeherder
 ln -s "$AGENT_SKILLS_ROOT/skills/os-integrations" ~/.claude/skills/os-integrations
 ln -s "$AGENT_SKILLS_ROOT/skills/jira" ~/.claude/skills/jira
 ln -s "$AGENT_SKILLS_ROOT/skills/taskcluster" ~/.claude/skills/taskcluster
+ln -s "$AGENT_SKILLS_ROOT/skills/skill-checker" ~/.claude/skills/skill-checker
 ln -s "$AGENT_SKILLS_ROOT/skills/writing-skills" ~/.claude/skills/writing-skills
 
 ln -s "$AGENT_SKILLS_ROOT/agents/coder.md" ~/.claude/agents/coder.md
