@@ -1,0 +1,55 @@
+{
+  "skill_name": "worker-ready-tracing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Trace how long vm-abc123 took from worker-manager provisioning to generic-worker workerReady, including Azure VM write events.",
+      "should_trigger": true
+    },
+    {
+      "id": 2,
+      "prompt": "How much time are our Windows workers spending in maintain_system and Puppet before generic-worker is ready?",
+      "should_trigger": true
+    },
+    {
+      "id": 3,
+      "prompt": "Compare a win11-64-25h2 VM startup trace against Yardstick worker-manager registration metrics.",
+      "should_trigger": true
+    },
+    {
+      "id": 4,
+      "prompt": "Show me reboot-to-workerReady cycles for this Taskcluster Windows worker.",
+      "should_trigger": true
+    },
+    {
+      "id": 5,
+      "prompt": "Why is generic-worker claiming tasks two minutes after instanceBoot on this Azure VM?",
+      "should_trigger": true
+    },
+    {
+      "id": 6,
+      "prompt": "Find in-VM logs for vm-abc123 around a task crash.",
+      "should_trigger": false
+    },
+    {
+      "id": 7,
+      "prompt": "Investigate whether a Firefox test failure is caused by a bad worker image.",
+      "should_trigger": false
+    },
+    {
+      "id": 8,
+      "prompt": "Query Azure audit logs for OSProvisioningTimedOut failures across a resource group.",
+      "should_trigger": false
+    },
+    {
+      "id": 9,
+      "prompt": "Find which Firefox CI tasks run on gecko-t/win11-64-25h2.",
+      "should_trigger": false
+    },
+    {
+      "id": 10,
+      "prompt": "Rerun a failed Taskcluster task and fetch its artifacts.",
+      "should_trigger": false
+    }
+  ]
+}

@@ -25,6 +25,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 - **papertrail** — In-VM worker logs from SolarWinds Observability via paperctl
 - **splunk** — Azure activity logs (`index=azure_audit`) via browser-harness against Splunk Web
+- **worker-ready-tracing** — End-to-end Azure VM request, in-VM boot scripts, and generic-worker ready timing
 
 ### Issue tracking
 
