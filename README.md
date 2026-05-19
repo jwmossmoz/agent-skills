@@ -41,6 +41,7 @@ This repository provides modular skills that enable AI agents to interact with M
 ### Productivity
 
 - **daily-log** — Compile a daily work log from Claude Code and Codex session JSONL files
+- **one-on-one** — Build topic-organized, linked 1:1/status bullets from `~/moz_artifacts` and copy them as rich text
 
 ### Meta
 
