@@ -1,0 +1,25 @@
+{
+  "skill_name": "one-on-one",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Pull my last week's daily logs from ~/moz_artifacts and put manager-friendly one-on-one bullets on the clipboard.",
+      "should_trigger": true
+    },
+    {
+      "id": 2,
+      "prompt": "Make a linked 1:1 summary for May 13 through May 19 from my moz_artifacts notes, organized by topic for Google Docs.",
+      "should_trigger": true
+    },
+    {
+      "id": 3,
+      "prompt": "Check why gecko-t/win11-64-25h2 has pending tasks right now.",
+      "should_trigger": false
+    },
+    {
+      "id": 4,
+      "prompt": "Generate today's daily log from my Claude and Codex sessions.",
+      "should_trigger": false
+    }
+  ]
+}
