@@ -7,7 +7,7 @@ description: >
   USE FOR provisioning failures where no worker started (use tc-logview)
   or Azure-side VM lifecycle events (use splunk).
 metadata:
-  version: "1.0"
+  version: "1.1"
 ---
 
 # SolarWinds Observability Logs (paperctl)
@@ -173,6 +173,22 @@ paperctl search "error" --since -1h --file errors.txt
 paperctl pull vm-abc123 --since "2026-01-29T10:00:00" --until "2026-01-29T11:00:00" --output incident.txt
 ```
 
+### Investigate docker-worker task startup failures
+
+When a task was claimed but did not produce a durable task log, pull the
+worker host logs around the run's `started` and `resolved` timestamps:
+
+```bash
+paperctl pull infra-build-decision-abc123 --since "2026-05-20T15:30:00Z" --until "2026-05-20T16:00:00Z" --output worker.log
+rg 'TASK_ID|error starting container|HTTP code 431|task resolved|worker-shutdown|reclaiming task' worker.log
+```
+
+Use the Queue API or Taskcluster UI to confirm the exact `workerGroup`,
+`workerId`, `runId`, `started`, `resolved`, and `reasonResolved`. If the
+original run has no explicit startup error, check retries and sibling tasks
+from the same incident; docker-worker errors can be visible on one worker
+but absent on the worker that later resolves as `worker-shutdown`.
+
 ## Migration from v1.x
 
 v2.0 switched from Papertrail API to SolarWinds Observability API:
@@ -192,3 +208,7 @@ v2.0 switched from Papertrail API to SolarWinds Observability API:
 - v2.0 uses `SWO_API_TOKEN`, not the v1.x `PAPERTRAIL_API_TOKEN`. Old configs will silently fail auth.
 - Partial worker IDs match — `paperctl pull vm-abc123def` will find `vm-abc123def.reddog.microsoft.com`. Don't bother resolving the full hostname.
 - If the worker never came up, papertrail has nothing — switch to `tc-logview` for the worker-manager view, then to `splunk` for Azure-side events.
+- Papertrail lines may show both an ingestion/display timestamp and the worker process timestamp. For docker-worker investigations, prefer the embedded worker timestamp (`2026/05/20 15:32:43`) when ordering events.
+- `Version: Taskcluster proxy ...` means the taskcluster-proxy sidecar started. It does not prove the main task container started or ran user code.
+- Docker startup errors such as `error starting container` or `HTTP code 431` are worker host logs. They may not survive in `public/logs/live.log`, especially when the Taskcluster artifact is a stale live-log reference to a gone worker host.
+- Absence of an error line on the original worker does not rule out a bad-task incident. Compare retries and nearby tasks on the same pool when the run resolves as `worker-shutdown` or the worker stops reclaiming cleanly.
