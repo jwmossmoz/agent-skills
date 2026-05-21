@@ -44,4 +44,4 @@ For production-ready substantive skills, expect hard validators to pass, accepte
 - `skill-validator` may warn that `evals/` is unknown. This repo intentionally keeps eval files there.
 - The checker reports missing or weak eval evidence, but it never spawns runs, grades assertions, aggregates benchmarks, or launches the viewer.
 
-Detailed interpretation notes and validator-finding → spec-rule mapping live in [references/usage.md](references/usage.md). Implementation is [scripts/check-skill.sh](scripts/check-skill.sh).
+Detailed interpretation notes and validator-finding → spec-rule mapping live in [references/usage.md](references/usage.md). Read [references/waza.md](references/waza.md) for waza-specific workflows and `WAZA-AUDIT.md` guidance. Implementation is [scripts/check-skill.sh](scripts/check-skill.sh).
