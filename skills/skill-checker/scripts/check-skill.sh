@@ -20,11 +20,13 @@ Validators:
   waza             Compliance score, token budget, advisory checks.
   skill-validator  File structure, link integrity, density, contamination.
   skill-check      0-100 quality score plus security scan.
+  eval-evidence    Local inventory of eval files and benchmark artifacts.
+                   Advisory only; this script does not run evals.
 
 Per-validator reports are saved to: ${SKILL_CHECKER_OUT:-/tmp/skill-checker}/<slug>/
 
 Exit codes:
-  0  All validators pass.
+  0  All hard validators pass.
   1  At least one validator reports an error or failure.
   2  Usage error or missing SKILL.md.
 EOF
@@ -102,6 +104,7 @@ SR_OUT="$WORK/skills-ref.txt"
 WAZA_OUT="$WORK/waza.txt"
 SV_OUT="$WORK/skill-validator.txt"
 SC_OUT="$WORK/skill-check.txt"
+EV_OUT="$WORK/eval-evidence.txt"
 
 SR_STATUS="skipped"
 WAZA_STATUS="skipped"
@@ -166,11 +169,21 @@ waza_summary() {
 # skill-validator: scan for "Result: passed/failed"
 sv_summary() {
   [[ "$SV_STATUS" == "skipped" ]] && { echo "skipped (install go and rerun)"; return; }
-  local result tokens contamination
-  result=$(grep -E "^Result:" "$SV_OUT" | head -1 | awk '{print $2}')
+  local result tokens contamination result_line warnings
+  result_line=$(grep -E "^Result:" "$SV_OUT" | head -1)
+  if [[ "$result_line" == *failed* ]]; then
+    result=failed
+  elif [[ "$result_line" == *passed* ]]; then
+    result=passed
+  elif [[ "$result_line" == *warning* ]]; then
+    result=warning
+  else
+    result=?
+  fi
+  warnings=$(printf '%s' "$result_line" | grep -oE "[0-9]+ warning" | awk '{print $1}' || true)
   tokens=$(grep -E "SKILL.md body:" "$SV_OUT" | head -1 | grep -oE "[0-9,]+ tokens" | head -1 | awk '{print $1}')
   contamination=$(grep -E "Contamination level:" "$SV_OUT" | head -1 | awk '{print $3}')
-  echo "result=${result:-?} tokens=${tokens:-?} contamination=${contamination:-?}"
+  echo "result=${result:-?} tokens=${tokens:-?} contamination=${contamination:-?} warnings=${warnings:-0}"
 }
 
 # skill-check: extract score, errors, warnings
@@ -184,10 +197,103 @@ sc_summary() {
   echo "score=${score:-?} status=${status:-?} errors=${errors:-0} warnings=${warnings:-0}"
 }
 
+count_json_key() {
+  local file="$1"
+  local key="$2"
+  if [[ -f "$file" ]]; then
+    (grep -o "\"$key\"" "$file" || true) | wc -l | tr -d ' '
+  else
+    echo 0
+  fi
+}
+
+eval_summary() {
+  local evals_json trigger_json loop_json loop_md waza_yaml waza_yml workspace
+  local evals_count trigger_count benchmark_count loop_present waza_present coverage
+  local task_label trigger_label waza_label benchmark_label latest_benchmark
+
+  evals_json="$ABS_PATH/evals/evals.json"
+  trigger_json="$ABS_PATH/evals/trigger-evals.json"
+  loop_json="$ABS_PATH/evals/loop-results.json"
+  loop_md="$ABS_PATH/evals/loop-results.md"
+  waza_yaml="$ABS_PATH/eval.yaml"
+  waza_yml="$ABS_PATH/eval.yml"
+  workspace="$(dirname "$ABS_PATH")/${SLUG}-workspace"
+
+  evals_count=$(count_json_key "$evals_json" "prompt")
+  trigger_count=$(count_json_key "$trigger_json" "query")
+  benchmark_count=0
+  latest_benchmark=""
+  if [[ -d "$workspace" ]]; then
+    benchmark_count=$(find "$workspace" -path "*/iteration-*/benchmark.json" -type f 2>/dev/null | wc -l | tr -d ' ')
+    latest_benchmark=$(find "$workspace" -path "*/iteration-*/benchmark.json" -type f 2>/dev/null | sort | tail -1)
+  fi
+
+  loop_present=missing
+  [[ -f "$loop_json" || -f "$loop_md" ]] && loop_present=present
+
+  waza_present=missing
+  [[ -f "$waza_yaml" || -f "$waza_yml" ]] && waza_present=present
+
+  if [[ "$benchmark_count" -gt 0 ]]; then
+    coverage=benchmark
+  elif [[ "$trigger_count" -gt 0 && "$loop_present" == "present" ]]; then
+    coverage=trigger-loop
+  elif [[ "$evals_count" -gt 0 || "$trigger_count" -gt 0 || "$waza_present" == "present" ]]; then
+    coverage=basic
+  else
+    coverage=missing
+  fi
+
+  if [[ "$evals_count" -gt 0 ]]; then
+    task_label="present(${evals_count} prompts)"
+  else
+    task_label=missing
+  fi
+
+  if [[ "$trigger_count" -gt 0 && "$loop_present" == "present" ]]; then
+    trigger_label="present(${trigger_count} queries+results)"
+  elif [[ "$trigger_count" -gt 0 ]]; then
+    trigger_label="partial(${trigger_count} queries,no-results)"
+  elif [[ "$loop_present" == "present" ]]; then
+    trigger_label="partial(results,no-queries)"
+  else
+    trigger_label=missing
+  fi
+
+  waza_label="$waza_present"
+
+  if [[ "$benchmark_count" -gt 0 ]]; then
+    benchmark_label="present(${benchmark_count})"
+  else
+    benchmark_label=missing
+  fi
+
+  {
+    echo "Eval evidence inventory for: $ABS_PATH"
+    echo ""
+    echo "coverage: $coverage"
+    echo "task_evals: $task_label"
+    echo "trigger_loop: $trigger_label"
+    echo "waza_eval: $waza_label"
+    echo "anthropic_benchmark: $benchmark_label"
+    [[ -n "$latest_benchmark" ]] && echo "latest_benchmark: $latest_benchmark"
+    echo ""
+    echo "Expected artifact types:"
+    echo "- evals/evals.json: task or routing prompts used by skill-creator-style evals."
+    echo "- evals/trigger-evals.json plus loop-results.*: description-trigger optimization evidence."
+    echo "- eval.yaml or eval.yml: waza task-level eval suite."
+    echo "- ../${SLUG}-workspace/iteration-*/benchmark.json: with-skill vs baseline run evidence."
+  } > "$EV_OUT"
+
+  echo "coverage=$coverage task_evals=$task_label trigger_loop=$trigger_label waza_eval=$waza_label benchmark=$benchmark_label"
+}
+
 SR_LINE=$(sr_summary)
 WAZA_LINE=$(waza_summary)
 SV_LINE=$(sv_summary)
 SC_LINE=$(sc_summary)
+EV_LINE=$(eval_summary)
 
 # --- emit ------------------------------------------------------------------
 
@@ -198,7 +304,8 @@ if [[ "$FORMAT" == "--json" ]]; then
   printf '  "skills_ref":      { "status": "%s", "summary": "%s" },\n' "$SR_STATUS"   "$(esc "$SR_LINE")"
   printf '  "waza":            { "status": "%s", "summary": "%s" },\n' "$WAZA_STATUS" "$(esc "$WAZA_LINE")"
   printf '  "skill_validator": { "status": "%s", "summary": "%s" },\n' "$SV_STATUS"   "$(esc "$SV_LINE")"
-  printf '  "skill_check":     { "status": "%s", "summary": "%s" }\n'  "$SC_STATUS"   "$(esc "$SC_LINE")"
+  printf '  "skill_check":     { "status": "%s", "summary": "%s" },\n'  "$SC_STATUS"   "$(esc "$SC_LINE")"
+  printf '  "eval_evidence":   { "status": "advisory", "summary": "%s" }\n' "$(esc "$EV_LINE")"
   printf '}\n'
   exit 0
 fi
@@ -211,6 +318,7 @@ printf '  %-18s %s\n' "skills-ref:"      "$SR_LINE"
 printf '  %-18s %s\n' "waza:"            "$WAZA_LINE"
 printf '  %-18s %s\n' "skill-validator:" "$SV_LINE"
 printf '  %-18s %s\n' "skill-check:"     "$SC_LINE"
+printf '  %-18s %s\n' "eval-evidence:"   "$EV_LINE"
 echo "$sep"
 
 # Detail dump on demand
@@ -220,6 +328,7 @@ echo "Full reports saved under: $ARTIFACT_DIR"
 [[ "$WAZA_STATUS" == "ran" ]] && echo "  - $WAZA_OUT"
 [[ "$SV_STATUS"   == "ran" ]] && echo "  - $SV_OUT"
 [[ "$SC_STATUS"   == "ran" ]] && echo "  - $SC_OUT"
+echo "  - $EV_OUT"
 
 # Determine overall exit code
 fail=0

@@ -1,0 +1,65 @@
+{
+  "skill_name": "skill-checker",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check the skill at skills/taskcluster and tell me whether it is production-ready.",
+      "should_trigger": true
+    },
+    {
+      "id": 2,
+      "prompt": "Audit this SKILL.md against agentskills.io and our repo conventions, including whether it has eval evidence.",
+      "should_trigger": true
+    },
+    {
+      "id": 3,
+      "prompt": "Why is waza saying Low compliance for skills/redash? Summarize the overlapping validator findings.",
+      "should_trigger": true
+    },
+    {
+      "id": 4,
+      "prompt": "Grade my skill-checker skill and tell me what needs tightening before I ship it.",
+      "should_trigger": true
+    },
+    {
+      "id": 5,
+      "prompt": "Look at /tmp/skill-checker/splunk/*.txt and explain which findings are real fix candidates.",
+      "should_trigger": true
+    },
+    {
+      "id": 6,
+      "prompt": "Does skills/bugzilla have enough eval coverage, or is it just passing structural validators?",
+      "should_trigger": true
+    },
+    {
+      "id": 7,
+      "prompt": "Create a new skill for comparing Windows DLL versions across cumulative updates.",
+      "should_trigger": false
+    },
+    {
+      "id": 8,
+      "prompt": "Run the skill-creator eval loop for skills/one-on-one and launch the review viewer.",
+      "should_trigger": false
+    },
+    {
+      "id": 9,
+      "prompt": "Use Taskcluster to retrigger the failed jobs from this try push.",
+      "should_trigger": false
+    },
+    {
+      "id": 10,
+      "prompt": "Generate one-on-one bullets from last week's moz_artifacts daily logs.",
+      "should_trigger": false
+    },
+    {
+      "id": 11,
+      "prompt": "Run a BigQuery dry-run and tell me how many bytes this telemetry query will scan.",
+      "should_trigger": false
+    },
+    {
+      "id": 12,
+      "prompt": "Improve the wording of this skill based on feedback from the benchmark viewer.",
+      "should_trigger": false
+    }
+  ]
+}

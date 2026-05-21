@@ -1,55 +1,47 @@
 ---
 name: skill-checker
-description: "Use when validating, auditing, or grading an agent skill against the agentskills.io spec and best practices. Trigger on check this skill, validate my skill, audit SKILL.md, grade this skill, or paths containing SKILL.md."
+description: "Use when validating, auditing, grading, or checking an agent skill, SKILL.md, validator report, eval coverage, or production-readiness claim against agentskills.io and repo conventions. Checks spec, style, links, references, and eval evidence. DO NOT USE FOR creating or iterating skills; use skill-creator."
 ---
 
 # skill-checker
 
-Run four independent validators against a skill directory and summarize the results. Use agreement across validators as the strongest signal.
+Audit a skill directory with validators and eval-artifact inventory. Eval evidence is advisory; use `skill-creator` for the actual eval loop.
 
 ```bash
-scripts/check-skill.sh <skill-path>
-scripts/check-skill.sh <skill-path> --json
-scripts/check-skill.sh --help
+~/.claude/skills/skill-checker/scripts/check-skill.sh <skill-path> [--json]
 ```
 
 ## USE FOR:
 
-Skill validation, skill audits, quality reviews, readiness checks, and diagnosing checker output.
+Skill validation, quality audits, readiness checks, and diagnosing checker output.
 
 ## DO NOT USE FOR:
 
-Running a skill, writing a new skill from scratch, or general Markdown linting.
+Running evals, creating or iterating skills, or Markdown linting.
 
-## Validators
+## Checks
 
-- `skills-ref`: official reference validator from `agentskills/agentskills`. Hard spec rules — frontmatter, name format, description length.
-- `waza`: strict spec, token budget, and advisory checks.
-- `skill-validator`: file structure, links, references, density, and contamination.
-- `skill-check`: 0-100 quality score plus security scan.
+- `skills-ref`: hard spec.
+- `waza`: token budget/advisories.
+- `skill-validator`: structure, links, density, contamination.
+- `skill-check`: quality/security.
+- `eval-evidence`: detects `evals/evals.json`, trigger-loop files, `eval.yaml`, and sibling benchmark workspaces.
 
 Treat one complaint as a hint. Treat the same issue from two or more validators as a fix candidate.
 
-## Summary Fields
-
-- `result` (skills-ref): `passed` means frontmatter conforms to the spec; `failed` means a hard rule is violated.
-- `compliance`, `status`, `score`: top-level verdicts from waza / skill-validator / skill-check.
-- `tokens`: SKILL.md body size — spec recommends < 5000.
-- `advisory_fails`: failed waza advisory checks.
-- `contamination`: skill-validator cross-language assessment.
-
 ## Examples
 
-- "Check the skill at `~/.claude/skills/foo`": run the script, show the four summaries, then call out overlapping issues.
-- "Why is waza saying Low compliance?": inspect the saved `waza.txt` report for issue rows.
-- "Is this production-ready?": expect `skills-ref` passed, `skill-check` at least 90, `skill-validator` passed, and waza at Medium or better with no advisory failures.
+- "Check `skills/taskcluster`": run the script and summarize overlapping issues.
+- "Is this production-ready?": require validator health plus eval evidence.
 
-## Gotchas
+## Readiness
 
-- `skills-ref`, `waza`, `skill-validator`, and `skill-check` are all pulled from `@latest` on first install. Verdicts can drift between runs — distrust a single-validator regression unless `skills-ref` also flips.
-- `skills-ref` is fetched via `uvx` from the `agentskills/agentskills` git repo (subdirectory `skills-ref`). First run clones and builds; subsequent runs hit the uvx cache.
-- `skills-ref passed` and `skill-validator Result: passed` mean different things. `skills-ref` is hard spec rules (`name`, `description` length, parent-dir match). `skill-validator` is style and density. A skill can fail one and pass the other.
-- waza counts the YAML frontmatter against the SKILL.md token budget — large `compatibility` strings and `allowed-tools` lists chew into the < 5000 token recommendation.
-- The script removes stale `.skill-check.*.txt` files from the skill directory each run — older `skill-check` versions wrote artifacts in-place rather than to `/tmp`.
+For production-ready substantive skills, expect hard validators to pass, accepted warnings explained, waza Medium or better, and `evals/evals.json` plus trigger-loop results or benchmark evidence.
+
+## Troubleshooting / Gotchas
+
+- Validator versions drift; distrust a single-tool regression unless `skills-ref` also flips.
+- `skill-validator` may warn that `evals/` is unknown. This repo intentionally keeps eval files there.
+- The checker reports missing or weak eval evidence, but it never spawns runs, grades assertions, aggregates benchmarks, or launches the viewer.
 
 Detailed interpretation notes and validator-finding → spec-rule mapping live in [references/usage.md](references/usage.md). Implementation is [scripts/check-skill.sh](scripts/check-skill.sh).

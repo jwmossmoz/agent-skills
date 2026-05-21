@@ -13,8 +13,10 @@ Each complaint below is keyed back to the spec section it implements. When two v
 | `waza`: advisory `[gotchas]` or `[examples]` failure | Spec patterns: Gotchas sections, worked examples, validation loops are high-value. | [/skill-creation/best-practices](https://agentskills.io/skill-creation/best-practices) |
 | `waza`: advisory `[description-imperative]` | Descriptions should use imperative phrasing ("Use when …") and list explicit triggers. | [/skill-creation/optimizing-descriptions](https://agentskills.io/skill-creation/optimizing-descriptions) |
 | `skill-validator`: `Result: failed` with orphaned reference | Link `references/*.md` files from `SKILL.md` with Markdown links, not backtick-only paths. | [/specification#file-references](https://agentskills.io/specification#file-references) |
+| `skill-validator`: `unknown directory: evals/` | Repo-local convention: eval artifacts live under `evals/` even though it is not a standard skill resource directory. Treat as an accepted warning unless the host starts rejecting the skill. | repo `writing-skills` eval guidance |
 | `skill-validator`: `Contamination level: …` | Multiple competing tool interfaces in one skill. Sometimes a false positive when scripts intentionally mix. | [/skill-creation/best-practices#design-coherent-units](https://agentskills.io/skill-creation/best-practices#design-coherent-units) |
 | `skill-check`: errors > 0 | Mix of spec violations and npm-side security/style heuristics. Cross-check against `skills-ref` before treating as authoritative. | n/a (npm package) |
+| `eval-evidence`: `coverage=missing` or `coverage=basic` | The skill has little or no evidence that it improves behavior once loaded. Validators passing is necessary, not sufficient, for release readiness. | [Anthropic skill-creator eval loop](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md#running-and-evaluating-test-cases) |
 
 ## Common fixes
 
@@ -36,10 +38,30 @@ Missing examples or troubleshooting:
 - Add 2–4 short examples that map user requests to actions.
 - Add a Gotchas section with concrete, non-obvious environment facts.
 
+Missing or weak eval evidence:
+
+- Add `evals/evals.json` with realistic prompts. For routing-heavy skills, include positive cases and near-miss negatives.
+- If tuning the description, add `evals/trigger-evals.json` and preserve `evals/loop-results.json` or `loop-results.md`.
+- If checking task behavior after a skill loads, use `skill-creator` to run with-skill and baseline runs into `<skill-name>-workspace/iteration-N/`, then keep `benchmark.json`.
+- If using waza's task-level evals, add root-level `eval.yaml` or `eval.yml`.
+
 Over-specificity:
 
 - Replace personal paths and hardcoded environment details with placeholders.
 - Keep URLs only when they are stable documentation or service roots.
+
+## Eval evidence levels
+
+The checker inventories eval artifacts; it does not execute them.
+
+| Coverage | Meaning | Typical next step |
+| --- | --- | --- |
+| `missing` | No recognized eval artifacts found. | Add `evals/evals.json` before calling the skill release-ready. |
+| `basic` | Prompts or waza evals exist, but no saved run results. | Run the relevant eval loop and preserve results. |
+| `trigger-loop` | Description-trigger evals and loop results exist. | Good for routing changes; still consider task benchmarks for behavior-heavy skills. |
+| `benchmark` | A sibling `<skill-name>-workspace/iteration-*/benchmark.json` exists. | Review benchmark deltas and user feedback before claiming readiness. |
+
+For full Anthropic-style task evals, the expected flow is: create realistic prompts, spawn with-skill and baseline runs in the same turn, draft objective assertions while runs are in progress, capture timing as each run completes, grade outputs, aggregate `benchmark.json`, launch the review viewer, and iterate from user feedback. Keep that orchestration in `skill-creator`; `skill-checker` should only report whether the artifacts exist.
 
 ## Artifacts
 
@@ -49,6 +71,7 @@ Reports are written under `${SKILL_CHECKER_OUT:-/tmp/skill-checker}/<skill-slug>
 - `waza.txt`
 - `skill-validator.txt`
 - `skill-check.txt`
+- `eval-evidence.txt`
 
 Use those files when the one-line summary is not enough.
 
