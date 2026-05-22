@@ -1,0 +1,45 @@
+{
+  "skill_name": "self-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Help me draft my H1 self review from my work notes and make a review-form-ready final answer.",
+      "should_trigger": true
+    },
+    {
+      "id": 2,
+      "prompt": "Use my local work notes and prior review to write 1-2 performance review examples with outcome, behaviors, and what I learned.",
+      "should_trigger": true
+    },
+    {
+      "id": 3,
+      "prompt": "Convert my performance review markdown into a rich clipboard paste for the review form.",
+      "should_trigger": true
+    },
+    {
+      "id": 4,
+      "prompt": "Tighten this H2 self-evaluation and keep the evidence in a full draft but make a concise final version for submission.",
+      "should_trigger": true
+    },
+    {
+      "id": 5,
+      "prompt": "Pull last week's daily logs and make topic-organized bullets for my manager 1:1.",
+      "should_trigger": false
+    },
+    {
+      "id": 6,
+      "prompt": "Generate today's daily log from my Claude and Codex sessions.",
+      "should_trigger": false
+    },
+    {
+      "id": 7,
+      "prompt": "Run a BigQuery dry run for this task-volume query.",
+      "should_trigger": false
+    },
+    {
+      "id": 8,
+      "prompt": "Inspect this review-form page and tell me what editor controls it exposes.",
+      "should_trigger": false
+    }
+  ]
+}

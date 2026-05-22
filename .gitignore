@@ -35,3 +35,7 @@ Thumbs.db
 
 # Local settings
 settings.local.json
+.claude/
+.claude-plugin/
+.codex/
+.opencode/

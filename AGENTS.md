@@ -5,7 +5,7 @@
 - `skills/` contains each skill as a self-contained module (for example, `skills/bugzilla/`, `skills/jira/`).
 - Each skill typically includes `SKILL.md` (documentation + metadata), `scripts/` (implementation), and optional `references/` or `assets/`.
 - `agents/` holds custom subagent definitions used by agent frameworks.
-- Top-level docs live in `README.md`, `CLAUDE.md`, and templates like `SKILL_TEMPLATE.md`.
+- Top-level docs live in `README.md` and `AGENTS.md`. `CLAUDE.md`, when present, should only include `@AGENTS.md`.
 
 ## Build, Test, and Development Commands
 

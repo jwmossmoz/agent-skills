@@ -42,6 +42,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 - **daily-log** — Compile a daily work log from Claude Code and Codex session JSONL files
 - **one-on-one** — Build topic-organized, linked 1:1/status bullets from `~/moz_artifacts` and copy them as rich text
+- **self-review** — Draft evidence-backed performance self-reviews and copy final Markdown as rich review-form text
 
 ### Meta
 
@@ -60,7 +61,7 @@ For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`
 
 ### For Users
 
-Once skills are installed, simply ask Claude naturally:
+Once skills are installed, ask your agent naturally:
 
 - "Show me my current sprint stories"
 - "Check the treeherder status for my push"
@@ -69,7 +70,7 @@ Once skills are installed, simply ask Claude naturally:
 - "Search bugzilla for crashes in Firefox"
 - "File a bug for the startup regression"
 
-Claude will invoke the appropriate skill and handle all the technical details (directory navigation, command execution, etc.) for you.
+The agent will invoke the appropriate skill and handle the technical details such as directory navigation and command execution.
 
 ### For Installation / Manual Use
 
@@ -81,7 +82,7 @@ Use `npx skills` to install — it manages the canonical location at `~/.agents/
 npx skills add jwmossmoz/agent-skills -g --agent '*' -y
 ```
 
-Pass `--skill <name>` to install individual skills. See `.claude-plugin/INSTALL.md` for the full checklist and Codex/OpenCode notes.
+Pass `--skill <name>` to install individual skills.
 
 #### Manual symlinks (advanced)
 
@@ -99,17 +100,13 @@ for f in "$AGENT_SKILLS_ROOT"/agents/*.md; do
 done
 ```
 
-#### Codex
+#### Other Agents
 
-Add this repo's `skills/` directory to your Codex skills search path. See `.codex/INSTALL.md` for a checklist.
-
-#### OpenCode
-
-Add this repo's `skills/` directory to your OpenCode skills search path. See `.opencode/INSTALL.md` for a checklist.
+For Codex, OpenCode, or any other agent that supports skills, point it at this repo's `skills/` directory or symlink individual skill directories into the agent's configured skills path.
 
 Each skill contains:
-- `SKILL.md` - Full documentation and examples for Claude's reference
-- `references/examples.md` - Command-line examples for manual execution
+- `SKILL.md` - Full documentation and examples for the agent's reference
+- `references/` - Optional supporting docs and examples
 - `scripts/` - The actual implementation scripts
 
 `uv.lock` files are tracked intentionally for reproducible Python dependencies.
