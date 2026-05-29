@@ -7,6 +7,14 @@ azure_cost       -- all local Parquet rows
 azure_cost_files -- row counts by source filename
 ```
 
+When the export has a tag column, `azure_cost` also exposes a derived
+`worker_pool_id` column. Azure tags the same FXCI worker pool two ways:
+Taskcluster-created VMs use `worker-pool-id` (hyphens) and Terraform-managed
+infra (for example dedicated hosts) uses `worker_pool_id` (underscores). The
+derived column coalesces both, so `GROUP BY worker_pool_id` surfaces every
+resource for a pool. Filtering by the raw hyphen tag alone drops the
+underscore-tagged resources into `(untagged)`.
+
 The `azure_cost` view is backed by:
 
 ```sql
@@ -122,12 +130,11 @@ ORDER BY cost DESC
 LIMIT 50;
 ```
 
-Top tagged worker pools when `Tags` is a JSON-like string:
+Top worker pools using the derived column (covers both tag spellings):
 
 ```sql
 SELECT
-  coalesce(json_extract_string(Tags, '$."worker-pool-id"'), '(untagged)')
-    AS worker_pool_id,
+  coalesce(worker_pool_id, '(untagged)') AS worker_pool_id,
   round(sum(CostInBillingCurrency), 2) AS cost
 FROM azure_cost
 GROUP BY 1
@@ -135,13 +142,17 @@ ORDER BY cost DESC
 LIMIT 50;
 ```
 
-If a malformed CSV diagnostic run leaves non-JSON tag text in the view, guard
-the extraction:
+The derived column already JSON-guards the tag value, so malformed CSV
+diagnostic rows return `NULL` rather than raising. If you need to extract a
+different tag key by hand, coalesce both spellings and guard the JSON:
 
 ```sql
 CASE
-  WHEN Tags IS NULL OR Tags = '' THEN '(untagged)'
-  WHEN json_valid(Tags) THEN coalesce(json_extract_string(Tags, '$."worker-pool-id"'), '(untagged)')
+  WHEN tags IS NULL OR tags = '' THEN '(untagged)'
+  WHEN json_valid(tags) THEN coalesce(
+    json_extract_string(tags, '$."worker-pool-id"'),
+    json_extract_string(tags, '$."worker_pool_id"'),
+    '(untagged)')
   ELSE '(malformed tags)'
 END
 ```

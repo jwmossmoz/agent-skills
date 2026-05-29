@@ -45,6 +45,13 @@ See [usage.md](references/usage.md) for all commands.
 - If interrupted, overwrite suspect partitions with `sync --pattern <file>.csv`;
   Azure CLI `--no-overwrite` does not resume.
 - Run `schema` first; export column names vary.
+- Group by the derived `worker_pool_id` column, not the raw tag. Azure tags
+  pools two ways (`worker-pool-id` on Taskcluster VMs, `worker_pool_id` on
+  Terraform infra like dedicated hosts); the raw hyphen tag alone hides the
+  underscore-tagged resources in `(untagged)`.
+- Dedicated-host compute can lag in cost exports; a host present in the portal
+  may show no compute meter until Azure rates it. Confirm against the Cost
+  Management API (or `az vm host`) before concluding a pool has no host cost.
 - Current periods can be rerated; refresh current month data.
 - DuckDB locks a `.duckdb` file per process.
 - Do not commit `raw/`, `.duckdb`, keys, tokens, or real config.

@@ -40,6 +40,13 @@ DEFAULT_CSV_DATEFORMAT = "%m/%d/%Y"
 DEFAULT_CSV_MAX_LINE_SIZE = 8 * 1024 * 1024
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
+# Azure tags the same FXCI worker pool two ways: Taskcluster-created VMs use
+# "worker-pool-id" (hyphens) and Terraform-managed infra (for example dedicated
+# hosts) uses "worker_pool_id" (underscores). The derived worker_pool_id column
+# coalesces both so a single GROUP BY surfaces every resource for a pool.
+WORKER_POOL_TAG_KEYS = ("worker-pool-id", "worker_pool_id")
+WORKER_POOL_COLUMN = "worker_pool_id"
+
 
 def expand_path(value: str | os.PathLike[str]) -> Path:
     return Path(value).expanduser()
@@ -188,6 +195,62 @@ def input_files(data_root: Path, selected_format: str) -> tuple[str, list[Path]]
     return "csv", csv_export_files
 
 
+def build_reader_sql(
+    data_root: Path,
+    resolved_format: str,
+    csv_dateformat: str = DEFAULT_CSV_DATEFORMAT,
+    csv_max_line_size: int = DEFAULT_CSV_MAX_LINE_SIZE,
+    csv_relaxed: bool = False,
+) -> str:
+    if resolved_format == "csv":
+        data_glob = data_root.expanduser().resolve() / "**" / "*.csv*"
+        relaxed_options = ""
+        if csv_relaxed:
+            relaxed_options = ",\n    strict_mode = false,\n    ignore_errors = true"
+        return (
+            "read_csv(\n"
+            f"    '{sql_string(data_glob)}',\n"
+            "    union_by_name = true,\n"
+            "    filename = true,\n"
+            f"    dateformat = '{sql_string(csv_dateformat)}',\n"
+            f"    max_line_size = {csv_max_line_size}{relaxed_options}\n"
+            ")"
+        )
+
+    data_glob = data_root.expanduser().resolve() / "**" / "*.parquet"
+    return (
+        "read_parquet(\n"
+        f"    '{sql_string(data_glob)}',\n"
+        "    hive_partitioning = true,\n"
+        "    union_by_name = true,\n"
+        "    filename = true\n"
+        ")"
+    )
+
+
+def find_tags_column(columns: list[str]) -> str | None:
+    """Return the export's tag column name (Azure native `tags`, FOCUS `Tags`)."""
+    for name in columns:
+        if name.lower() == "tags":
+            return name
+    return None
+
+
+def worker_pool_expr(tags_col: str) -> str:
+    """Build a CASE that extracts worker_pool_id from either tag spelling."""
+    col = sql_ident(tags_col)
+    extracts = ",\n      ".join(
+        f"json_extract_string({col}, '$.\"{key}\"')" for key in WORKER_POOL_TAG_KEYS
+    )
+    return (
+        "CASE\n"
+        f"    WHEN {col} IS NULL OR {col} = '' THEN NULL\n"
+        f"    WHEN json_valid({col}) THEN coalesce(\n      {extracts})\n"
+        "    ELSE NULL\n"
+        "  END"
+    )
+
+
 def create_views(
     conn: Any,
     data_root: Path,
@@ -203,37 +266,21 @@ def create_views(
     if not files:
         return resolved_format, 0
 
-    if resolved_format == "parquet":
-        data_glob = data_root.resolve() / "**" / "*.parquet"
-        reader = f"""
-            read_parquet(
-                '{sql_string(data_glob)}',
-                hive_partitioning = true,
-                union_by_name = true,
-                filename = true
-            )
-        """
-    else:
-        data_glob = data_root.resolve() / "**" / "*.csv*"
-        relaxed_options = ""
-        if csv_relaxed:
-            relaxed_options = """
-                ,
-                strict_mode = false,
-                ignore_errors = true
-            """
-        reader = f"""
-            read_csv(
-                '{sql_string(data_glob)}',
-                union_by_name = true,
-                filename = true,
-                dateformat = '{sql_string(csv_dateformat)}',
-                max_line_size = {csv_max_line_size}
-                {relaxed_options}
-            )
-        """
-
+    reader = build_reader_sql(
+        data_root, resolved_format, csv_dateformat, csv_max_line_size, csv_relaxed
+    )
     conn.execute(f"CREATE OR REPLACE VIEW {view} AS SELECT * FROM {reader}")
+
+    columns = [row[0] for row in conn.execute(f"DESCRIBE {view}").fetchall()]
+    tags_col = find_tags_column(columns)
+    has_pool_col = any(name.lower() == WORKER_POOL_COLUMN for name in columns)
+    if tags_col and not has_pool_col:
+        conn.execute(
+            f"CREATE OR REPLACE VIEW {view} AS "
+            f"SELECT *, {worker_pool_expr(tags_col)} AS {WORKER_POOL_COLUMN} "
+            f"FROM {reader}"
+        )
+
     conn.execute(
         f"""
         CREATE OR REPLACE VIEW {files_view} AS
@@ -268,35 +315,23 @@ def init_sql_text(
     csv_dateformat: str = DEFAULT_CSV_DATEFORMAT,
     csv_max_line_size: int = DEFAULT_CSV_MAX_LINE_SIZE,
     csv_relaxed: bool = False,
+    worker_pool_tags_col: str | None = None,
 ) -> str:
     view = sql_ident(view)
     files_view = sql_ident(f"{view}_files")
-    if selected_format == "csv":
-        data_glob = data_root.expanduser().resolve() / "**" / "*.csv*"
-        relaxed_options = ""
-        if csv_relaxed:
-            relaxed_options = """
-    ,
-    strict_mode = false,
-    ignore_errors = true"""
-        reader = f"""read_csv(
-    '{sql_string(data_glob)}',
-    union_by_name = true,
-    filename = true,
-    dateformat = '{sql_string(csv_dateformat)}',
-    max_line_size = {csv_max_line_size}{relaxed_options}
-)"""
-    else:
-        data_glob = data_root.expanduser().resolve() / "**" / "*.parquet"
-        reader = f"""read_parquet(
-    '{sql_string(data_glob)}',
-    hive_partitioning = true,
-    union_by_name = true,
-    filename = true
-)"""
+    reader = build_reader_sql(
+        data_root, selected_format, csv_dateformat, csv_max_line_size, csv_relaxed
+    )
+
+    select_clause = "SELECT *"
+    if worker_pool_tags_col:
+        select_clause = (
+            f"SELECT *,\n  {worker_pool_expr(worker_pool_tags_col)} "
+            f"AS {WORKER_POOL_COLUMN}"
+        )
 
     return f"""CREATE OR REPLACE VIEW {view} AS
-SELECT *
+{select_clause}
 FROM {reader};
 
 CREATE OR REPLACE VIEW {files_view} AS
@@ -305,6 +340,32 @@ FROM {view}
 GROUP BY filename
 ORDER BY filename;
 """
+
+
+def detect_worker_pool_tags_column(
+    data_root: Path,
+    selected_format: str,
+    csv_dateformat: str,
+    csv_max_line_size: int,
+    csv_relaxed: bool,
+) -> str | None:
+    resolved_format, files = input_files(data_root, selected_format)
+    if not files:
+        return None
+    reader = build_reader_sql(
+        data_root, resolved_format, csv_dateformat, csv_max_line_size, csv_relaxed
+    )
+    duckdb = get_duckdb_module()
+    conn = duckdb.connect(":memory:")
+    try:
+        columns = [
+            row[0] for row in conn.execute(f"DESCRIBE SELECT * FROM {reader}").fetchall()
+        ]
+    finally:
+        conn.close()
+    if any(name.lower() == WORKER_POOL_COLUMN for name in columns):
+        return None
+    return find_tags_column(columns)
 
 
 def render_value(value: Any) -> str:
@@ -608,7 +669,11 @@ def cmd_init_sql(args: argparse.Namespace) -> None:
     selected_format = file_format(args, config)
     csv_max_line_size, csv_relaxed = csv_options(args, config)
     if selected_format == "auto":
-        selected_format = "parquet"
+        resolved_format, _files = input_files(data_root, selected_format)
+        selected_format = resolved_format or "parquet"
+    tags_col = detect_worker_pool_tags_column(
+        data_root, selected_format, args.csv_dateformat, csv_max_line_size, csv_relaxed
+    )
     print(
         init_sql_text(
             data_root,
@@ -617,6 +682,7 @@ def cmd_init_sql(args: argparse.Namespace) -> None:
             args.csv_dateformat,
             csv_max_line_size,
             csv_relaxed,
+            tags_col,
         ),
         end="",
     )
