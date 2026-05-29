@@ -74,6 +74,42 @@ The latest current-month snapshot can still be incomplete for the current day.
 Use the max usage date from the local query and the export run timestamp when
 describing month-to-date results.
 
+## Reconciling Unbilled Resources
+
+The cache can only show what Azure rated. A resource can be deployed and
+running yet produce no cost row, so it is absent from the export entirely — not
+present at $0. Treating "absent from the cache" as "free" is wrong.
+
+The cause seen in practice: a SKU is deployable in a region but Azure has no
+price meter for it there. A `NVadsA10v5_Type1` dedicated host in `westus3`
+provisioned fine, but Azure publishes that Dedicated Host meter only in
+`eastus2`, `westus2`, `germanywestcentral`, and `japaneast` (≈$7.17/hour), not
+`westus3`. With no regional meter the consumption pipeline emits nothing, so
+the host shows no rows at any Cost Management scope (actual and amortized) while
+the rest of the subscription bills normally and stays current.
+
+Before reporting that a known resource has zero cost, reconcile across three
+sources:
+
+1. Confirm the resource exists and is allocated:
+   `az vm host show -g <rg> --host-group <hg> --name <host>` (or
+   `az resource list -g <rg>`).
+2. Confirm Cost Management has no row at the resource scope, not just the cache:
+   query the `ResourceId` at subscription scope with `ActualCost` and
+   `AmortizedCost`. Empty rows plus fresh data for other resources means Azure
+   rated nothing, not that the cost is zero.
+3. Confirm whether a price meter even exists for that SKU and region with the
+   Retail Prices API:
+
+   ```bash
+   curl -s "https://prices.azure.com/api/retail/prices?\$filter=contains(productName,'NVadsA10v5')%20and%20contains(productName,'Dedicated')" \
+     | python3 -c "import sys,json;[print(i['armRegionName'],i['retailPrice'],i['type']) for i in json.load(sys.stdin)['Items']]"
+   ```
+
+   A SKU present in some regions but missing the target region is the tell. An
+   unbilled resource can be back-rated later if Azure publishes the meter, so
+   flag it rather than recording it as free.
+
 ## Historical Backfill
 
 The Azure portal supports limited historical export reruns. For older history,

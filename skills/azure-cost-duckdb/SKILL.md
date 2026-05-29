@@ -49,10 +49,14 @@ See [usage.md](references/usage.md) for all commands.
   pools two ways (`worker-pool-id` on Taskcluster VMs, `worker_pool_id` on
   Terraform infra like dedicated hosts); the raw hyphen tag alone hides the
   underscore-tagged resources in `(untagged)`.
-- Dedicated-host compute can lag in cost exports; a host present in the portal
-  may show no compute meter until Azure rates it. Confirm against the Cost
-  Management API (or `az vm host`) before concluding a pool has no host cost.
-- Current periods can be rerated; refresh current month data.
+- A resource missing from cost data is not proof it is free. Azure emits no
+  cost row when a deployed SKU has no price meter in its region, so the export
+  and cache have nothing to ingest (seen with `NVadsA10v5_Type1` dedicated
+  hosts in `westus3`: deployable, but no regional Dedicated Host meter). Before
+  reporting zero cost for a known resource, reconcile it — see "Reconciling
+  unbilled resources" in [azure-exports.md](references/azure-exports.md).
+- Current periods can be rerated, including back-rating a previously unbilled
+  resource once Azure publishes its meter; refresh current month data.
 - DuckDB locks a `.duckdb` file per process.
 - Do not commit `raw/`, `.duckdb`, keys, tokens, or real config.
 
