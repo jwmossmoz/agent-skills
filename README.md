@@ -36,6 +36,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 - **bigquery** — Ad-hoc SQL against Mozilla telemetry tables via the bq CLI
 - **redash** — Saved queries and shareable results from sql.telemetry.mozilla.org
+- **azure-cost-duckdb** — Download Azure Cost Management exports from Blob Storage and query local Parquet with DuckDB
 - **win11-files** — Local SQLite of Windows 11 cumulative-update file information
 
 ### Productivity

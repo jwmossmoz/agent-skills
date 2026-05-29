@@ -1,0 +1,16 @@
+[storage]
+# Placeholder values only. Do not commit real account names, SAS tokens,
+# connection strings, or downloaded cost exports.
+account_name = "REPLACE_WITH_STORAGE_ACCOUNT"
+container = "REPLACE_WITH_CONTAINER"
+prefix = "REPLACE_WITH_EXPORT_DIRECTORY"
+auth_mode = "login"
+patterns = ["*.parquet", "*.csv", "*manifest*.json"]
+
+[local]
+data_root = "~/moz_artifacts/azure-cost/raw"
+database = "~/moz_artifacts/azure-cost/azure_cost.duckdb"
+file_format = "auto"
+csv_max_line_size = 8388608
+# Set true only when diagnosing malformed source CSVs.
+csv_relaxed = false
