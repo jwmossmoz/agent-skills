@@ -73,10 +73,17 @@ duckdb ~/moz_artifacts/azure-cost/azure_cost.duckdb -init /tmp/azure-cost-init.s
 uv run ~/.claude/skills/azure-cost-duckdb/scripts/azure_cost_duckdb.py sync \
   --account-name <storage-account> \
   --container <container> \
-  --prefix <storage-directory>/<export-name> \
+  --prefix <export-name>/<YYYYMMDD-YYYYMMDD> \
   --latest-run \
-  --data-root ~/moz_artifacts/azure-cost/raw
+  --data-root ~/moz_artifacts/azure-cost/<month>/raw \
+  --database ~/moz_artifacts/azure-cost/<month>/azure_cost.duckdb
 ```
+
+Scope `--prefix` to one date-range directory so `--latest-run` resolves to that
+month's latest snapshot. A shallower prefix (`<export-name>` alone) pulls every
+run of every month. Give each month its own `--data-root`/`--database`: the
+view UNIONs every CSV under `data_root`, so mixing two full-month snapshots in
+one folder double-counts. See `references/azure-exports.md`.
 
 ## Output Formats
 

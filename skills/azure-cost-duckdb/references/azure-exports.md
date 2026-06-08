@@ -70,6 +70,20 @@ Monthly export folders can contain multiple run snapshots. Use
 `sync --latest-run` when the prefix points at a month directory so the helper
 downloads only the latest run and avoids double-counting old snapshots.
 
+`--latest-run` is prefix-depth sensitive. Point `--prefix` at a single
+date-range directory (`<export-name>/<YYYYMMDD-YYYYMMDD>`) so it resolves to
+that month's latest run. A shallower prefix (`<export-name>` alone) resolves to
+the export root and pulls *every* run of *every* month — a large, duplicated
+download.
+
+Double-counting happens at the query layer, not just on download: the DuckDB
+view globs every `*.csv*` under `data_root` and UNIONs them. Each daily export
+run is a *full* month-to-date snapshot, so two snapshots in one `data_root`
+double the rows. Keep each full-month snapshot in its own clean `data_root`
+(e.g. a per-month folder via `--data-root`/`--database`). `--latest-run` only
+avoids doubling if the destination does not already hold an older run; if it
+does, clear the old run directory first or sync into a fresh folder.
+
 The latest current-month snapshot can still be incomplete for the current day.
 Use the max usage date from the local query and the export run timestamp when
 describing month-to-date results.
