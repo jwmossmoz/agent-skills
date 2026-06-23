@@ -3,9 +3,10 @@ name: worker-image-build
 description: >
   Trigger GitHub Actions workflows in mozilla-platform-ops/worker-images
   to build Firefox CI Windows worker images (FXCI Azure trusted and
-  untrusted, win10-2009 / win11-24h2 / win11-a64 / win2022). Use to start
-  an image build or check the status of a triggered run. DO NOT USE FOR
-  debugging an existing image's failures (use worker-image-investigation).
+  untrusted, win10-2009 / win11-24h2 / win11-25h2 / win11-a64 / win2022).
+  Use to start an image build, discover dispatchable configs, or check the
+  status of a triggered run. DO NOT USE FOR debugging an existing image's
+  failures (use worker-image-investigation).
 metadata:
   version: "1.0"
 ---
@@ -21,26 +22,28 @@ Build Firefox CI worker images by triggering GitHub Actions workflows.
 | `sig-nontrusted.yml` | FXCI - Azure | Build untrusted Windows images |
 | `sig-trusted.yml` | FXCI - Azure - Trusted | Build trusted Windows images |
 
-## Available Configs
+## Discover Available Configs
 
-### Untrusted (FXCI - Azure)
+The `config` dropdown `options:` in each workflow are the authoritative
+dispatchable set — a `config/*.yaml` file can exist without being wired
+into the dropdown, so list the workflow, not the directory. Works without
+a local clone.
 
+```bash
+# Untrusted dispatchable configs
+gh workflow view "FXCI - Azure" --repo mozilla-platform-ops/worker-images --yaml \
+  | yq '.on.workflow_dispatch.inputs.config.options[]'
+
+# Trusted dispatchable configs
+gh workflow view "FXCI - Azure - Trusted" --repo mozilla-platform-ops/worker-images --yaml \
+  | yq '.on.workflow_dispatch.inputs.config.options[]'
 ```
-win10-64-2009-alpha       win10-64-2009
-win11-64-2009-alpha       win11-64-2009
-win11-64-24h2-alpha       win11-64-24h2
-win11-64-24h2-alpha-v6
-win11-a64-24h2-tester-alpha    win11-a64-24h2-tester
-win11-a64-24h2-builder-alpha   win11-a64-24h2-builder
-win2022-64-2009-alpha          win2022-64-2009
-win2022-64-2009-alpha-v6
-```
 
-### Trusted (FXCI - Azure - Trusted)
+No `yq`? Fall back to grepping the options block:
 
-```
-trusted-win11-a64-24h2-builder
-trusted-win2022-64-2009
+```bash
+gh workflow view "FXCI - Azure" --repo mozilla-platform-ops/worker-images --yaml \
+  | sed -n '/options:/,/permissions:/p' | grep -E '^[[:space:]]+- ' | sed -E 's/^[[:space:]]+- //'
 ```
 
 ## Trigger a Build
@@ -115,6 +118,7 @@ See [references/examples.md](references/examples.md) for additional command exam
 
 ## Gotchas
 
+- Build-only scope: this skill triggers individual build workflows. For the full pin-a-new-ronin_puppet-commit → alpha → validate → production rollout, use the `production-image-deploy` skill.
 - Access is gated by `.github/relsre.json` in mozilla-platform-ops/worker-images — if your gh user isn't on that list, the workflow rejects the trigger immediately.
 - Builds take 30-60 min (Packer). Use `gh run watch` rather than polling `gh run list` in a tight loop.
 - `-alpha` configs build to staging galleries; non-suffixed configs go to production. Always validate image changes through `-alpha` first.
