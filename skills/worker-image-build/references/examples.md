@@ -1,5 +1,18 @@
 # Example Commands
 
+## Discover Dispatchable Configs
+
+The workflow `config` dropdown options are the authoritative set (a
+`config/*.yaml` file may exist without being dispatchable).
+
+```bash
+gh workflow view "FXCI - Azure" --repo mozilla-platform-ops/worker-images --yaml \
+  | yq '.on.workflow_dispatch.inputs.config.options[]'
+
+gh workflow view "FXCI - Azure - Trusted" --repo mozilla-platform-ops/worker-images --yaml \
+  | yq '.on.workflow_dispatch.inputs.config.options[]'
+```
+
 ## Trigger Builds
 
 ### Untrusted Windows 11 24H2 (alpha)
@@ -34,14 +47,14 @@ gh workflow run "FXCI - Azure" \
 ```bash
 gh workflow run "FXCI - Azure" \
   --repo mozilla-platform-ops/worker-images \
-  -f config=win11-a64-24h2-tester-alpha
+  -f config=win11-a64-25h2-tester-alpha
 ```
 
 ### Untrusted Windows 11 ARM64 builder (alpha)
 ```bash
 gh workflow run "FXCI - Azure" \
   --repo mozilla-platform-ops/worker-images \
-  -f config=win11-a64-24h2-builder-alpha
+  -f config=win11-a64-25h2-builder-alpha
 ```
 
 ### Trusted Windows Server 2022
@@ -55,7 +68,7 @@ gh workflow run "FXCI - Azure - Trusted" \
 ```bash
 gh workflow run "FXCI - Azure - Trusted" \
   --repo mozilla-platform-ops/worker-images \
-  -f config=trusted-win11-a64-24h2-builder
+  -f config=trusted-win11-a64-25h2-builder
 ```
 
 ## Check Build Status
