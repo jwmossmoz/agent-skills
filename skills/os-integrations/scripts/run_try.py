@@ -67,6 +67,7 @@ VALID_PRESETS = [
     "win11-source",
     "b-win2022",
     "win11-arm64",
+    "win11-a64-25h2-builder",
 ]
 
 PROTECTED_BRANCHES = ["main", "master", "central"]

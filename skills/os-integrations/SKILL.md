@@ -116,6 +116,7 @@ Use `-t` to filter to specific test suites:
 - `win11-source` - Source image testing
 - `b-win2022` - Build worker testing
 - `win11-arm64` - ARM64 architecture
+- `win11-a64-25h2-builder` - ARM64 25H2 builder image validation via the `generate-profile` (PGO) task; must be run with `--fresh-build` (see Gotchas)
 
 ## Prerequisites
 
@@ -130,6 +131,9 @@ Use `-t` to filter to specific test suites:
 - Lando-based pushes need Mozilla Auth0; the auth prompt opens in the browser if needed.
 - Each preset's worker overrides live in `references/presets.yml` — change them there, not in `run_try.py`.
 - Use `--query-set` (per preset) instead of long `-t` lists when you have a recurring test bundle.
+- Adding a new preset means editing **two** files: the entry in `references/presets.yml` **and** the hardcoded `VALID_PRESETS` list in `run_try.py` (argparse choices are not derived from the YAML).
+- `worker_overrides` keys are mach try worker-type **aliases** (the LHS of `workers.aliases` in the gecko `taskcluster/config.yml`), not the resolved worker-type. ARM64 builds use the `b-win-aarch64-25h2` alias, which resolves to the `win11-a64-25h2-builder` worker-type.
+- `win11-a64-25h2-builder` must run with `--fresh-build`: it targets the shippable `generate-profile-win64-aarch64-shippable` task, which is not in autoland's reusable graph (so `--use-existing-tasks` selects nothing) and needs `--full`. It also only validates the new image once that alpha builder image is actually published to `gecko-1/win11-a64-25h2-builder-alpha`.
 
 ## Additional Documentation
 

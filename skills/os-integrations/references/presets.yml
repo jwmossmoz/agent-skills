@@ -142,6 +142,16 @@ presets:
       - win11-a64-24h2=gecko-t/win11-a64-24h2-alpha
     use_os_integration: false
 
+  win11-a64-25h2-builder:
+    description: "ARM64 25H2 builder image validation via generate-profile (PGO) — exercises the build toolchain on the win11-a64-25h2-builder image"
+    query: "-q 'generate-profile-win64-aarch64-shippable'"
+    flags:
+      - "--no-artifact"
+      - "--full"
+    worker_overrides:
+      - b-win-aarch64-25h2=gecko-1/win11-a64-25h2-builder-alpha
+    use_os_integration: false
+
 # Preset configuration documentation
 # ===================================
 #
