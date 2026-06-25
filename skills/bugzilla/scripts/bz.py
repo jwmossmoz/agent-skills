@@ -365,6 +365,7 @@ def cmd_create(args) -> None:
         "component": args.component,
         "summary": args.summary,
         "version": args.version,
+        "type": args.type,
     }
 
     # Handle description from file or inline
@@ -809,6 +810,13 @@ def main():
     create_parser.add_argument("-c", "--component", required=True, help="Component name")
     create_parser.add_argument("-s", "--summary", required=True, help="Bug summary/title")
     create_parser.add_argument("-V", "--version", required=True, help="Product version")
+    create_parser.add_argument(
+        "-t",
+        "--type",
+        choices=["defect", "enhancement", "task"],
+        default="task",
+        help="Bug type (BMO requires one; default: task)",
+    )
     create_parser.add_argument("-d", "--description", help="Bug description")
     create_parser.add_argument("--description-file", help="Read description from file")
     create_parser.add_argument("--severity", help="Severity")
