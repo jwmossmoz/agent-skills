@@ -1,0 +1,90 @@
+{
+  "skill_name": "expensify-remote-expenses",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create draft Expensify reports for my last three months of home internet. Check the current Mana policy, download the statements from the providers I'm already signed into, and mirror my latest approved report.",
+      "should_trigger": true
+    },
+    {
+      "id": 2,
+      "prompt": "I'm behind on recurring remote-work reimbursements. Work out which internet months are still eligible, gather the bills, and prepare the missing monthly Expensify drafts without submitting them.",
+      "should_trigger": true
+    },
+    {
+      "id": 3,
+      "prompt": "Please recreate my approved on-call cellphone expense pattern for May through July using the statements in my logged-in carrier account.",
+      "should_trigger": true
+    },
+    {
+      "id": 4,
+      "prompt": "Look at my previous home internet and phone reports in Expensify, verify the latest reimbursement rules on Mana, then create this quarter's missing drafts with receipts.",
+      "should_trigger": true
+    },
+    {
+      "id": 5,
+      "prompt": "My internet bill is split across two providers and exceeds the monthly cap. Download both PDFs and build the correctly capped Expensify report for each eligible month.",
+      "should_trigger": true
+    },
+    {
+      "id": 6,
+      "prompt": "Can you audit the recurring remote expense drafts you just created? Check workspace, category, totals, dates, and that every statement is attached.",
+      "should_trigger": true
+    },
+    {
+      "id": 7,
+      "prompt": "Use browser-harness to catch up my Mozilla home-internet reimbursements, but leave everything in draft for me to review.",
+      "should_trigger": true
+    },
+    {
+      "id": 8,
+      "prompt": "Find the last approved on-call phone report, download the matching monthly carrier bills, and prepare the same recurring claim for the missing months.",
+      "should_trigger": true
+    },
+    {
+      "id": 17,
+      "prompt": "Set up July's recurring internet report, but one provider's July statement runs into August and is not final yet. Leave the month open and tell me when it is actually submission-ready.",
+      "should_trigger": true
+    },
+    {
+      "id": 9,
+      "prompt": "Create an Expensify report for my flight, hotel, meals, and rides from the Berlin work week.",
+      "should_trigger": false
+    },
+    {
+      "id": 10,
+      "prompt": "I bought a replacement keyboard and monitor for my home office. Check Mana and file the equipment reimbursement.",
+      "should_trigger": false
+    },
+    {
+      "id": 11,
+      "prompt": "Summarize the Remote Work Expenses page on Mana for me, but don't open Expensify or create anything.",
+      "should_trigger": false
+    },
+    {
+      "id": 12,
+      "prompt": "Download my latest mobile phone statement to Downloads; I don't need an expense report.",
+      "should_trigger": false
+    },
+    {
+      "id": 13,
+      "prompt": "Review this pull request that changes an Expensify API integration and point out bugs.",
+      "should_trigger": false
+    },
+    {
+      "id": 14,
+      "prompt": "Create an invoice in Expensify for consulting work performed for an external client.",
+      "should_trigger": false
+    },
+    {
+      "id": 15,
+      "prompt": "Search my prior investigation notes for why a monthly internet reimbursement was rejected last year.",
+      "should_trigger": false
+    },
+    {
+      "id": 16,
+      "prompt": "Submit the travel expense report that's already complete and waiting in Expensify.",
+      "should_trigger": false
+    }
+  ]
+}
