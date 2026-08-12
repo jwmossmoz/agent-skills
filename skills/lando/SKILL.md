@@ -3,10 +3,10 @@ name: lando
 description: >
   Poll Mozilla's public Lando API to check the status of a landing job
   (submitted, in_progress, landed, failed) and surface the landed commit
-  hash or failure reason. Use after submitting a try push or commit
-  through Lando to verify whether it landed.
+  hash or failure reason. Use when you need to verify a try push or
+  commit after you submit it through Lando.
 metadata:
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Lando
@@ -17,20 +17,20 @@ Check the status of Mozilla Lando landing jobs using the public API.
 
 ```bash
 # Check landing job status
-curl -s "https://lando.services.mozilla.com/api/v1/landing_jobs/<JOB_ID>" | jq
+curl -fsS "https://api.lando.services.mozilla.com/landing_jobs/<JOB_ID>" | jq
 
 # Example
-curl -s "https://lando.services.mozilla.com/api/v1/landing_jobs/173397" | jq
+curl -fsS "https://api.lando.services.mozilla.com/landing_jobs/173397" | jq
 
 # Check only the status field
-curl -s "https://lando.services.mozilla.com/api/v1/landing_jobs/173397" | jq -r '.status'
+curl -fsS "https://api.lando.services.mozilla.com/landing_jobs/173397" | jq -r '.status'
 
 # Poll every 90 seconds until landed or failed
 JOB_ID=173397
 while true; do
-  STATUS=$(curl -s "https://lando.services.mozilla.com/api/v1/landing_jobs/$JOB_ID" | jq -r '.status')
+  STATUS=$(curl -fsS "https://api.lando.services.mozilla.com/landing_jobs/$JOB_ID" | jq -r '.status')
   echo "$(date): $STATUS"
-  [[ "$STATUS" == "landed" || "$STATUS" == "failed" ]] && break
+  [[ "$STATUS" == "LANDED" || "$STATUS" == "FAILED" || "$STATUS" == "CANCELLED" ]] && break
   sleep 90
 done
 ```
@@ -41,18 +41,19 @@ The API returns a JSON object with these key fields:
 
 | Field | Description |
 |-------|-------------|
-| `status` | Job status: `submitted`, `in_progress`, `landed`, `failed` |
-| `error` | Error message if status is `failed` |
-| `landed_commit_id` | Commit hash if successfully landed |
+| `status` | Job status, such as `SUBMITTED`, `IN_PROGRESS`, `LANDED`, or `FAILED` |
+| `error` | Error message if status is `FAILED` |
+| `commit_id` | Commit hash if the job landed successfully |
 | `created_at` | When the job was submitted |
 | `updated_at` | Last status update time |
 
 ## Common Statuses
 
-- `submitted` - Job is queued
-- `in_progress` - Currently being processed
-- `landed` - Successfully landed to the repository
-- `failed` - Landing failed (check `error` field)
+- `SUBMITTED` - Job is queued
+- `IN_PROGRESS` - Job is being processed
+- `LANDED` - Job landed successfully
+- `FAILED` - Job failed (check the `error` field)
+- `CANCELLED` - User cancelled the job
 
 ## Prerequisites
 
@@ -61,13 +62,13 @@ None - the API is publicly accessible. No authentication required for read opera
 ## Gotchas
 
 - The API is read-only and unauthenticated — no token plumbing needed for status polls.
-- `status` values are lowercase (`landed`, not `Landed`). Match exactly when comparing.
+- `status` values are uppercase (`LANDED`, not `landed`). Match them exactly.
 - Failed jobs put the reason in `error`, not `status`. Always check both fields when reporting back to the user.
 - The polling loop in this doc uses 90s; pick longer intervals for batched dashboards — Lando state doesn't change often.
 
 ## Documentation
 
 - **Lando Service**: https://lando.services.mozilla.com/
-- **API Base**: https://lando.services.mozilla.com/api/v1/
+- **Landing Job API example**: https://api.lando.services.mozilla.com/landing_jobs/173397
 - **Mozilla Conduit Documentation**: https://moz-conduit.readthedocs.io/
-- **Source Code**: https://github.com/mozilla-conduit/lando-api
+- **Source Code**: https://github.com/mozilla-conduit/lando
