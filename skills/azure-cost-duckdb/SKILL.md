@@ -1,10 +1,9 @@
 ---
 name: azure-cost-duckdb
 description: >
-  Download Azure Cost Management exports and query local Parquet/CSV in
-  DuckDB. Use when refreshing local Azure cost caches or writing DuckDB SQL
-  over exports. DO NOT USE FOR live Cost Management API diagnosis; use
-  azure-cost-analysis.
+  Use when downloading Azure Cost Management exports or querying local
+  Parquet and CSV cost data with DuckDB. DO NOT USE FOR live Cost Management
+  API diagnosis; use azure-cost-analysis.
 metadata:
   version: "1.0"
 ---

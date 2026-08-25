@@ -40,6 +40,24 @@ There is no automated test suite today. Validate changes by running the relevant
 
 ## Skill Authoring Notes
 
-- Keep `SKILL.md` concise and move long procedures into `references/`.
-- Use relative paths when linking between skill files.
-- Prefer reusable scripts in `scripts/` over large inline code blocks in docs.
+- Treat the description as a routing rule. Start it with `Use when`, keep it
+  between 150 and 300 characters when practical, and stay below 50 words.
+- Name the wrapped tool and the user's intent. Add `DO NOT USE FOR` with the
+  alternative when two skills overlap. Do not add trigger keyword lists.
+- Aim for at most 500 tokens in the `SKILL.md` body. Keep only routing,
+  prerequisites, one runnable path, decisions, and verified gotchas there.
+- Put command catalogs, API details, and variant procedures in `references/`.
+  Link each reference from `SKILL.md` and state when to read it.
+- Include `## Prerequisites`, `## Usage`, and `## Gotchas`. Add
+  `## Related Skills` when another skill is a realistic alternative.
+- A log skill must include a scope table that distinguishes Taskcluster service
+  logs, worker guest logs, Azure control-plane logs, and task logs.
+- Use `~/.claude/skills/<name>/...` in examples. Do not use `/Users/<name>` or a
+  local checkout path.
+- Prefer one reusable script over repeated inline procedures. Do not add a
+  dependency when the standard library or an existing helper is sufficient.
+- Keep task evals and trigger evidence under `evals/`. Use `skill-creator` for
+  changes and eval work. Run `skill-checker` after each change group and before
+  handoff.
+- Treat one validator complaint as a hint. Treat the same issue from two or
+  more validators as a fix candidate. Document accepted tool disagreements.

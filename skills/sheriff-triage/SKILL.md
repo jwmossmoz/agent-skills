@@ -1,102 +1,53 @@
 ---
 name: sheriff-triage
 description: >
-  Use when performing comprehensive failure triage for sheriffs and image maintainers.
-  Automatically determines if a failure is caused by code changes, image changes,
-  or is a known intermittent. Combines data from Taskcluster, Treeherder, and
-  worker image analysis. Triggers on "triage", "sheriff", "why did this fail",
-  "is this an image regression", "failure analysis".
+  Use when a sheriff or image maintainer needs one evidence-based verdict for
+  a Firefox CI failure from Taskcluster, Treeherder classifications, history,
+  and image versions.
+metadata:
+  version: "1.1"
 ---
 
 # Sheriff Triage
 
-Comprehensive failure triage that automatically determines the likely cause of CI failures.
+This skill is a short routing layer over Taskcluster, Treeherder, and worker
+image evidence.
+
+## Prerequisites
+
+Install `taskcluster`, `treeherder-client`, and `uv`. Set
+`TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com`.
 
 ## Usage
 
 ```bash
-cd /Users/jwmoss/github_moz/agent-skills/skills/sheriff-triage/scripts
+TRIAGE=~/.claude/skills/sheriff-triage/scripts/triage.py
 
-# Full triage for a failing task
-uv run triage.py <TASK_ID>
-
-# Triage with Taskcluster URL
-uv run triage.py https://firefox-ci-tc.services.mozilla.com/tasks/Xcac5C8gRqiOT13YsVRX8A
-
-# JSON output for scripting
-uv run triage.py <TASK_ID> --json
-
-# Skip cross-branch search (faster)
-uv run triage.py <TASK_ID> --skip-treeherder
+uv run "$TRIAGE" <TASK_ID>
+uv run "$TRIAGE" <TASK_ID> --json
+uv run "$TRIAGE" <TASK_ID> --skip-treeherder
 ```
 
-## What It Does
+The report classifies the evidence as `CODE_REGRESSION`, `IMAGE_REGRESSION`,
+`INTERMITTENT`, `INFRA`, or `NEEDS_INVESTIGATION`.
 
-The triage command performs a comprehensive analysis:
+## Decision rules
 
-1. **Task Analysis**: Gets task info from Taskcluster (worker pool, status, labels)
-2. **Image Comparison**: Compares alpha vs production image versions
-3. **Cross-Branch Search**: Searches for similar failures on autoland/mozilla-central
-4. **Classification Check**: Gets failure classification from Treeherder (if available)
-5. **Verdict**: Determines the likely cause based on all signals
-
-## Verdicts
-
-| Verdict | Meaning | Evidence |
-|---------|---------|----------|
-| `CODE_REGRESSION` | Likely caused by code change | Same failure on production branches |
-| `IMAGE_REGRESSION` | Likely caused by image change | Only fails on alpha, different image version |
-| `INTERMITTENT` | Known flaky test | Classified as intermittent in Treeherder |
-| `INFRA` | Infrastructure issue | Classified as infra in Treeherder |
-| `NEEDS_INVESTIGATION` | Unclear cause | No strong signals either way |
-
-## Example Output
-
-```
-## Triage Report: Xcac5C8gRqiOT13YsVRX8A
-
-**Test**: mochitest-chrome-1proc
-**Status**: failed
-
-### Signals
-
-| Signal | Value | Implication |
-|--------|-------|-------------|
-| Alpha Pool | Yes | Using new/staging image |
-| Image Version Differs | Yes (1.0.9 vs 1.0.8) | Image change detected |
-| Similar Failures on autoland | 0 | Not failing on production |
-| Similar Failures on mozilla-central | 0 | Not failing on production |
-| Treeherder Classification | not classified | No prior triage |
-
-### Verdict: IMAGE_REGRESSION
-
-**Confidence**: High
-**Rationale**: Task failed on alpha pool with different image version than production,
-and no similar failures found on production branches.
-
-### Recommended Actions
-
-1. Notify image maintainer
-2. Check SBOM for image changes
-3. Consider rolling back image
-```
-
-## Prerequisites
-
-- `taskcluster` CLI: `brew install taskcluster`
-- `uv` for running scripts
-- Network access to Treeherder API
+- Treat the verdict as a hypothesis. Check the task log before you act.
+- For image validation, compare with the latest autoland decision baseline and
+  equivalent production-pool history.
+- A Tier 1 failure unique to the new image is a release blocker, even if the
+  test was intermittent before.
+- Use `--skip-treeherder` only for a fast first pass; it removes important
+  history and classification evidence.
 
 ## Related Skills
 
-- **treeherder**: Cross-branch failure search and classification lookup
-- **worker-image-investigation**: Image version comparison and SBOM analysis
-- **taskcluster**: Task status and logs
-- **bugzilla**: File bugs for confirmed regressions
+- Use **treeherder** for deeper test history and classification details.
+- Use **worker-image-investigation** for SBOM, task-group, and VM analysis.
+- Use **taskcluster-worker-lifecycle-logs** if no worker claimed the task.
+- Use **bugzilla** after the regression is confirmed.
 
 ## References
 
-- Implementation: [scripts/triage.py](scripts/triage.py)
-- Mozilla Sheriffing Wiki on wiki.mozilla.org
-- Job Visibility Policy on wiki.mozilla.org
-- Test Disabling Policy on wiki.mozilla.org
+- [scripts/triage.py](scripts/triage.py): implementation and full options

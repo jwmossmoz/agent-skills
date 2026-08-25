@@ -3,7 +3,6 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "jira>=3.10.0",
-#     "requests>=2.31.0",
 # ]
 # ///
 """

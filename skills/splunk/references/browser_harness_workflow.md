@@ -71,8 +71,76 @@ Only three harness primitives are needed:
 - `switch_tab(target_id)` — make it the active CDP target.
 - `js(code)` — run an async IIFE in that tab and get its return value.
 
-The canonical recipe in `SKILL.md` puts all of this in a single
-`browser-harness -c '...'` block — no wrapper script needed.
+The canonical recipe below puts all of this in one `browser-harness -c '...'`
+block. Change only the `SPL` value for a normal query.
+
+```bash
+browser-harness -c '
+import json
+
+SPL = """search index=azure_audit "<RESOURCE_GROUP_OR_VM>" earliest=-2h latest=now
+| table time operationName resultType resultSignature resourceId"""
+
+tabs = list_tabs()
+splunk_tab = next((t for t in tabs if "splunkcloud" in t.get("url", "")), None)
+assert splunk_tab, "open Splunk Cloud in Chrome and sign in first"
+switch_tab(splunk_tab["targetId"])
+
+code = """
+(async () => {
+  const cookie = document.cookie.split(";").map(c => c.trim())
+    .find(c => c.startsWith("splunkweb_csrf_token_"));
+  if (!cookie) return JSON.stringify({error: "missing CSRF cookie"});
+  const csrf = cookie.split("=")[1];
+  const body = new URLSearchParams({search: %s, output_mode: "json", max_count: "0"});
+  const submitted = await fetch(
+    "/en-US/splunkd/__raw/services/search/jobs",
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-Splunk-Form-Key": csrf,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: body.toString(),
+    }
+  );
+  if (submitted.status !== 201) {
+    return JSON.stringify({error: "submit failed", status: submitted.status});
+  }
+  const {sid} = await submitted.json();
+  let done = false;
+  for (let i = 0; i < 300; i++) {
+    const status = await (await fetch(
+      "/en-US/splunkd/__raw/services/search/jobs/" + sid + "?output_mode=json",
+      {credentials: "include"}
+    )).json();
+    const state = status.entry?.[0]?.content?.dispatchState;
+    if (state === "DONE") { done = true; break; }
+    if (state === "FAILED") return JSON.stringify({error: "search failed", sid});
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  if (!done) return JSON.stringify({error: "search timed out", sid});
+
+  let results = [];
+  for (let offset = 0; ; offset += 5000) {
+    const page = await (await fetch(
+      "/en-US/splunkd/__raw/services/search/jobs/" + sid +
+      "/results?output_mode=json&count=5000&offset=" + offset,
+      {credentials: "include"}
+    )).json();
+    const rows = page.results || [];
+    results = results.concat(rows);
+    if (rows.length < 5000) break;
+  }
+  return JSON.stringify({sid, count: results.length, results});
+})()
+""" % json.dumps(SPL)
+
+print(json.dumps(json.loads(js(code)), indent=2))
+'
+```
 
 ## Concurrency
 

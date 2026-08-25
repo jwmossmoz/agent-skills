@@ -1,77 +1,49 @@
 ---
 name: redash
 description: >
-  Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry from
-  BigQuery via saved query IDs or ad-hoc SQL. Use when the task references
-  a saved query, needs FXCI worker-pool queue-time data, or wants results
-  that can be shared and visualized. DO NOT USE FOR raw bq CLI work without
-  a saved query (use bigquery).
+  Use when running Mozilla Redash saved queries or ad hoc SQL for shareable
+  telemetry, visualizations, and FXCI queue analysis. DO NOT USE FOR direct bq
+  CLI work.
 metadata:
-  version: "1.0"
+  version: "1.1"
 ---
 
-# Redash Query Tool
+# Redash
 
-Query Mozilla's Redash (sql.telemetry.mozilla.org) for telemetry data. Redash is the front-end to BigQuery telemetry data.
-
-## Knowledge References
-@references/README.md
-@references/fxci-schema.md
+Use the helper to fetch cached saved-query results or run fresh SQL through
+Mozilla Redash.
 
 ## Prerequisites
 
-- `REDASH_API_KEY` environment variable set
-- `uv` for running the script
-
-## Quick Start
-
-```bash
-# Run custom SQL
-uv run scripts/query_redash.py --sql "SELECT * FROM telemetry.main LIMIT 10"
-
-# Fetch cached results from an existing Redash query
-uv run scripts/query_redash.py --query-id 65967
-
-# Save results to file
-uv run scripts/query_redash.py --sql "SELECT 1" --output ~/moz_artifacts/data.json
-```
+Set `REDASH_API_KEY` from the Redash profile page. Install `uv`.
 
 ## Usage
 
-Either `--sql` or `--query-id` is required.
+```bash
+REDASH=~/.claude/skills/redash/scripts/query_redash.py
 
-| Flag | Description |
-|------|-------------|
-| `--sql` | SQL query to execute against BigQuery via Redash |
-| `--query-id` | Fetch cached results from an existing Redash query ID |
-| `--output`, `-o` | Save results to JSON file |
-| `--format`, `-f` | Output format: `json`, `csv`, `table` (default: `table`) |
-| `--limit` | Limit number of rows displayed |
+# Fetch the latest cached result stored for a saved query.
+uv run "$REDASH" --query-id 65967 --format json
 
-## Example Prompts
+# Run fresh SQL and save the result.
+uv run "$REDASH" --sql 'SELECT ...' \
+  --output ~/moz_artifacts/redash-result.json
+```
 
-These natural language prompts map to queries in `references/common-queries.md`:
-
-| Prompt | Query used |
-|--------|------------|
-| "What's the DAU breakdown by macOS version?" | `--query-id 114866` (macOS Version DAU) |
-| "Show me macOS version × architecture distribution" | `--query-id 114867` (macOS version × arch) |
-| "What share of macOS users are on Apple Silicon?" | `--query-id 114867`, compare aarch64 vs x86_64 |
-| "Pull the macOS DAU and arch breakdown for the last 28 days" | `--query-id 114866` and `--query-id 114867` |
-| "What Windows versions are Firefox Desktop users on?" | `--query-id 65967` (Windows Version Distribution) |
-| "How many Firefox users are on Windows 11?" | `--query-id 65967` |
-| "What does the macOS adoption curve look like over time?" | `--query-id 114866`, look at darwin_version |
-| "Why is a worker pool showing high queue time?" | Use the FXCI worker-pool queue-time query in `references/common-queries.md` |
-| "What task groups are driving queue time for a worker pool?" | Use the FXCI worker-pool queue-time queries in `references/common-queries.md` |
-
-For questions not covered by a documented query, write SQL on the fly using the table references in `references/README.md`.
-
-## Common Queries
-@references/common-queries.md
+Run `uv run "$REDASH" --help` for output formats and limits. Read
+[common-queries.md](references/common-queries.md) for maintained query IDs and
+FXCI examples. Read [fxci-schema.md](references/fxci-schema.md) for FXCI tables
+or [README.md](references/README.md) for telemetry tables.
 
 ## Gotchas
 
-- `--query-id N` returns *cached* results from the saved query's last run. Pass `--sql` if you need fresh data or different parameters.
-- Required env: `REDASH_API_KEY` (get one from your Redash profile). Without it the script fails before hitting the API.
-- For one-off analyses, write `--sql` inline rather than creating a saved query — saved queries proliferate, get stale, and clutter the UI for everyone.
-- Redash query IDs in this skill (`65967`, `114866`, `114867`) are stable; if a query disappears, check `references/common-queries.md` for the SQL and re-create.
+- `--query-id` returns the saved query's cached result. Use `--sql` when the
+  result must be fresh or the parameters differ.
+- Do not create a saved query for a one-time analysis. Run inline SQL to avoid
+  stale shared objects.
+- If a maintained query ID is missing, use its SQL from
+  [common-queries.md](references/common-queries.md).
+
+## Related Skills
+
+- Use **bigquery** for direct `bq` access, dry runs, and scripted raw SQL.

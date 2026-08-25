@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["treeherder-client", "requests"]
+# dependencies = ["treeherder-client"]
 # ///
 """
 Sheriff Triage Tool
@@ -19,12 +19,10 @@ Verdicts:
 """
 
 import argparse
+import importlib.util
 import json
-import os
-import re
-import subprocess
+from pathlib import Path
 import sys
-from typing import Optional
 
 from thclient import TreeherderClient
 
@@ -40,98 +38,28 @@ CLASSIFICATION_NAMES = {
     7: "autoclassified intermittent",
 }
 
-DEFAULT_TASKCLUSTER_ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
-
-
-def extract_task_id(task_id_or_url: str) -> str:
-    """Extract task ID from a Taskcluster URL or return as-is."""
-    url_pattern = r"https?://[^/]+/(?:tasks|task-group)/([A-Za-z0-9_-]{22})"
-    match = re.search(url_pattern, task_id_or_url)
-    if match:
-        return match.group(1)
-    return task_id_or_url
-
-
-def run_tc_cmd(args: list[str], root_url: str = DEFAULT_TASKCLUSTER_ROOT_URL) -> dict | str | None:
-    """Run taskcluster CLI command and return parsed JSON or raw output."""
-    env = os.environ.copy()
-    env["TASKCLUSTER_ROOT_URL"] = root_url
-
-    cmd = ["taskcluster"] + args
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
-        if result.returncode != 0:
-            return None
-        try:
-            return json.loads(result.stdout)
-        except json.JSONDecodeError:
-            return result.stdout.strip()
-    except FileNotFoundError:
-        print("Error: taskcluster CLI not found. Install with: brew install taskcluster", file=sys.stderr)
-        return None
-
-
-def get_task_info(task_id: str, root_url: str) -> dict | None:
-    """Get task definition and status from Taskcluster."""
-    definition = run_tc_cmd(["api", "queue", "task", task_id], root_url)
-    status = run_tc_cmd(["api", "queue", "status", task_id], root_url)
-
-    if not definition:
-        return None
-
-    return {
-        "taskId": task_id,
-        "definition": definition,
-        "status": status or {},
-    }
-
-
-def get_worker_sbom(worker_pool: str, root_url: str) -> dict | None:
-    """Get SBOM (Software Bill of Materials) for a worker pool."""
-    parts = worker_pool.split("/")
-    if len(parts) != 2:
-        return None
-
-    provisioner, worker_type = parts
-    pool_config = run_tc_cmd(
-        ["api", "workerManager", "workerPool", f"{provisioner}/{worker_type}"],
-        root_url,
+def load_image_helpers():
+    """Load shared Taskcluster and image helpers from the investigation skill."""
+    helper_path = (
+        Path(__file__).resolve().parents[2]
+        / "worker-image-investigation"
+        / "scripts"
+        / "investigate.py"
     )
-
-    if not pool_config:
-        return None
-
-    config = pool_config.get("config", {})
-    launch_configs = config.get("launchConfigs", [])
-
-    sbom_url = None
-    image_version = None
-
-    for lc in launch_configs:
-        worker_config = lc.get("workerConfig", {})
-        gw_config = worker_config.get("genericWorker", {}).get("config", {})
-        metadata = gw_config.get("workerTypeMetaData", {})
-
-        if metadata.get("sbom") and not sbom_url:
-            sbom_url = metadata.get("sbom")
-            version_match = re.search(r"-(\d+\.\d+\.\d+)\.md$", sbom_url)
-            if version_match:
-                image_version = version_match.group(1)
-
-    return {
-        "workerPool": worker_pool,
-        "imageVersion": image_version,
-        "sbomUrl": sbom_url,
-    }
+    spec = importlib.util.spec_from_file_location("worker_image_investigate", helper_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load image helpers from {helper_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
-def get_production_pool(alpha_pool: str) -> str:
-    """Map alpha pool to production equivalent."""
-    alpha_suffixes = ["-alpha", "-staging", "-test", "-beta"]
-    for suffix in alpha_suffixes:
-        if alpha_pool.endswith(suffix):
-            return alpha_pool[: -len(suffix)]
-    return alpha_pool
+IMAGE_HELPERS = load_image_helpers()
+DEFAULT_TASKCLUSTER_ROOT_URL = IMAGE_HELPERS.DEFAULT_TASKCLUSTER_ROOT_URL
+extract_task_id = IMAGE_HELPERS.extract_task_id
+get_task_info = IMAGE_HELPERS.get_task_info
+get_worker_sbom = IMAGE_HELPERS.get_worker_sbom
+get_production_pool = IMAGE_HELPERS.get_production_pool_for_alpha
 
 
 def find_similar_failures_treeherder(

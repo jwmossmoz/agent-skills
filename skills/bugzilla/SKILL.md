@@ -1,114 +1,55 @@
 ---
 name: bugzilla
 description: >
-  Use when searching, viewing, creating, updating, commenting on, or attaching files to Mozilla
-  Bugzilla (bugzilla.mozilla.org) tickets via the bz.py CLI. Use whenever
-  the task involves a Bugzilla bug — filing a regression, triaging a crash,
-  needinfo'ing a reviewer, or following up on assigned bugs.
+  Use when a Mozilla Bugzilla task needs the local helper for issue discovery,
+  lifecycle changes, reviewer coordination, evidence attachments, or a
+  confirmed worker-image regression report.
 metadata:
-  version: "1.0"
+  version: "1.1"
 ---
 
-# Bugzilla CLI
+# Bugzilla
 
-Requires: `export BUGZILLA_API_KEY="your-key"` (get from https://bugzilla.mozilla.org/userprefs.cgi?tab=apikey)
+The `bz.py` helper covers Bugzilla search, inspection, updates, attachments,
+needinfo, and image-regression reports.
 
-Read-only ops work without auth.
+## Prerequisites
 
-Run via the installed skill path:
-
-```bash
-BZ=~/.claude/skills/bugzilla/scripts/bz.py
-```
+Read-only commands do not need authentication. Set `BUGZILLA_API_KEY` for
+write commands. Create a key in Bugzilla account preferences.
 
 ## Usage
 
 ```bash
-uv run "$BZ" <command> [options]
-```
+BZ=~/.claude/skills/bugzilla/scripts/bz.py
 
-Run `uv run "$BZ" --help` for full options.
-
-## Commands
-
-| Command | Purpose |
-|---------|---------|
-| `search` | Find bugs by product, component, status, assignee, etc. |
-| `get` | View bug details, comments, history |
-| `create` | File a new bug (requires: product, component, summary, version) |
-| `update` | Modify status, assignee, priority, add comments |
-| `comment` | Add comment to a bug |
-| `attachment` | Attach files to a bug |
-| `needinfo` | Request or clear needinfo flags |
-| `products` | List products and components |
-| `whoami` | Verify authentication |
-| `create-image-regression` | File a bug for a confirmed image regression |
-
-## Quick Examples
-
-```bash
-# Search
+# Search and inspect.
 uv run "$BZ" search --quicksearch "crash" --limit 10
-uv run "$BZ" search --product Firefox --status NEW,ASSIGNED --priority P1
+uv run "$BZ" get 1234567 --include-comments --include-history
 
-# View
-uv run "$BZ" get 1234567 -v --include-comments
-uv run "$BZ" get 1234567 --include-comments --full-comments
-uv run "$BZ" get 1234567 --include-comments --include-history --format json
-
-# Update
-uv run "$BZ" update 1234567 --status RESOLVED --resolution FIXED
+# Update or create.
 uv run "$BZ" needinfo 1234567 --request user@mozilla.com
+uv run "$BZ" create --product Firefox --component General \
+  --summary "Title" --version unspecified
 
-# Create
-uv run "$BZ" create --product Firefox --component General --summary "Title" --version unspecified
+# Preview a confirmed image-regression report.
+uv run "$BZ" create-image-regression --image-version 1.0.9 \
+  --worker-pool gecko-t/win11-64-24h2-alpha --dry-run
 ```
 
-## Image Regression Template
-
-Create a pre-filled bug for confirmed image regressions:
-
-```bash
-# Basic usage
-uv run bz.py create-image-regression \
-  --image-version 1.0.9 \
-  --worker-pool gecko-t/win11-64-24h2-alpha
-
-# Full example with investigation details
-uv run bz.py create-image-regression \
-  --image-version 1.0.9 \
-  --worker-pool gecko-t/win11-64-24h2-alpha \
-  --windows-build 26100.7171 \
-  --production-version 1.0.8 \
-  --failing-tests "test_keycodes.xhtml,mochitest-browser-media" \
-  --investigation-doc ~/moz_artifacts/win11-24h2-image-1.0.9-failure-investigation.md \
-  --task-group U0vOaaW-T-i5nN79edugYA
-
-# Dry run to preview
-uv run bz.py create-image-regression \
-  --image-version 1.0.9 \
-  --worker-pool gecko-t/win11-64-24h2-alpha \
-  --dry-run
-```
-
-### Default Fields
-
-| Field | Default Value |
-|-------|---------------|
-| Product | Infrastructure & Release Engineering |
-| Component | General |
-| Severity | S3 |
-| Priority | P3 |
-| Keywords | regression |
+Run `uv run "$BZ" --help` and the command-specific `--help` for all options.
+See [examples.md](references/examples.md) for update, attachment, and image
+regression examples.
 
 ## Gotchas
 
-- Read-only ops (`search`, `get`, `whoami`, `products`) work without `BUGZILLA_API_KEY`; write ops (`create`, `update`, `comment`, `attachment`, `needinfo`, `create-image-regression`) need it.
-- `--quicksearch` only honors what BMO's quicksearch grammar supports. For structured filters use `--product`, `--component`, `--status`, `--priority`.
-- `create` requires `--product`, `--component`, `--summary`, and `--version` together — missing any of them produces a confusing 400, not a useful error.
+- Search, get, product, and identity commands are read-only. Create, update,
+  comment, attachment, needinfo, and image-regression commands need an API key.
+- `--quicksearch` follows Bugzilla's limited quick-search grammar. Use explicit
+  product, component, status, and priority filters for structured searches.
+- `create` needs product, component, summary, and version. Supply all four.
 
 ## References
 
-- [examples.md](references/examples.md) - Workflow examples and user request mappings
-- [api-reference.md](references/api-reference.md) - REST API endpoints and fields
-- Implementation: [scripts/bz.py](scripts/bz.py)
+- [api-reference.md](references/api-reference.md): fields and endpoints
+- [scripts/bz.py](scripts/bz.py): implementation

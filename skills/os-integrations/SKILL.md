@@ -1,151 +1,52 @@
 ---
 name: os-integrations
 description: >
-  Run Firefox `mach try` with pre-configured worker pool overrides for
-  alpha-image testing on Windows and Linux pools (win11-24h2, win11-25h2,
-  win11-arm64, win11-amd, win10-2009, b-win2022, win11-source). Use when
-  pushing tests to alpha pools to validate worker images before they ship
-  to production.
+  Use when sending Firefox try pushes to alpha worker pools to validate Windows
+  or Linux worker images, including build reuse, task selection, Lando status,
+  and result watching.
 metadata:
-  version: "1.0"
+  version: "1.1"
 ---
 
 # OS Integrations
 
-Run Firefox `mach try` commands with pre-configured worker pool overrides for testing against alpha images.
+Run the helper from a configured Firefox source checkout.
+
+## Prerequisites
+
+Install `uv`. Install `treeherder-cli` for `--watch` and `lando-cli` for
+`--watch-lando`.
+
+Use [fetch_worker_pools.py](scripts/fetch_worker_pools.py) to list current alpha
+pools from `fxci-config`.
 
 ## Usage
 
 ```bash
-# Run with preset (dry-run to preview)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --dry-run
-
-# Push to try server
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --push
-
-# Filter to specific test types (recommended)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell -t mochitest-browser-chrome --push
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t mochitest-devtools-chrome -t mochitest-chrome-1proc --dry-run
-
-# Override query (advanced)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -q "test-windows11-64-24h2" --push
+OS_TRY=~/.claude/skills/os-integrations/scripts/run_try.py
+uv run "$OS_TRY" win11-24h2 -t xpcshell --dry-run
+uv run "$OS_TRY" win11-24h2 -t xpcshell --watch
 ```
 
-## Build Behavior
+The default reuses builds from the latest autoland decision task. Use
+`--task-id` for a specific decision task or `--fresh-build` when required.
+Use `--query-set` or `--query` for custom selection. Run `--help` for options.
 
-By default, the script reuses builds from the latest autoland decision task (skipping the 45+ minute Firefox build). Autoland is Firefox's integration branch where tier 1 tasks must be green, so its decision tasks have the freshest and most complete pre-built task pool to reuse. Use `--fresh-build` to force a full build instead:
+## Validation gate
 
-```bash
-# Default: reuses existing Firefox builds
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --push
-
-# Use a specific decision task
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --task-id ABC123 -t mochitest-browser-chrome --push
-
-# Force a fresh Firefox build
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-build --push
-```
-
-## Watching Test Results
-
-Use `--watch` to automatically monitor test results with treeherder-cli after pushing:
-
-```bash
-# Push and watch all test results
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --watch
-
-# Watch with filter (regex)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch --watch-filter "xpcshell|mochitest"
-
-# Combine with fresh build and watch
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --fresh-build -t xpcshell --watch
-```
-
-## Watching Lando Job Status
-
-Use `--watch-lando` to poll the Lando landing job status until it lands or fails:
-
-```bash
-# Push and watch Lando job (polls every 90 seconds by default)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 -t xpcshell --watch-lando
-
-# Custom polling interval (in seconds)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-lando --lando-interval 60
-
-# Combine with test watching (Lando check runs first, then test watching)
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --watch-lando --watch
-```
-
-## Named Query Sets
-
-Use `--query-set` to run a predefined set of test queries. Query sets can bundle specific suites with their own settings (e.g., skipping os-integration):
-
-```bash
-# Run targeted test suites
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --push
-
-# Preview what a query set will run
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --dry-run
-
-# Watch results from a query set
-uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2 --query-set targeted --watch
-```
-
-Query sets are defined per-preset in `references/presets.yml` under the `query_sets` key.
-
-## Common Test Types
-
-Use `-t` to filter to specific test suites:
-
-- `xpcshell` - XPCShell tests
-- `mochitest-browser-chrome` - Browser chrome mochitests
-- `mochitest-chrome-1proc` - Chrome mochitests (single process)
-- `mochitest-devtools-chrome` - DevTools mochitests
-- `mochitest-plain` - Plain mochitests
-- `reftest` - Reference tests
-- `crashtest` - Crash tests
-
-## Available Presets
-
-- `win11-24h2` - Windows 11 24H2 standard
-- `win11-25h2` - Windows 11 25H2 (redirects 24H2 tasks to 25H2 alpha pools)
-- `win11-25h2-prod` - Windows 11 25H2 tier 1 on production pool (post-deploy image validation, no worker overrides)
-- `win11-hw` - Windows 11 hardware workers
-- `win10-2009` - Windows 10 2009
-- `win11-amd` - Windows 11 AMD configuration
-- `win11-source` - Source image testing
-- `b-win2022` - Build worker testing
-- `win11-arm64` - ARM64 architecture
-- `win11-a64-25h2-builder` - ARM64 25H2 builder image validation via the `generate-profile` (PGO) task; must be run with `--fresh-build` (see Gotchas)
-
-## Prerequisites
-
-- Firefox repository at `~/firefox`
-- Must be on a feature branch (not main/master)
-- Mozilla Auth0 authentication (for Lando-based pushes)
+All Tier 1 tasks must pass before production. Do not recommend deployment for
+a unique Tier 1 failure or a clear increase in Tier 1 intermittent failures.
 
 ## Gotchas
 
-- Must be on a feature branch — `mach try` refuses pushes from `main`/`master`.
-- Default reuses builds from the latest autoland decision task (skips a 45-min Firefox build). Use `--fresh-build` only when something changed in the build itself.
-- Lando-based pushes need Mozilla Auth0; the auth prompt opens in the browser if needed.
-- Each preset's worker overrides live in `references/presets.yml` — change them there, not in `run_try.py`.
-- Use `--query-set` (per preset) instead of long `-t` lists when you have a recurring test bundle.
-- Adding a new preset means editing **two** files: the entry in `references/presets.yml` **and** the hardcoded `VALID_PRESETS` list in `run_try.py` (argparse choices are not derived from the YAML).
-- `worker_overrides` keys are mach try worker-type **aliases** (the LHS of `workers.aliases` in the gecko `taskcluster/config.yml`), not the resolved worker-type. ARM64 builds use the `b-win-aarch64-25h2` alias, which resolves to the `win11-a64-25h2-builder` worker-type.
-- `win11-a64-25h2-builder` must run with `--fresh-build`: it targets the shippable `generate-profile-win64-aarch64-shippable` task, which is not in autoland's reusable graph (so `--use-existing-tasks` selects nothing) and needs `--full`. It also only validates the new image once that alpha builder image is actually published to `gecko-1/win11-a64-25h2-builder-alpha`.
+- Start with `--dry-run`; broad queries can schedule many tasks.
+- `--watch` implies a push unless `--dry-run` is set.
+- Preset validation comes from [presets.yml](references/presets.yml).
+- Read [linux-worker-overrides.md](references/linux-worker-overrides.md) before
+  changing Linux scopes or payload fields.
 
-## Additional Documentation
+## Related Skills
 
-- **Presets Configuration**: See `references/presets.yml`
-- **Linux Worker Overrides**: See `references/linux-worker-overrides.md`
-- **Pushing to Try**: See `references/pushing-to-try.md`
-- **Script Help**: Run `uv run ~/.claude/skills/os-integrations/scripts/run_try.py --help`
-
-## Official Documentation
-
-For more information on mach try and Taskcluster:
-
-- **Firefox Try Documentation**: https://firefox-source-docs.mozilla.org/tools/try/
-- **Taskcluster Documentation**: https://docs.taskcluster.net/
-- **Firefox Source Docs**: https://firefox-source-docs.mozilla.org/
+Use **treeherder** for results, **worker-image-investigation** for unique
+failures, and **lando** for separate landing checks. See
+[pushing-to-try.md](references/pushing-to-try.md) for selector details.

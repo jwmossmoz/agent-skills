@@ -200,7 +200,7 @@ uv run scripts/tc.py status <TASK_ID>
 uv run scripts/tc.py definition <TASK_ID> | jq '.workerType, .provisionerId'
 
 # 3. Check fxci-config for worker pool definition
-cd ~/github_moz/fxci-config
+cd <path-to-fxci-config>
 yq eval '.["gecko-t/win11-64-24h2-alpha"]' worker-pools.yml
 
 # 4. For Azure workers, check ARM template configuration
@@ -216,7 +216,7 @@ az ts show --name taskcluster-arm-template-v6-nvme --version 1.0 \
 uv run scripts/tc.py status <TASK_ID> | jq '.status.runs[-1]'
 
 # 2. Check worker pool max capacity
-cd ~/github_moz/fxci-config
+cd <path-to-fxci-config>
 yq eval '.["gecko-t/win11-64-24h2-alpha"].config.maxCapacity' worker-pools.yml
 
 # 3. See all pending tasks in the group
@@ -231,7 +231,7 @@ uv run scripts/tc.py group-list <GROUP_ID> | \
 uv run scripts/tc.py definition <TASK_ID> | jq '.payload'
 
 # 2. Check worker pool configuration in fxci-config
-cd ~/github_moz/fxci-config
+cd <path-to-fxci-config>
 yq eval '.["gecko-t/win11-64-24h2-alpha"]' worker-pools.yml
 
 # 3. Compare with ARM template (for Azure)
@@ -243,14 +243,14 @@ yq eval '.["gecko-t/win11-64-24h2-alpha"]' worker-pools.yml
 ### Find Worker Pools Using a Specific Image
 
 ```bash
-cd ~/github_moz/fxci-config
+cd <path-to-fxci-config>
 yq eval 'to_entries | .[] | select(.value.config.imageRef.id == "win116424h2alpha") | .key' worker-pools.yml
 ```
 
 ### List All Worker Pools by Provider
 
 ```bash
-cd ~/github_moz/fxci-config
+cd <path-to-fxci-config>
 yq eval 'to_entries | .[] | select(.value.providerId == "azure") | .key' worker-pools.yml
 ```
 
@@ -258,7 +258,7 @@ yq eval 'to_entries | .[] | select(.value.providerId == "azure") | .key' worker-
 
 ```bash
 # For Linux images, check provisioning script
-cd ~/github_moz/worker-images
+cd <path-to-worker-images>
 grep -r "taskcluster.*version" scripts/linux/
 
 # For Windows images

@@ -1,6 +1,6 @@
 ---
 name: skill-checker
-description: "Use when validating, auditing, grading, or checking an agent skill, SKILL.md, validator report, eval coverage, or production-readiness claim against agentskills.io and repo conventions. Checks spec, style, links, references, and eval evidence. DO NOT USE FOR creating or iterating skills; use skill-creator."
+description: "Use when validating or auditing an agent skill, SKILL.md, checker report, eval coverage, or production-readiness claim. DO NOT USE FOR creating or iterating skills; use skill-creator."
 ---
 
 # skill-checker

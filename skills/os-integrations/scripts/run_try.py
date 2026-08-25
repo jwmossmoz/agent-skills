@@ -56,20 +56,6 @@ FIREFOX_DIR = Path.home() / "firefox"
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PRESETS_FILE = SCRIPT_DIR.parent / "references" / "presets.yml"
 
-VALID_PRESETS = [
-    "win11-24h2",
-    "win11-25h2",
-    "win11-25h2-prod",
-    "win11-25h2-gpu-webgpu",
-    "win11-hw",
-    "win10-2009",
-    "win11-amd",
-    "win11-source",
-    "b-win2022",
-    "win11-arm64",
-    "win11-a64-25h2-builder",
-]
-
 PROTECTED_BRANCHES = ["main", "master", "central"]
 
 # Taskcluster root URL for Firefox CI
@@ -532,7 +518,6 @@ Examples:
 
     parser.add_argument(
         "preset",
-        choices=VALID_PRESETS,
         help="Preset configuration name",
     )
     parser.add_argument(

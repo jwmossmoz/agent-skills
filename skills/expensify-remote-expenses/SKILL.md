@@ -1,11 +1,9 @@
 ---
 name: expensify-remote-expenses
 description: >
-  Create recurring Mozilla home-internet and on-call phone expense-report
-  drafts in Expensify using browser-harness, authenticated billing portals,
-  and current Mana guidance. Use when gathering monthly statements and
-  recreating prior approved reimbursement patterns. DO NOT USE FOR travel or
-  one-off purchases.
+  Use when preparing recurring Mozilla home-internet or on-call phone expense
+  drafts from final statements, prior approved reports, and current Mana policy.
+  DO NOT USE FOR travel or one-off purchases.
 metadata:
   version: "1.0"
 ---
@@ -68,5 +66,4 @@ Stop on authentication or policy conflicts; use the Gotchas above for UI issues.
 
 ## Related Skills
 
-- Use `writing-skills` when changing this skill or its evals.
-- Use `skill-checker` before merging changes.
+Use **writing-skills** and **skill-checker** only when maintaining this skill.

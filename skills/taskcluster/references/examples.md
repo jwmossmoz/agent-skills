@@ -6,7 +6,7 @@ Always set the root URL first:
 
 ```bash
 export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
-TC=/Users/jwmoss/github_moz/agent-skills/skills/taskcluster/scripts/tc.py
+TC=~/.claude/skills/taskcluster/scripts/tc.py
 ```
 
 ## Basic Task Operations
@@ -182,7 +182,8 @@ When testing new worker pools (e.g., win11-64-24h2-alpha):
 
 ```bash
 # 1. Trigger a try push with os-integrations skill
-cd ~/firefox && uv run /Users/jwmoss/github_moz/agent-skills/skills/os-integrations/scripts/run_try.py win11-24h2
+cd ~/firefox
+uv run ~/.claude/skills/os-integrations/scripts/run_try.py win11-24h2
 
 # 2. Get the task group ID from the output
 TASK_GROUP_ID="<from mach try output>"

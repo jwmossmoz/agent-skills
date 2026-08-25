@@ -81,10 +81,19 @@ The agent will invoke the appropriate skill and handle the technical details suc
 Use `npx skills` to install — it manages the canonical location at `~/.agents/skills/` and creates the symlinks Claude Code reads from `~/.claude/skills/`:
 
 ```bash
-npx skills add jwmossmoz/agent-skills -g --agent '*' -y
+npx skills add jwmossmoz/agent-skills -g --agent '*' --skill taskcluster --skill treeherder -y
 ```
 
-Pass `--skill <name>` to install individual skills.
+Install the operational skills that match your work. Add more `--skill <name>`
+options as needed. This keeps the global skill catalog small. The
+`writing-skills` skill is for repository contributors and is not needed for
+normal CI work.
+
+To install the complete collection, omit all `--skill` options:
+
+```bash
+npx skills add jwmossmoz/agent-skills -g --agent '*' -y
+```
 
 #### Manual symlinks (advanced)
 

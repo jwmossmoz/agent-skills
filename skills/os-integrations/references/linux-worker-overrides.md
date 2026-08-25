@@ -179,6 +179,6 @@ Or check the task definition on Treeherder by clicking on a job and viewing the 
 ## Related Files
 
 - `~/firefox/taskcluster/config.yml` - Worker alias definitions
-- `~/github_moz/fxci-config/worker-images.yml` - Worker image mappings
+- `<path-to-fxci-config>/worker-images.yml` - Worker image mappings
 - `~/firefox/taskcluster/kinds/test/marionette.yml` - Marionette test definitions
 - `~/firefox/taskcluster/kinds/test/kind.yml` - General test kind configuration
