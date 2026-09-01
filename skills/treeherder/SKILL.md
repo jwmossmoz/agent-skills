@@ -15,16 +15,18 @@ data that the CLI does not expose.
 
 ## Prerequisites
 
-Install `treeherder-cli`. Read operations need no authentication.
+Install `treeherder-cli`. Read operations need no authentication. Run
+`treeherder-cli --help` before use. The installed help is the source of truth
+for supported options.
 
 ## Usage
 
 ```bash
 TH_CLASSIFY=~/.claude/skills/treeherder/scripts/classification.py
 
+treeherder-cli --help
 treeherder-cli <REVISION> --repo try --json
 treeherder-cli <REVISION> --compare <BASE_REVISION> --repo try --json
-treeherder-cli --history "<TEST>" --history-count 50 --repo autoland --json
 treeherder-cli --similar-history <JOB_ID> --similar-count 100 --repo autoland --json
 uv run "$TH_CLASSIFY" get --task-id <TASK_ID> --include-notes
 ```
@@ -37,7 +39,8 @@ comparison API.
 ## Gotchas
 
 - `--similar-history` needs a numeric Treeherder job ID, not a Taskcluster ID.
-- The default repository is autoland. Set `--repo` for other branches.
+- For history by test name or across repositories, use the REST API.
+- The default repository is try. Set `--repo` for other branches.
 - REST calls need a `User-Agent` header. Deduplicate calls for retried jobs.
 
 ## Related Skills
