@@ -4,6 +4,9 @@ This skill uses **treeherder-cli** for revision-based failure analysis, comparis
 
 For features treeherder-cli does not cover (push listing, failures-by-bug, error-line bug suggestions, perf alerts, repository listing), call the Treeherder REST API directly. See `api-reference.md`.
 
+Run `treeherder-cli --help` before use. Use only the options that the installed
+CLI shows.
+
 ---
 
 # treeherder-cli
@@ -14,13 +17,16 @@ Rust CLI for fetching and analyzing Firefox CI failures from Treeherder.
 
 ```bash
 cargo install --git https://github.com/padenot/treeherder-cli
+
+# Update an existing installation
+cargo install --git https://github.com/padenot/treeherder-cli --force
 ```
 
 ## Usage
 
 ```bash
+treeherder-cli --help
 treeherder-cli <REVISION> [OPTIONS]
-treeherder-cli --history <TEST_NAME> [OPTIONS]
 treeherder-cli --similar-history <JOB_ID> [OPTIONS]
 treeherder-cli --use-cache [OPTIONS]
 ```
@@ -33,7 +39,7 @@ treeherder-cli --use-cache [OPTIONS]
 |--------|-------------|
 | `<REVISION>` | Revision hash to query (positional argument) |
 | `--json` | Output results as JSON |
-| `--repo <REPO>` | Repository to query (default: autoland) |
+| `--repo <REPO>` | Repository to query (default: try) |
 
 ### Filtering
 
@@ -50,8 +56,6 @@ treeherder-cli --use-cache [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | `--compare <REVISION>` | Compare against another revision to find regressions |
-| `--history <TEST_NAME>` | Examine test occurrence patterns across builds |
-| `--history-count <N>` | Number of historical records to retrieve |
 | `--similar-history <JOB_ID>` | Get job history via Treeherder's similar_jobs API |
 | `--similar-count <N>` | Number of similar job results to return |
 
@@ -95,9 +99,6 @@ treeherder-cli a13b9fc22101 --group-by test --json
 
 # Compare revisions to find regressions
 treeherder-cli a13b9fc22101 --compare b2c3d4e5f678 --json
-
-# Check test history for intermittent detection
-treeherder-cli --history "test_audio_playback" --history-count 10 --repo try --json
 
 # Include intermittent failures
 treeherder-cli a13b9fc22101 --include-intermittent --json

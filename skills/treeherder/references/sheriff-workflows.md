@@ -8,8 +8,7 @@ This document describes common sheriff workflows using **treeherder-cli** plus d
 |------|----------|---------|
 | Get failures for a revision | treeherder-cli | `treeherder-cli abc123 --json` |
 | Compare revisions | treeherder-cli | `treeherder-cli abc123 --compare def456 --json` |
-| Check test history | treeherder-cli | `treeherder-cli --history "test_name" --json` |
-| Compare a failed job with similar jobs | treeherder-cli | `treeherder-cli --similar-history 543981186 --repo try --json` |
+| Check similar job history | treeherder-cli | `treeherder-cli --similar-history 543981186 --repo try --json` |
 | Fetch logs with search | treeherder-cli | `treeherder-cli abc123 --fetch-logs --pattern "ERROR"` |
 | Watch a revision | treeherder-cli | `treeherder-cli abc123 --watch --notify` |
 | List recent pushes | REST API | `GET /api/project/{repo}/push/?count=10` |
@@ -72,15 +71,14 @@ curl -s -A "Mozilla/5.0" \
 treeherder-cli a13b9fc22101 --compare b2c3d4e5f678 --json
 ```
 
-### Check test history for intermittent detection
+### Check similar job history for intermittent detection
 
 ```bash
-# Is this test historically flaky?
-treeherder-cli --history "browser_all_files_flash.js" --history-count 20 --json
-
-# Check via Treeherder's similar_jobs API
 treeherder-cli --similar-history 543981186 --similar-count 100 --repo autoland --json
 ```
+
+Use the REST API when you must search history by test name or compare
+repositories.
 
 ## Workflow 3: Monitoring a Try Push
 
