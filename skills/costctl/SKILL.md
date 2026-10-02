@@ -1,5 +1,5 @@
 ---
-name: azure-cost-duckdb
+name: costctl
 description: >
   Use when downloading Azure Cost Management exports or querying local
   Parquet and CSV cost data with DuckDB. DO NOT USE FOR live Cost Management
