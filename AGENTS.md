@@ -2,17 +2,21 @@
 
 ## Project Structure & Module Organization
 
-- `skills/` contains each skill as a self-contained module (for example, `skills/bugzilla/`, `skills/jira/`).
+- `skills/` contains each skill as a self-contained module (for example, `skills/bugzilla/`, `skills/taskcluster/`).
 - Each skill typically includes `SKILL.md` (documentation + metadata), `scripts/` (implementation), and optional `references/` or `assets/`.
 - `agents/` holds custom subagent definitions used by agent frameworks.
 - Top-level docs live in `README.md` and `AGENTS.md`. `CLAUDE.md`, when present, should only include `@AGENTS.md`.
+
+## Jira
+
+Use the Atlassian MCP for Jira work. This repository does not provide a Jira skill.
 
 ## Build, Test, and Development Commands
 
 There is no global build step; skills are executed directly.
 
 - Run a Python-based skill: `uv run skills/bugzilla/scripts/bz.py search --quicksearch "crash"`
-- Run a script from its directory: `cd skills/jira/scripts && uv run extract_jira.py --help`
+- Run a script from its directory: `cd skills/taskcluster/scripts && uv run tc.py --help`
 - Run a tool via `uvx` (zero-install): `uvx --from lando-cli lando check-job <job_id>`
 
 `uv` is the standard runner for Python dependencies; `uv.lock` files are committed for reproducibility.
@@ -34,7 +38,7 @@ There is no automated test suite today. Validate changes by running the relevant
 
 ## Commit & Pull Request Guidelines
 
-- Keep commits focused and use concise, imperative messages (for example, “Add JIRA export flag”).
+- Keep commits focused and use concise, imperative messages (for example, “Add Taskcluster status command”).
 - Include a short summary of changes, testing performed, and any required setup (env vars, config files).
 - Link issues when applicable and add screenshots only if output formatting changes.
 

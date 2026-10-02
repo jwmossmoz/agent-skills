@@ -48,7 +48,7 @@ gecko-t/win11-64-24h2-alpha:
 **Related Skills**:
 - Use **os-integrations** skill to test worker pools with Firefox mach try
 - Use **taskcluster** skill to debug worker pool issues
-- Use **jira** skill to track worker pool deployment stories
+- Use the Atlassian MCP to track worker pool deployment stories in Jira
 
 ### mozilla-platform-ops/worker-images
 
