@@ -36,7 +36,7 @@ Use the Atlassian MCP for Jira work.
 
 - **bigquery** — Ad-hoc SQL against Mozilla telemetry tables via the bq CLI
 - **redash** — Saved queries and shareable results from sql.telemetry.mozilla.org
-- **costctl** — Query the local costctl DuckDB lake of GCP and Azure CI costs with Taskcluster context, find waste, and look up spot prices
+- **costctl** — Lives in [jwmossmoz/costctl](https://github.com/jwmossmoz/costctl/tree/main/.agents/skills/costctl) with the CLI; install with `npx skills add jwmossmoz/costctl -s costctl -g -y`
 - **win11-files** — Local SQLite of Windows 11 cumulative-update file information
 
 ### Productivity
