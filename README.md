@@ -30,7 +30,8 @@ This repository provides modular skills that enable AI agents to interact with M
 ### Issue tracking
 
 - **bugzilla** — Search, view, create, update, and comment on Mozilla Bugzilla bugs
-- **jira** — Search, create, modify, and transition issues in Mozilla JIRA with Markdown→ADF
+
+Use the Atlassian MCP for Jira work.
 
 ### Telemetry and data
 
@@ -65,10 +66,8 @@ For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`
 
 Once skills are installed, ask your agent naturally:
 
-- "Show me my current sprint stories"
 - "Check the treeherder status for my push"
 - "Run os-integration tests on Windows 11"
-- "Create a JIRA story for fixing the login bug"
 - "Search bugzilla for crashes in Firefox"
 - "File a bug for the startup regression"
 
