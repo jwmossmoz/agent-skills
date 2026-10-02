@@ -24,7 +24,6 @@ This repository provides modular skills that enable AI agents to interact with M
 ### Logs
 
 - **papertrail** — In-VM worker logs from SolarWinds Observability via paperctl
-- **splunk** — Azure activity logs (`index=azure_audit`) via browser-harness against Splunk Web
 - **worker-ready-tracing** — End-to-end Azure VM request, in-VM boot scripts, and generic-worker ready timing
 
 ### Issue tracking
@@ -52,7 +51,7 @@ Use the Atlassian MCP for Jira work.
 - **skill-checker** — Validate Agent Skills with waza, skill-validator, and skill-check
 - **writing-skills** — House style for authoring and maintaining the skills in this repo
 
-For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`, `redash` vs `bigquery`, `splunk` vs `papertrail` vs `tc-logview`, `worker-image-build` vs `worker-image-investigation`), see each skill's description and `## Related Skills` section.
+For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`, `redash` vs `bigquery`, `papertrail` vs `tc-logview`, `worker-image-build` vs `worker-image-investigation`), see each skill's description and `## Related Skills` section.
 
 ## Subagents
 

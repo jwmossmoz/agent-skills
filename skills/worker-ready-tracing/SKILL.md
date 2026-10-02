@@ -56,7 +56,6 @@ registration and can be minutes earlier. Read
 ## Related Skills
 
 - Use **papertrail** for an ad hoc guest-log search.
-- Use **splunk** for broader Azure lifecycle analysis.
 - Use **worker-image-investigation** for test or image failures.
 
 ## References

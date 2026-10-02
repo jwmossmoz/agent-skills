@@ -54,5 +54,4 @@ Tier 1 failure or a clear increase in Tier 1 intermittents blocks deployment.
 
 ## Related Skills
 
-Use **taskcluster** for tasks, **papertrail** for guest logs, **splunk** for
-Azure lifecycle, and **worker-image-build** for a new build.
+Use **taskcluster** for tasks, **papertrail** for guest logs, and **worker-image-build** for a new build.

@@ -18,7 +18,6 @@ Search or download logs forwarded from a running worker.
 |---|---|
 | **papertrail** | Worker process, Windows events, service output, and container startup |
 | **taskcluster-worker-lifecycle-logs** | Worker-manager decisions, registration, scanner state, and workers that never started |
-| **splunk** | Azure VM, disk, and NIC control-plane events |
 | **taskcluster** | Task logs, artifacts, state, and retriggers |
 
 ## Prerequisites
@@ -55,5 +54,4 @@ options.
 
 ## Related Skills
 
-Use **worker-ready-tracing** for a combined startup timeline and **splunk** for
-an Azure provisioning error such as `OSProvisioningTimedOut`.
+Use **worker-ready-tracing** for a combined startup timeline.
