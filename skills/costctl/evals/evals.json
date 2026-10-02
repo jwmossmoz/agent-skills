@@ -1,45 +1,17 @@
 {
-  "skill_name": "azure-cost-duckdb",
+  "skill_name": "costctl",
   "evals": [
-    {
-      "id": 1,
-      "prompt": "Set up a local DuckDB cache for my Azure Cost Management exports so I can stop querying Azure for repeated cost analysis.",
-      "should_trigger": true
-    },
-    {
-      "id": 2,
-      "prompt": "Download the latest Parquet cost export from Azure Blob Storage and show me a DuckDB query for monthly spend by service.",
-      "should_trigger": true
-    },
-    {
-      "id": 3,
-      "prompt": "I have Azure Cost Management FOCUS exports in blob storage; refresh my local files and query top resources in DuckDB.",
-      "should_trigger": true
-    },
-    {
-      "id": 4,
-      "prompt": "Create an init.sql view over ~/moz_artifacts/azure-cost/raw/**/*.parquet for DuckDB cost analysis.",
-      "should_trigger": true
-    },
-    {
-      "id": 5,
-      "prompt": "Why did FXCI Azure costs go up this month? Compare cost per task and worker-pool volume.",
-      "should_trigger": false
-    },
-    {
-      "id": 6,
-      "prompt": "Run a BigQuery query to count Taskcluster tasks by worker pool for last week.",
-      "should_trigger": false
-    },
-    {
-      "id": 7,
-      "prompt": "Search Splunk Azure activity logs for VM deletion failures yesterday.",
-      "should_trigger": false
-    },
-    {
-      "id": 8,
-      "prompt": "Open the Azure portal and create a new Cost Management export for me.",
-      "should_trigger": false
-    }
+    {"id": 1, "prompt": "Which GCP worker pools wasted the most money on idle instances last month?", "should_trigger": true},
+    {"id": 2, "prompt": "What did a task on gecko-t/t-linux-docker-kvm cost on average in September, by test suite?", "should_trigger": true},
+    {"id": 3, "prompt": "How much did failed and interrupted (worker-shutdown) task runs cost us in September?", "should_trigger": true},
+    {"id": 4, "prompt": "Is GCP CI compute spend up because we ran more tasks or because the cost per busy hour went up?", "should_trigger": true},
+    {"id": 5, "prompt": "How much FXCI DevTest Azure spend is untagged or not VM compute, like disks and bandwidth?", "should_trigger": true},
+    {"id": 6, "prompt": "For our most expensive worker pools, how much is idle cost and what minCapacity and machine types are they using?", "should_trigger": true},
+    {"id": 7, "prompt": "What's the current spot price for Standard_D32ads_v5 in eastus2 compared to westus2?", "should_trigger": true},
+    {"id": 8, "prompt": "Give me daily GCP and Azure CI cost totals for the last two weeks from my local cost data.", "should_trigger": true},
+    {"id": 9, "prompt": "Pull today's Azure spend for the Trusted FXCI and TC Engineering subscriptions from the Cost Management API.", "should_trigger": false},
+    {"id": 10, "prompt": "Azure cost jumped this week; check the Cost Management API by meter and correlate it with fxci-config changes.", "should_trigger": false},
+    {"id": 11, "prompt": "Run the saved Redash query for FXCI cost per push and send me a shareable chart link.", "should_trigger": false},
+    {"id": 12, "prompt": "Open an Azure support ticket disputing an overcharge on the FXCI DevTest subscription last month.", "should_trigger": false}
   ]
 }

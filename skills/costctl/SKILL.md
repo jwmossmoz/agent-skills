@@ -1,57 +1,50 @@
 ---
 name: costctl
 description: >
-  Use when downloading Azure Cost Management exports or querying local
-  Parquet and CSV cost data with DuckDB. DO NOT USE FOR live Cost Management
+  Use when answering Firefox CI cost questions with costctl: syncing or querying
+  the local DuckDB lake of GCP and Azure CI costs with Taskcluster context,
+  finding waste, or looking up spot prices. DO NOT USE FOR live Cost Management
   API diagnosis; use azure-cost-analysis.
 metadata:
-  version: "1.0"
+  version: "2.0"
 ---
 
-# Azure Cost DuckDB
+# costctl
 
-Download Azure Cost Management exports from Blob Storage and query them locally with DuckDB.
+Local DuckDB lake of CI costs (fxci_derived, Azure exports, worker-manager pools) plus spot prices.
 
 ## Prerequisites
 
-- Cost exports (Parquet/CSV) in Blob Storage
-- Azure CLI with Blob data access
-- `uv` (installs DuckDB)
+`costctl` from private `jwmossmoz/costctl` (`make install`), `uv`, `gcloud` with BigQuery on
+`mozdata`, Azure CLI, and `~/.config/costctl/lake.toml` from `lake/lake.toml.example`.
 
 ## Usage
 
-Copy `scripts/config.toml.example`, then run:
-
 ```bash
-AZC=~/.claude/skills/azure-cost-duckdb/scripts/azure_cost_duckdb.py
-uv run "$AZC" sync --config ~/.config/azure-cost-duckdb.toml
-uv run "$AZC" query --config ~/.config/azure-cost-duckdb.toml --sql "SELECT 1"
+costctl lake status        # run first: sources, date ranges
+costctl lake sync          # incremental; --dry-run shows scan bytes
+costctl lake ask           # list saved questions
+costctl lake ask idle --since 2026-09-01 --until 2026-10-01   # --until exclusive
+costctl lake sql "SELECT ..."
+costctl azure spot current --sku Standard_D32ads_v5 --region eastus2   # list prices
 ```
 
-See [usage.md](references/usage.md).
+Read [lake.md](references/lake.md) for views and questions before writing SQL,
+[azure-sql.md](references/azure-sql.md) for `azure_cost`, and
+[azure-exports.md](references/azure-exports.md) for export refresh. Report dollars with window and view.
 
 ## Examples
 
-- "Refresh May cost exports and show top worker pools."
+- "Which pools wasted most on idle instances last month?" → `costctl lake ask idle`.
 
 ## Gotchas And Troubleshooting
 
-- `sync --dry-run` first; `--pattern` matches container paths.
-- `sync --latest-run` for month folders with snapshots.
-- `validate` after large CSV downloads; row counts should match manifests.
-- Overwrite a bad partition: `sync --pattern <file>.csv`; `--no-overwrite`
-  won't resume.
-- `schema` first; export column names vary.
-- Group by the derived `worker_pool_id` (both tag spellings); absent-from-data
-  may be unbilled, not free — see
-  [duckdb-queries.md](references/duckdb-queries.md),
-  [azure-exports.md](references/azure-exports.md).
-- Current periods can be rerated; refresh the current month.
-- DuckDB locks a `.duckdb` file per process.
-- Do not commit `raw/`, `.duckdb`, keys, tokens, or real config.
+- Azure totals: `azure_cost`, not `worker_costs` (~25% coverage).
+- GCP `worker_costs` is compute only; 2026-08-01..05 is broken upstream.
+- Run cost is keyed to task submission date; compare billed vs attributed over weeks.
+- Never pull GCP billing `labels` or `billing_views.gcp_billing_export_v3` (TB scans).
+- Write `AS usd`; DuckDB rejects bare `cost` aliases.
 
-## References
+## Related Skills
 
-- [usage.md](references/usage.md) — Commands.
-- [azure-exports.md](references/azure-exports.md) — Export behavior.
-- [duckdb-queries.md](references/duckdb-queries.md) — SQL patterns.
+- **azure-cost-analysis** for live Cost Management API diagnosis.

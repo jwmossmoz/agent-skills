@@ -22,9 +22,9 @@ partition whose physical row count does not match its manifest entry.
 
 ## Preferred Dataset
 
-Prefer Cost and usage details in FOCUS format when you want a stable FinOps
-shape that combines actual and amortized concepts. Use actual or amortized
-exports when you need an Azure-native schema matching existing reports.
+`costctl lake` supports Azure-native **actual cost** exports only. `azure_cost`, the saved
+questions, and the documented SQL use that schema (`date`, `meterCategory`, `costInUsd`, `tags`).
+Adding a FOCUS or amortized export to `[azure].exports` would mix schemas in one view.
 
 ## Preferred File Format
 
@@ -50,7 +50,7 @@ az login
 az storage blob download-batch \
   --account-name <storage-account> \
   --source <container> \
-  --destination ~/moz_artifacts/azure-cost/raw \
+  --destination /tmp/azure-export-raw \
   --auth-mode login \
   --pattern '<export-prefix>/*.parquet' \
   --overwrite true
@@ -65,6 +65,11 @@ Current billing-period charges can change until the invoice closes. Daily
 exports commonly overwrite the latest current-period run. Refresh current
 month data before analysis, and treat closed months as the more stable
 baseline.
+
+`costctl lake sync` already handles this: per export and month it resolves the
+latest run, downloads only that run, replaces the month's Parquet file, and
+skips months whose latest run is already imported (`parquet/azure_cost/_runs.json`).
+The rest of this section applies to manual `costctl lake azure sync` runs.
 
 Monthly export folders can contain multiple run snapshots. Use
 `sync --latest-run` when the prefix points at a month directory so the helper
