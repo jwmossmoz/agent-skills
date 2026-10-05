@@ -43,7 +43,7 @@ Using the `--push-to-vcs` flag bypasses Lando and pushes directly.
 
 After pushing, you'll receive:
 - **Treeherder URL**: `https://treeherder.mozilla.org/jobs?repo=try&revision=<REVISION>`
-- **Lando Job ID**: `https://api.lando.services.mozilla.com/landing_jobs/<JOB_ID>`
+- **Lando Job ID**: `https://lando.moz.tools/landing_jobs/<JOB_ID>/`
 
 ## Common Commands
 

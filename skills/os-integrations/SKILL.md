@@ -5,7 +5,7 @@ description: >
   or Linux worker images, including build reuse, task selection, Lando status,
   and result watching.
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
 # OS Integrations
