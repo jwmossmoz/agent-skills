@@ -29,8 +29,7 @@ This repository provides modular skills that enable AI agents to interact with M
 ### Issue tracking
 
 - **bugzilla** — Search, view, create, update, and comment on Mozilla Bugzilla bugs
-
-Use the Atlassian MCP for Jira work.
+- **jira** — Search, create, update, and transition Mozilla Jira issues with the local helper.
 
 ### Telemetry and data
 

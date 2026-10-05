@@ -1,0 +1,5 @@
+# Data files (JIRA outputs)
+*.json
+
+# Configuration (contains sensitive info)
+scripts/config.toml

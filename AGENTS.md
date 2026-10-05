@@ -9,7 +9,8 @@
 
 ## Jira
 
-Use the Atlassian MCP for Jira work. This repository does not provide a Jira skill.
+Use the `jira` skill for Mozilla Jira work. It provides the local helper for
+issue searches, sprint queries, and updates.
 
 ## Build, Test, and Development Commands
 
