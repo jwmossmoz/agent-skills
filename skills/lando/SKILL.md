@@ -5,7 +5,7 @@ description: >
   current state, landed commit, failure reason, or cancellation from the public
   read-only API.
 metadata:
-  version: "1.2"
+  version: "1.3"
 ---
 
 # Lando
@@ -20,7 +20,7 @@ The read-only API does not need authentication. Use `curl` and `jq`.
 ## Usage
 
 ```bash
-curl -fsS "https://api.lando.services.mozilla.com/landing_jobs/<JOB_ID>" \
+curl -fsS "https://lando.moz.tools/landing_jobs/<JOB_ID>/" \
   | jq '{status, commit_id, error, updated_at}'
 ```
 
@@ -32,7 +32,11 @@ Poll at a moderate interval until `status` is `LANDED`, `FAILED`, or
 - Status values are uppercase.
 - The landed commit field is `commit_id`, not `landed_commit_id`.
 - A job can end as `CANCELLED` as well as `FAILED` or `LANDED`.
-- Do not use the older `/api/v1/landing_jobs/` host path.
+- Use `lando.moz.tools` (instance `lando-prod-2025`, the `landoInstance` in the
+  Treeherder URL that `mach try` prints). The old
+  `api.lando.services.mozilla.com` host is a different instance whose job IDs
+  overlap, so it returns unrelated jobs instead of an error.
+- Keep the trailing slash. Without it the endpoint returns a 301 redirect.
 
 ## References
 
