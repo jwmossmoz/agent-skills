@@ -19,7 +19,7 @@ This repository provides modular skills that enable AI agents to interact with M
 ### Worker images
 
 - **worker-image-build** — Trigger GitHub Actions workflows to build FXCI Windows worker images
-- **worker-image-investigation** — Diagnose image-caused CI failures (cliffs, comparisons, debug VMs)
+- **worker-image-investigation** — Triage CI failures to a verdict and diagnose image-caused failures (cliffs, comparisons, debug VMs)
 
 ### Logs
 
