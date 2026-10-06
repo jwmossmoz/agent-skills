@@ -39,13 +39,8 @@ CLASSIFICATION_NAMES = {
 }
 
 def load_image_helpers():
-    """Load shared Taskcluster and image helpers from the investigation skill."""
-    helper_path = (
-        Path(__file__).resolve().parents[2]
-        / "worker-image-investigation"
-        / "scripts"
-        / "investigate.py"
-    )
+    """Load shared Taskcluster and image helpers from investigate.py."""
+    helper_path = Path(__file__).resolve().with_name("investigate.py")
     spec = importlib.util.spec_from_file_location("worker_image_investigate", helper_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Could not load image helpers from {helper_path}")

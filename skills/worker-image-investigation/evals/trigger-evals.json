@@ -9,6 +9,8 @@
   {"query": "Find a recent passing run on mozilla-beta for `test-windows11-64-24h2-mochitest-browser-chrome` and compare images with the failing autoland one.", "should_trigger": true},
   {"query": "Get the Treeherder job ID for taskcluster task `bjUM4ECETnioVcU9KH5_qg` so I can run --similar-history on it.", "should_trigger": true},
   {"query": "VM-info on vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in RG-TASKCLUSTER-WORKER-MANAGER-PRODUCTION — Windows build and GenericWorker version.", "should_trigger": true},
+  {"query": "Sheriff here: is the failure in task `bjUM4ECETnioVcU9KH5_qg` a code regression, an image regression, or just intermittent?", "should_trigger": true},
+  {"query": "Give me one verdict for this failing win11-64-25h2-alpha mochitest task before I back anything out.", "should_trigger": true},
   {"query": "Build a worker image — config is win11-64-24h2-alpha, untrusted FXCI Azure workflow.", "should_trigger": false},
   {"query": "Get task status and live log from Taskcluster for `bjUM4ECETnioVcU9KH5_qg`.", "should_trigger": false},
   {"query": "Pull worker logs from vm-cykzet5ps4qwwqx4qe1fgqzcvjsxiptmu5f in papertrail — I want the on-host bootstrap output.", "should_trigger": false},
