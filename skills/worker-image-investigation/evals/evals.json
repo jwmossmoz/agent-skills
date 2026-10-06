@@ -1,0 +1,46 @@
+{
+  "skill_name": "worker-image-investigation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Today's alpha Tier 1 32-bit XPCShell task hung in test_crash_stl.js, then logged MiniDumpWriteDump 0x8007012B, a dump PermissionError, and test_start while in progress. Today's autoland production task has the same signature; a central task passed. Should that shared failure block the image change?",
+      "expected_output": "No. Link the matching autoland failure as existing baseline evidence. A passing central task does not turn a shared intermittent into an alpha-only failure. Do not require all Tier 1 tasks to be green or create a failure-frequency gate.",
+      "files": [],
+      "assertions": [
+        "Does not treat the shared failure as an image blocker.",
+        "Uses the matching failure signature, not only the final test pass on retry.",
+        "Does not require an all-green run or a failure-frequency gate."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The candidate image fails a Tier 1 sandbox test. Equivalent tests using the same build and configuration pass today on both autoland and central production workers, with no matching baseline failure. Is this an image blocker?",
+      "expected_output": "Yes. Investigate the candidate-only failure against the passing equivalents before recommending deployment; do not claim a root cause solely from the image version difference.",
+      "files": [],
+      "assertions": [
+        "Treats the candidate-only failure against passing equivalents as a blocker.",
+        "Does not invent a root cause from an image version difference."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Alpha fails test_crash_stl.js. Today's production XPCShell task is also red, but only because test_backgroundupdate_exitcodes.js failed; test_crash_stl.js completed cleanly there. Can we dismiss the alpha failure just because both jobs are red?",
+      "expected_output": "No. The production failure is a different signature. Compare the individual test and its full task log; the clean equivalent crash test is evidence that the candidate failure needs investigation.",
+      "files": [],
+      "assertions": [
+        "Does not equate unrelated red jobs with matching baseline failures.",
+        "Checks the individual test and failure signature."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Alpha fails a test, today's equivalent autoland and central jobs are still pending, and fx-tests has no history. Is this already a confirmed image regression?",
+      "expected_output": "No. Baseline evidence is inconclusive. Obtain completed equivalent results rather than interpreting pending jobs or missing history as passes, failures, or proof of a new regression.",
+      "files": [],
+      "assertions": [
+        "Calls the baseline inconclusive rather than confirming an image regression.",
+        "Does not interpret missing history or pending jobs as a completed baseline."
+      ]
+    }
+  ]
+}
