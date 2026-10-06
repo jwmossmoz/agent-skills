@@ -5,7 +5,7 @@ description: >
   GitHub Actions builds. DO NOT USE FOR failure investigation or a complete
   production rollout.
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Worker Image Build
@@ -46,9 +46,10 @@ Use `FXCI - Azure - Trusted` for a trusted configuration. Read
 - A trusted configuration must use the trusted workflow.
 - Build an `-alpha` image before production. A build usually takes 30 to 60
   minutes and opens a release-notes pull request.
-- Do not merge release notes or recommend production deployment until
-  **os-integrations** shows that all Tier 1 tasks pass against the latest
-  autoland decision baseline.
+- Before merging release notes or recommending production, use
+  **os-integrations** to compare failures with today's autoland, mozilla-central,
+  or other existing-pool results. Shared baseline failures are not image
+  blockers; only candidate failures against passing equivalents are.
 
 ## Related Skills
 

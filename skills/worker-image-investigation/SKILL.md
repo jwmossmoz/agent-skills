@@ -5,7 +5,7 @@ description: >
   infra verdict, or when a failure needs image, SBOM, test-history, pool, or
   Azure VM comparison. DO NOT USE FOR starting a build.
 metadata:
-  version: "1.3"
+  version: "1.4"
 ---
 
 # Worker Image Investigation
@@ -20,15 +20,11 @@ Install `uv` and `taskcluster`; add `az` for VM access. Follow
 ```bash
 SCRIPTS=~/.claude/skills/worker-image-investigation/scripts
 export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
-uv run "$SCRIPTS/triage.py" <FAILING_TASK_ID> [--json] [--skip-treeherder]
-uv run "$SCRIPTS/investigate.py" investigate <FAILING_TASK_ID>
+uv run "$SCRIPTS/triage.py" <FAILING_TASK_ID>
 uv run "$SCRIPTS/investigate.py" compare <PASSING_TASK_ID> <FAILING_TASK_ID>
 ```
 
-`triage.py` gives one verdict: `CODE_REGRESSION`, `IMAGE_REGRESSION`,
-`INTERMITTENT`, `INFRA`, or `NEEDS_INVESTIGATION`. Other `investigate.py`
-commands: `find-image-regressions`, `batch-compare`, `workers`, `sbom`,
-`vm-info`.
+Run `investigate.py --help` for image, SBOM, pool, and VM commands.
 
 ## Investigation
 
@@ -36,14 +32,15 @@ commands: `find-image-regressions`, `batch-compare`, `workers`, `sbom`,
 2. Check history with `fx-tests` or **treeherder**.
 3. Compare an equivalent pass and failure (same revision, test, platform,
    configuration). A version difference is not proof.
-4. Gate: against the latest autoland baseline, all Tier 1 tasks must pass. A
-   unique Tier 1 failure or more Tier 1 intermittents blocks deployment.
+4. Check today's equivalent baseline tasks. Shared failures, including Tier 1,
+   do not block; failures against passing equivalents do. Read
+   [validation-gate.md](references/validation-gate.md) before deciding.
 5. Read [azure-commands.md](references/azure-commands.md) only when guest
    inspection is needed.
 
 ## Gotchas
 
-- An image can make a known intermittent repeatable.
+- Passing retries can hide earlier harness failures; inspect full task logs.
 - `--skip-treeherder` drops history and classification evidence.
 - Missing `fx-tests` history means unknown, not new.
 - Some SBOM files need UTF-16LE decoding.

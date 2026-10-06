@@ -5,7 +5,7 @@ description: >
   or Linux worker images, including build reuse, task selection, Lando status,
   and result watching.
 metadata:
-  version: "1.2"
+  version: "1.3"
 ---
 
 # OS Integrations
@@ -34,8 +34,12 @@ Use `--query-set` or `--query` for custom selection. Run `--help` for options.
 
 ## Validation gate
 
-All Tier 1 tasks must pass before production. Do not recommend deployment for
-a unique Tier 1 failure or a clear increase in Tier 1 intermittent failures.
+Compare candidate failures with today's equivalent tasks on autoland,
+mozilla-central, or another existing pool. Matching failures already present
+there are baseline noise, including Tier 1, and do not block deployment. Only
+candidate failures whose equivalent tests pass elsewhere are image blockers.
+Link the baseline logs; missing or unfinished results are inconclusive. Do
+not require an all-green run or invent a failure-frequency gate.
 
 ## Gotchas
 
