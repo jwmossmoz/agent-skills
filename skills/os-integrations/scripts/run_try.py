@@ -37,7 +37,7 @@ Usage:
 """
 
 import argparse
-import os
+import json
 import re
 import shlex
 import subprocess
@@ -171,7 +171,7 @@ def run_treeherder_cli_watch(revision: str, filter_regex: str | None = None) -> 
     if filter_regex:
         cmd.extend(["--filter", filter_regex])
 
-    print(f"\nWatching tests with treeherder-cli...")
+    print("\nWatching tests with treeherder-cli...")
     if filter_regex:
         print(f"Filter: {filter_regex}")
     print(f"Command: {' '.join(cmd)}\n")
@@ -260,6 +260,25 @@ def delete_branch(branch_name: str) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def full_builder_locales_ready(checkout: Path) -> bool:
+    """Reject the smaller try locale catalogue for full builder validation."""
+    locales = checkout / "browser" / "locales"
+    try:
+        full = json.loads((locales / "l10n-changesets.json").read_text())
+        onchange = json.loads((locales / "l10n-onchange-changesets.json").read_text())
+    except (OSError, ValueError) as error:
+        print(f"Error: Cannot check builder locale catalogues: {error}", file=sys.stderr)
+        return False
+    if not isinstance(full, dict) or not full or full != onchange:
+        print(
+            "Error: Full builder selection requires the full locale catalogue. "
+            "Prepare the validation branch as described in references/builders.md.",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
 def preflight_check(preset_name: str) -> tuple[bool, str | None, str | None]:
@@ -493,6 +512,7 @@ def display_summary(
 
 def main() -> int:
     """Main entry point."""
+    global FIREFOX_DIR
     parser = argparse.ArgumentParser(
         description="Run mach try with OS integration presets",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -562,7 +582,7 @@ Examples:
     parser.add_argument(
         "--task-id",
         metavar="TASK_ID",
-        help="Specific decision task ID to reuse builds from (default: latest autoland)",
+        help="Decision task for build reuse and task discovery (default: latest autoland for reuse)",
     )
     parser.add_argument(
         "--fresh-build",
@@ -610,12 +630,19 @@ Examples:
     )
     parser.add_argument(
         "--branch",
-        default="mozilla-central",
+        default=None,
         metavar="BRANCH",
-        help="Branch to fetch task graph from for discovery (default: mozilla-central)",
+        help="Discovery branch (default: preset branch, otherwise mozilla-central)",
+    )
+    parser.add_argument(
+        "--checkout",
+        type=Path,
+        default=FIREFOX_DIR,
+        help="Firefox source checkout (default: ~/firefox)",
     )
 
     args = parser.parse_args()
+    FIREFOX_DIR = args.checkout.expanduser().resolve()
 
     # --watch and --watch-lando imply --push
     if args.watch or args.watch_lando:
@@ -623,9 +650,6 @@ Examples:
 
     # --query-set may imply --no-os-integration
     # (validated later after preset is loaded)
-
-    # Default to reusing existing tasks; --fresh-build opts out
-    use_existing = not args.fresh_build
 
     # Load presets
     presets = load_presets()
@@ -640,6 +664,9 @@ Examples:
         )
         print(f"Available presets: {', '.join(presets.keys())}", file=sys.stderr)
         return 1
+
+    use_existing = not args.fresh_build and preset_config.get("use_existing_tasks", True)
+    discovery_branch = args.branch or preset_config.get("discovery_branch", "mozilla-central")
 
     # Handle task discovery
     discovered_labels: list[str] = []
@@ -660,7 +687,11 @@ Examples:
     if worker_types_from_preset:
         type_str = ", ".join(worker_types_from_preset)
         print(f"Discovering tasks for worker types: {type_str}...")
-        task_graph = fetch_task_graph(branch=args.branch)
+        task_graph = fetch_task_graph(
+            branch=discovery_branch,
+            full=preset_config.get("full_task_graph", False),
+            task_id=args.task_id,
+        )
         if task_graph is None:
             print("Error: Failed to fetch task graph", file=sys.stderr)
             return 1
@@ -671,6 +702,9 @@ Examples:
         discovered_labels = sorted(all_labels)
 
         if not discovered_labels:
+            if preset_config.get("full_task_graph"):
+                print(f"Error: No tasks found for worker types: {type_str}", file=sys.stderr)
+                return 1
             print(f"Warning: No tasks found for worker types: {type_str}", file=sys.stderr)
         else:
             print(f"Found {len(discovered_labels)} task(s)\n")
@@ -711,7 +745,11 @@ Examples:
         if args.watch and not args.watch_filter:
             args.watch_filter = qs.get("watch_filter")
     elif discovered_labels:
-        final_queries = discovered_labels
+        final_queries = (
+            [f"^{label}$" for label in discovered_labels]
+            if preset_config.get("full_task_graph")
+            else discovered_labels
+        )
 
     # Build command
     cmd = build_command(
@@ -728,7 +766,7 @@ Examples:
     )
 
     # Display command
-    cmd_str = " ".join(cmd)
+    cmd_str = shlex.join(cmd)
     print(f"\nCommand: {cmd_str}")
     print(f"Directory: {FIREFOX_DIR}\n")
 
@@ -745,6 +783,9 @@ Examples:
         print("[DRY RUN] Command not executed")
         display_summary(args.preset, preset_config, cmd, discovered_labels=discovered_labels)
         return 0
+
+    if preset_config.get("full_task_graph") and not full_builder_locales_ready(FIREFOX_DIR):
+        return 1
 
     # Run preflight checks (may create temp branch if on protected branch)
     success, original_branch, temp_branch = preflight_check(args.preset)

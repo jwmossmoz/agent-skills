@@ -1,0 +1,38 @@
+{
+  "skill_name": "os-integrations",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The Server 2025 Desktop and Core images are published. Validate the full Server 2022 builder task set on Core, Desktop, and GPU pools in parallel, with the same latest autoland source and fresh builds. Show previews before submission.",
+      "expected_output": "Resolve one latest autoland decision and prepare a dedicated validation branch with matching product source and a CI-only full-locale catalogue commit. Preview b-win2025, b-win2025-core, and b-win2025-gpu with that decision and checkout. Select all b-win2022 labels from the full graph with exact queries, disable build reuse, and use the three alpha pool overrides. Submit sequentially from the shared checkout so CI can run concurrently.",
+      "files": [],
+      "expectations": [
+        "Uses all three Server 2025 builder presets.",
+        "Pins one autoland decision and prepares the same full-locale validation branch for all three runs.",
+        "Uses full graph discovery, exact label queries, and fresh builds.",
+        "Previews before submission; does not run simultaneous pushes in one checkout."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Preview the usual Windows 11 24H2 xpcshell integration run. Keep the current build-reuse behavior and do not submit tasks.",
+      "expected_output": "Use win11-24h2 -t xpcshell --dry-run. Reuse latest autoland builds. Do not use Server 2025 overrides or fresh full-builder selection.",
+      "files": [],
+      "expectations": [
+        "Uses the existing win11-24h2 preset with xpcshell and dry-run.",
+        "Preserves build reuse and avoids unrelated Server 2025 changes.",
+        "Does not submit tasks."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want the Server 2025 Core builder run, but the frozen autoland graph has no b-win2022 tasks or cannot be fetched. Can we still submit the run?",
+      "expected_output": "Stop without generating or submitting a broad fallback run. Check the decision artifact and source worker type first. Do not treat an empty selection as full builder validation.",
+      "files": [],
+      "expectations": [
+        "Stops on failed or empty builder discovery.",
+        "Does not submit tasks or fall back to an unrelated task set."
+      ]
+    }
+  ]
+}

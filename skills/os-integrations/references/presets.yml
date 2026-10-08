@@ -131,6 +131,39 @@ presets:
       - b-win2022=gecko-1/b-win2022-alpha
     use_os_integration: false
 
+  b-win2025:
+    description: "Server 2025 Desktop alpha: full Server 2022 builder task coverage"
+    worker_type: "b-win2022"
+    discovery_branch: autoland
+    full_task_graph: true
+    use_existing_tasks: false
+    flags: ["--all-tasks", "--full", "--no-artifact"]
+    worker_overrides:
+      - b-win2022=gecko-1/b-win2025-alpha
+    use_os_integration: false
+
+  b-win2025-core:
+    description: "Server 2025 Core alpha: full Server 2022 builder task coverage"
+    worker_type: "b-win2022"
+    discovery_branch: autoland
+    full_task_graph: true
+    use_existing_tasks: false
+    flags: ["--all-tasks", "--full", "--no-artifact"]
+    worker_overrides:
+      - b-win2022=gecko-1/b-win2025-core-alpha
+    use_os_integration: false
+
+  b-win2025-gpu:
+    description: "Server 2025 GPU alpha: full Server 2022 builder task coverage"
+    worker_type: "b-win2022"
+    discovery_branch: autoland
+    full_task_graph: true
+    use_existing_tasks: false
+    flags: ["--all-tasks", "--full", "--no-artifact"]
+    worker_overrides:
+      - b-win2022=gecko-1/b-win2025-gpu-alpha
+    use_os_integration: false
+
   win11-arm64:
     description: "ARM64 architecture testing"
     worker_type: "win11-a64-24h2"
@@ -163,6 +196,9 @@ presets:
 # - flags: List of command-line flags to pass to mach try
 # - worker_overrides: List of worker pool mappings in format "old-worker=pool/new-worker"
 # - use_os_integration: Boolean indicating if OS-specific integration features should be enabled
+# - discovery_branch: Default branch for worker-type discovery
+# - full_task_graph: Include unscheduled tasks and use exact label queries
+# - use_existing_tasks: Default build reuse; false runs fresh builder tasks
 # - query_sets: (Optional) Named sets of queries for different validation scenarios
 #     Each query set has: description, queries, and optional use_existing_tasks,
 #     skip_os_integration, watch_filter
