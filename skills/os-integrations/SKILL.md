@@ -1,16 +1,16 @@
 ---
 name: os-integrations
 description: >
-  Use when sending Firefox try pushes to alpha worker pools to validate Windows
-  or Linux worker images, including build reuse, task selection, Lando status,
-  and result watching.
+  Use when sending Firefox try pushes to alpha pools to validate worker images
+  or compare Windows builder pools, including task selection, build reuse,
+  Lando status, and results.
 metadata:
-  version: "1.3"
+  version: "1.4"
 ---
 
 # OS Integrations
 
-Run the helper from a configured Firefox source checkout.
+Use a configured Firefox checkout.
 
 ## Prerequisites
 
@@ -22,15 +22,18 @@ pools from `fxci-config`.
 
 ## Usage
 
+### Examples
+
 ```bash
 OS_TRY=~/.claude/skills/os-integrations/scripts/run_try.py
 uv run "$OS_TRY" win11-24h2 -t xpcshell --dry-run
 uv run "$OS_TRY" win11-24h2 -t xpcshell --watch
 ```
 
-The default reuses builds from the latest autoland decision task. Use
-`--task-id` for a specific decision task or `--fresh-build` when required.
-Use `--query-set` or `--query` for custom selection. Run `--help` for options.
+Test presets reuse latest autoland builds. `--task-id` selects a decision;
+`--fresh-build` disables reuse. Use `--query-set` or `--query` for custom selection.
+Read [builders.md](references/builders.md) for parallel Server 2025 Desktop,
+Core, and GPU validation with the full autoland graph and fresh builder tasks.
 
 ## Validation gate
 
@@ -41,7 +44,7 @@ candidate failures whose equivalent tests pass elsewhere are image blockers.
 Link the baseline logs; missing or unfinished results are inconclusive. Do
 not require an all-green run or invent a failure-frequency gate.
 
-## Gotchas
+## Gotchas and troubleshooting
 
 - Start with `--dry-run`; broad queries can schedule many tasks.
 - `--watch` implies a push unless `--dry-run` is set.

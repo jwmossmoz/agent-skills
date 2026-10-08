@@ -29,27 +29,36 @@ INDEX_API = f"{TASKCLUSTER_ROOT}/api/index/v1"
 DEFAULT_BRANCH = "mozilla-central"
 
 
-def get_task_graph_url(branch: str) -> str:
-    """Build the URL for fetching the task graph artifact."""
-    artifact_path = quote("public/task-graph.json", safe="")
+def get_task_graph_url(branch: str, full: bool = False, task_id: str | None = None) -> str:
+    """Build the URL for the selected task graph artifact."""
+    artifact_path = quote("public/full-task-graph.json" if full else "public/task-graph.json", safe="")
+    if task_id:
+        return f"{TASKCLUSTER_ROOT}/api/queue/v1/task/{quote(task_id, safe='')}/artifacts/{artifact_path}"
     return (
         f"{INDEX_API}/task/gecko.v2.{branch}.latest.taskgraph.decision"
         f"/artifacts/{artifact_path}"
     )
 
 
-def fetch_task_graph(branch: str = DEFAULT_BRANCH, timeout: float = 60.0) -> dict | None:
+def fetch_task_graph(
+    branch: str = DEFAULT_BRANCH,
+    timeout: float = 60.0,
+    full: bool = False,
+    task_id: str | None = None,
+) -> dict | None:
     """
     Fetch the task graph from Taskcluster index API.
 
     Args:
         branch: The gecko branch to fetch from (e.g., mozilla-central, autoland)
         timeout: Request timeout in seconds
+        full: Include tasks omitted from the scheduled graph
+        task_id: Read this decision task instead of the latest branch decision
 
     Returns:
         The task graph as a dictionary, or None if fetch failed
     """
-    url = get_task_graph_url(branch)
+    url = get_task_graph_url(branch, full=full, task_id=task_id)
 
     try:
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
@@ -164,11 +173,16 @@ Examples:
         help="Request timeout in seconds (default: 60)",
     )
 
+    parser.add_argument("--full-task-graph", action="store_true", help="Include unscheduled tasks")
+    parser.add_argument("--task-id", help="Read a specific decision task")
+
     args = parser.parse_args()
 
     # Fetch task graph
     print(f"Fetching task graph from {args.branch}...", file=sys.stderr)
-    task_graph = fetch_task_graph(branch=args.branch, timeout=args.timeout)
+    task_graph = fetch_task_graph(
+        branch=args.branch, timeout=args.timeout, full=args.full_task_graph, task_id=args.task_id
+    )
 
     if task_graph is None:
         return 1
