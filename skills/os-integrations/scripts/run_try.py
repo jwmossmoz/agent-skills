@@ -37,6 +37,7 @@ Usage:
 """
 
 import argparse
+import json
 import re
 import shlex
 import subprocess
@@ -259,6 +260,25 @@ def delete_branch(branch_name: str) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def full_builder_locales_ready(checkout: Path) -> bool:
+    """Reject the smaller try locale catalogue for full builder validation."""
+    locales = checkout / "browser" / "locales"
+    try:
+        full = json.loads((locales / "l10n-changesets.json").read_text())
+        onchange = json.loads((locales / "l10n-onchange-changesets.json").read_text())
+    except (OSError, ValueError) as error:
+        print(f"Error: Cannot check builder locale catalogues: {error}", file=sys.stderr)
+        return False
+    if not isinstance(full, dict) or not full or full != onchange:
+        print(
+            "Error: Full builder selection requires the full locale catalogue. "
+            "Prepare the validation branch as described in references/builders.md.",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
 def preflight_check(preset_name: str) -> tuple[bool, str | None, str | None]:
@@ -763,6 +783,9 @@ Examples:
         print("[DRY RUN] Command not executed")
         display_summary(args.preset, preset_config, cmd, discovered_labels=discovered_labels)
         return 0
+
+    if preset_config.get("full_task_graph") and not full_builder_locales_ready(FIREFOX_DIR):
+        return 1
 
     # Run preflight checks (may create temp branch if on protected branch)
     success, original_branch, temp_branch = preflight_check(args.preset)

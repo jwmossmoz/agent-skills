@@ -15,10 +15,18 @@ Normal Taskcluster dependencies still control task order.
 
 ## Prepare and preview
 
-Use a clean Firefox checkout at the source revision that matches one frozen
-latest autoland decision. `--task-id` fixes the discovery graph; it does not
-change the checkout revision for fresh builds. Use `--checkout` to select the
-checkout without changing another source tree.
+Use a dedicated, clean Firefox validation branch based on one frozen latest
+autoland decision. `--task-id` fixes the discovery graph; it does not change the
+checkout revision for fresh builds. Use `--checkout` to select the checkout
+without changing another source tree.
+
+Try uses a smaller locale catalogue. Without a selection-only catalogue change,
+it can silently omit requested localized MSI tasks even when all labels are
+selected. Copy the full catalogue from
+that autoland source into the onchange catalogue and commit this CI-only change
+once on the validation branch. All three runs must use that same branch state.
+Do not change product code. The helper stops a real submission if the
+catalogues differ; `--dry-run` only previews the command.
 
 ```bash
 export TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com
@@ -26,6 +34,11 @@ OS_TRY=~/.claude/skills/os-integrations/scripts/run_try.py
 CHECKOUT=/path/to/clean/firefox
 DECISION=$(taskcluster api index findTask \
   gecko.v2.autoland.latest.taskgraph.decision | jq -r .taskId)
+
+cp "$CHECKOUT/browser/locales/l10n-changesets.json" \
+  "$CHECKOUT/browser/locales/l10n-onchange-changesets.json"
+git -C "$CHECKOUT" add browser/locales/l10n-onchange-changesets.json
+git -C "$CHECKOUT" commit -m "Select full builder locales for worker validation"
 
 for preset in b-win2025 b-win2025-core b-win2025-gpu; do
   uv run "$OS_TRY" "$preset" --checkout "$CHECKOUT" \
@@ -44,8 +57,14 @@ time because they share a checkout and try configuration. Their Taskcluster
 jobs can run in parallel; no separate parallel runner is needed. Confirm the
 checkout is still clean and at the intended source revision before each push.
 
-Keep each Lando job ID and Treeherder URL. Compare candidate failures with the
-corresponding Server 2022 tasks at that autoland revision. Missing baseline
+Keep each Lando job ID and Treeherder URL. After each decision succeeds, compare
+`public/target-tasks.json` and the actual worker pools in `public/task-graph.json`
+with the requested label set. A command preview or a landed push does not prove
+full coverage. Confirm `existing_tasks` is empty and `optimize_target_tasks` is
+false in `public/parameters.yml`.
+
+Compare candidate failures with the corresponding Server 2022 tasks at that
+autoland revision. Missing baseline
 results are inconclusive. Record startup, storage, driver, build, and PGO
 failures separately. A successful image build is not builder validation.
 

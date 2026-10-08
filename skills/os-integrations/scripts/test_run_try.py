@@ -7,8 +7,10 @@
 
 import contextlib
 import io
+import json
 import shlex
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -56,6 +58,34 @@ class BuilderTests(unittest.TestCase):
             [],
         )
         return status, command, stdout.getvalue(), stderr.getvalue(), fetch, latest
+
+    def check_catalogues(self, full, onchange):
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            locales = checkout / "browser" / "locales"
+            locales.mkdir(parents=True)
+            (locales / "l10n-changesets.json").write_text(full)
+            (locales / "l10n-onchange-changesets.json").write_text(onchange)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                ready = run_try.full_builder_locales_ready(checkout)
+            return ready, stderr.getvalue()
+
+    def test_full_locales_rejects_try_subset(self):
+        ready, error = self.check_catalogues(json.dumps({"ar": {}, "fr": {}}), json.dumps({"ar": {}}))
+        self.assertFalse(ready)
+        self.assertIn("requires the full locale catalogue", error)
+
+    def test_full_locales_accepts_same_catalogue(self):
+        catalogue = json.dumps({"ar": {"revision": "baseline"}, "fr": {"revision": "baseline"}})
+        ready, error = self.check_catalogues(catalogue, catalogue)
+        self.assertTrue(ready)
+        self.assertEqual(error, "")
+
+    def test_full_locales_rejects_invalid_catalogue(self):
+        ready, error = self.check_catalogues("invalid json", "{}")
+        self.assertFalse(ready)
+        self.assertIn("Cannot check builder locale catalogues", error)
 
     def test_full_graph_artifact(self):
         url = discover_tasks.get_task_graph_url("autoland", full=True)

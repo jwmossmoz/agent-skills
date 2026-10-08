@@ -4,11 +4,11 @@
     {
       "id": 1,
       "prompt": "The Server 2025 Desktop and Core images are published. Validate the full Server 2022 builder task set on Core, Desktop, and GPU pools in parallel, with the same latest autoland source and fresh builds. Show previews before submission.",
-      "expected_output": "Resolve one latest autoland decision and prepare a clean matching source checkout. Preview b-win2025, b-win2025-core, and b-win2025-gpu with that decision and checkout. Select all b-win2022 labels from the full graph with exact queries, disable build reuse, and use the three alpha pool overrides. Submit sequentially from the shared checkout so CI can run concurrently.",
+      "expected_output": "Resolve one latest autoland decision and prepare a dedicated validation branch with matching product source and a CI-only full-locale catalogue commit. Preview b-win2025, b-win2025-core, and b-win2025-gpu with that decision and checkout. Select all b-win2022 labels from the full graph with exact queries, disable build reuse, and use the three alpha pool overrides. Submit sequentially from the shared checkout so CI can run concurrently.",
       "files": [],
       "expectations": [
         "Uses all three Server 2025 builder presets.",
-        "Pins one autoland decision for discovery and requires a clean matching source checkout.",
+        "Pins one autoland decision and prepares the same full-locale validation branch for all three runs.",
         "Uses full graph discovery, exact label queries, and fresh builds.",
         "Previews before submission; does not run simultaneous pushes in one checkout."
       ]
