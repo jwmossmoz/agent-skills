@@ -18,7 +18,7 @@
     },
     {
       "id": 4,
-      "prompt": "Generate today's daily log from my Claude and Codex sessions.",
+      "prompt": "Generate today's daily log from my Claude, Codex, and pi sessions.",
       "should_trigger": false
     }
   ]

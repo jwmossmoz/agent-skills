@@ -4,7 +4,7 @@ description: >
   Use when turning indexed Mozilla work notes into topic-based manager or 1:1
   bullets with links and copying them as rich text. DO NOT USE FOR raw logs.
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
 # One-on-One
@@ -48,5 +48,6 @@ Create a JSON object with a `sections` array. Each section has a `title` and
 
 ## Related Skills
 
-- Use **daily-log** to create missing source logs.
+- Use **daily-log** to create missing source logs. Daily logs cover Claude
+  Code, Codex, and pi sessions.
 - Use data skills only when the summary needs fresh evidence, not prior notes.

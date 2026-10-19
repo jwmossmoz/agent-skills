@@ -40,7 +40,7 @@ This repository provides modular skills that enable AI agents to interact with M
 
 ### Productivity
 
-- **daily-log** — Compile a daily work log from Claude Code and Codex session JSONL files
+- **daily-log** — Compile a daily work log from Claude Code, Codex, and pi session JSONL files
 - **expensify-remote-expenses** — Create recurring Mozilla home-internet and on-call phone expense-report drafts from current Mana guidance and authenticated billing portals
 - **one-on-one** — Build topic-organized, linked 1:1/status bullets from `~/moz_artifacts` and copy them as rich text
 - **self-review** — Draft evidence-backed performance self-reviews and copy final Markdown as rich review-form text

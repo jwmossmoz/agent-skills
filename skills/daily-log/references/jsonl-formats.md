@@ -25,6 +25,18 @@ To extract the initial prompt, find the first object with `type: "user"`.
 
 To identify key actions, scan for `tool_use` blocks with names like `Bash`, `Edit`, `Write`, `Skill`.
 
+## pi
+
+Path: `~/.pi/agent/sessions/<cwd-slug>/<UTC-timestamp>_<uuid>.jsonl`
+
+Each line is a JSON object with `type`, `id`, `parentId`, and `timestamp`.
+
+- `type: "session"` is the first line and has `cwd`.
+- `type: "message"` has `message.role`: `"user"` | `"assistant"` |
+  `"toolResult"` | `"system"`.
+- `message.content` is an array of blocks: `text`, `thinking`, or `toolCall`.
+- Other types, such as `model_change`, carry no conversation text.
+
 ## Codex
 
 Path: `~/.codex/sessions/YYYY/MM/DD/<name>-<uuid>.jsonl`

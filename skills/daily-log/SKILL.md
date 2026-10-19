@@ -1,11 +1,11 @@
 ---
 name: daily-log
 description: >
-  Use when compiling one day's Claude Code and Codex sessions into a concise
-  work log with outcomes and artifacts under ~/moz_artifacts, or reviewing
+  Use when compiling one day's Claude Code, Codex, and pi sessions into a
+  concise work log with outcomes and artifacts under ~/moz_artifacts, or reviewing
   what work was completed on a specific date.
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
 # Daily Log
@@ -15,7 +15,7 @@ Collect bounded session evidence, then write a human-readable work log.
 ## Prerequisites
 
 Use Python 3.10 or later. Session files must be available under
-`~/.claude/projects/` and `~/.codex/sessions/`.
+`~/.claude/projects/`, `~/.codex/sessions/`, and `~/.pi/agent/sessions/`.
 
 ## Usage
 
@@ -34,8 +34,8 @@ IDs, revisions, try pushes, and files produced. Omit routine tool calls.
 ## Gotchas
 
 - The collector skips Claude subagent files and bounds message size.
-- Claude session selection uses the file modification date. Codex uses its
-  date directory. Check a known session directly if it is absent.
+- Claude and pi session selection uses the file modification date. Codex uses
+  its date directory. Check a known session directly if it is absent.
 - The source file is evidence, not the final log. Verify long or interrupted
   sessions before stating an outcome.
 - Do not run `qmd update` or `qmd embed` automatically. After writing the log,

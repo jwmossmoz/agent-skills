@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect bounded Claude Code and Codex session evidence for one local date."""
+"""Collect bounded Claude Code, Codex, and pi session evidence for one local date."""
 
 from __future__ import annotations
 
@@ -54,6 +54,14 @@ def message_from_line(data: dict[str, Any], agent: str) -> tuple[str, str] | Non
         role = data.get("type")
         message = data.get("message", {})
         content = message.get("content") if isinstance(message, dict) else None
+    elif agent == "pi":
+        if data.get("type") != "message":
+            return None
+        message = data.get("message", {})
+        if not isinstance(message, dict):
+            return None
+        role = message.get("role")
+        content = message.get("content")
     else:
         if data.get("type") != "response_item":
             return None
@@ -97,7 +105,7 @@ def collect_session(path: Path, agent: str, limit: int) -> dict[str, Any] | None
             payload = data.get("payload", {})
             if agent == "Codex" and data.get("type") == "session_meta" and isinstance(payload, dict):
                 cwd = str(payload.get("cwd") or cwd)
-            elif agent == "Claude Code":
+            elif agent == "Claude Code" or (agent == "pi" and data.get("type") == "session"):
                 cwd = str(data.get("cwd") or cwd)
 
             message = message_from_line(data, agent)
@@ -136,14 +144,18 @@ def collect_session(path: Path, agent: str, limit: int) -> dict[str, Any] | None
 
 def session_paths(target: date) -> list[tuple[str, Path]]:
     paths: list[tuple[str, Path]] = []
-    claude_root = Path.home() / ".claude" / "projects"
-    if claude_root.exists():
-        for path in claude_root.rglob("*.jsonl"):
+    for agent, root in (
+        ("Claude Code", Path.home() / ".claude" / "projects"),
+        ("pi", Path.home() / ".pi" / "agent" / "sessions"),
+    ):
+        if not root.exists():
+            continue
+        for path in root.rglob("*.jsonl"):
             if "subagents" in path.parts:
                 continue
             modified = datetime.fromtimestamp(path.stat().st_mtime, tz=LOCAL_ZONE).date()
             if modified == target:
-                paths.append(("Claude Code", path))
+                paths.append((agent, path))
 
     codex_root = Path.home() / ".codex" / "sessions" / target.strftime("%Y/%m/%d")
     if codex_root.exists():
@@ -158,7 +170,7 @@ def quote(text: str) -> str:
 
 def render(target: date, sessions: list[dict[str, Any]]) -> str:
     lines = [f"# Session evidence for {target.isoformat()}", ""]
-    for agent in ("Codex", "Claude Code"):
+    for agent in ("Codex", "Claude Code", "pi"):
         matching = [session for session in sessions if session["agent"] == agent]
         lines.extend([f"## {agent} ({len(matching)})", ""])
         for session in matching:
