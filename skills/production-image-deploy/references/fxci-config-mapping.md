@@ -13,15 +13,15 @@ cd ~/github_moz/fxci-config
 grep -B1 -A4 'name: <worker-images-config-name>' worker-images.yml
 ```
 
-Example: `worker-images@config/win11-64-24h2.yaml` corresponds to:
+Example: `worker-images@config/win11-64-25h2.yaml` corresponds to:
 
 ```yaml
-ronin_t_windows11_64_24h2:
+win116425h2:
   azure2:
-    version: 1.3.3
+    version: 1.0.13
     resource_group: rg-packer-worker-images
-    deployment_id: "71b0588"
-    name: win11_64_24h2          # ← matches config/<this>.yaml
+    deployment_id: "29172b6"
+    name: win11_64_25h2          # ← matches config/<this>.yaml
 ```
 
 Note the underscores: the `name` field in fxci-config swaps hyphens for
@@ -33,8 +33,6 @@ underscores. The mapping is otherwise straightforward.
 |---|---|---|
 | `win10-64-2009` | `ronin_t_windows10_64_2009_prod` | azure2 |
 | `win10-64-2009-alpha` | `ronin_t_windows10_64_2009_alpha` | azure2 |
-| `win11-64-24h2` | `ronin_t_windows11_64_24h2` | azure2 |
-| `win11-64-24h2-alpha` | `ronin_t_windows11_64_24h2_alpha` | azure2 |
 | `win11-64-25h2` | `win116425h2` | azure2 |
 | `win11-64-25h2-alpha` | `win116425h2alpha` | azure2 |
 | `win11-a64-24h2-builder` | `ronin_b1_windows11_a64_24h2_builder` | azure2 |
@@ -83,10 +81,9 @@ After editing, run a diff and check that:
 1. Every changed entry has `version` + `deployment_id` updated together
    (Windows) or both `fxci-level1-gcp` and `fxci-level3-gcp` updated
    together where the entry has both (Linux).
-2. The number of changed entries matches the user's expectation. A full
-   Windows rollout typically touches 11 entries (`ronin_b1_*`,
-   `ronin_b3_*`, `ronin_t_*`, three `win11a6425h2*`, two `win116425h2`/
-   `ronin_t_windows11_64_24h2`); a smaller bump touches fewer. If the
-   diff size surprises you, re-check against the SBOMs.
+2. The number of changed entries matches the user's expectation and the
+   current `images.production` list, including rebuilt trusted variants.
+   Do not count retired configs. If the diff size surprises you, re-check
+   against the SBOMs.
 3. No alpha entries (`*_alpha` keys with `version: 1.0.0` and
    `deployment_id: alpha`, or `*-alpha` Linux aliases) were changed.

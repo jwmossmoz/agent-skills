@@ -92,7 +92,7 @@ parallel prod runs stay clean while you fix it; add it back after.
 
 ```bash
 # Windows single config
-gh workflow run "FXCI - Azure" --repo mozilla-platform-ops/worker-images -f config=win11-64-24h2
+gh workflow run "FXCI - Azure" --repo mozilla-platform-ops/worker-images -f config=win11-64-25h2
 # Windows trusted single config
 gh workflow run "FXCI - Azure - Trusted" --repo mozilla-platform-ops/worker-images -f config=trusted-win11-a64-25h2-builder
 # Full prod rollout (no inputs — builds the matrix)

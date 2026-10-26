@@ -144,7 +144,7 @@ and committed by the `Upload release notes` job. The files are UTF-16LE
 encoded — read with:
 
 ```bash
-iconv -f UTF-16LE -t UTF-8 sboms/win11-64-24h2-1.3.3.md | head -40
+iconv -f UTF-16LE -t UTF-8 sboms/win11-64-25h2-1.0.3.md | head -40
 ```
 
 Useful fields it captures:
@@ -203,7 +203,7 @@ audit.
   (e.g. `win11-64-2009` in worker-images@`9bbca89`), its fxci-config
   entry is frozen at the last shipped version — don't bump it.
 - **Re-using a `deploymentId` across families when ranges differ.** The
-  24H2 family and 25H2 family can be at different prior `deploymentId`s.
+  Windows families can be at different prior `deploymentId`s.
   Compute the compare range from each family's prior baseline; if they
   resolve to the same range, collapse to one table.
 

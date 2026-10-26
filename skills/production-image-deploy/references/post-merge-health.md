@@ -43,7 +43,7 @@ rollout healthy?".
 `worker-images.yml` bindings flow into `worker-pools.yml` aliases.
 Before you start, list the pool IDs that consume each fxci-config
 alias you bumped — `worker-pools.yml` is where pool IDs (in
-`<provisioner>/<workerType>` form like `gecko-t/win11-64-24h2`) are
+`<provisioner>/<workerType>` form like `gecko-t/win11-64-25h2`) are
 defined. Pull them out with:
 
 ```bash

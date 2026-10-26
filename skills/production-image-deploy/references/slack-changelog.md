@@ -64,7 +64,6 @@ versions. Retired configs are not part of the default list.
 | Link label | worker-images config |
 |---|---|
 | Windows 10 x64 22H2 | `win10-64-2009` |
-| Windows 11 x64 24H2 | `win11-64-24h2` |
 | Windows 11 x64 25H2 | `win11-64-25h2` |
 | Windows 11 ARM64 25H2 tester | `win11-a64-25h2-tester` |
 | Windows 11 ARM64 25H2 L1 builder | `win11-a64-25h2-builder` |
