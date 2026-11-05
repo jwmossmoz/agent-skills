@@ -1,132 +1,34 @@
 # Agent Skills
 
-A collection of reusable skills for AI agents working with Mozilla Firefox development and CI infrastructure.
-
-## Overview
-
-This repository provides modular skills that enable AI agents to interact with Mozilla's development tools and CI systems. Skills use official Mozilla tools and libraries where available, with minimal custom wrappers.
+A small collection of skills for Mozilla work logs, status updates, and performance reviews.
 
 ## Skills
 
-### CI and task management
+### Work records and reporting
 
-- **taskcluster** — Status, logs, artifacts, retriggers, and in-tree actions for Firefox CI tasks
-- **treeherder** — CI job results, failure analysis, and similar-job comparison via treeherder-cli + REST API
-- **lando** — Poll the Lando API for landing job status
-- **task-discovery** — List tasks assigned to a worker pool (migrations, audits, targeted try pushes)
-- **os-integrations** — Firefox `mach try` with pre-configured alpha worker pool overrides
+- **daily-log** — Compile Claude Code, Codex, and pi sessions into a concise daily work log.
+- **one-on-one** — Turn indexed work notes into topic-based, linked manager updates.
+- **self-review** — Draft evidence-based performance and promotion reviews.
 
-### Worker images
+## Use
 
-- **worker-image-build** — Trigger GitHub Actions workflows to build FXCI Windows worker images
-- **worker-image-investigation** — Triage CI failures to a verdict and diagnose image-caused failures (cliffs, comparisons, debug VMs)
+Once installed, ask your agent naturally:
 
-### Logs
+- "Compile yesterday's work log."
+- "Prepare 1:1 bullets for the last two weeks."
+- "Draft my annual self-review from my notes."
 
-- **papertrail** — In-VM worker logs from SolarWinds Observability via paperctl
-- **worker-ready-tracing** — End-to-end Azure VM request, in-VM boot scripts, and generic-worker ready timing
+## Install
 
-### Issue tracking
-
-- **bugzilla** — Search, view, create, update, and comment on Mozilla Bugzilla bugs
-- **jira** — Search, create, update, and transition Mozilla Jira issues with the local helper.
-
-### Telemetry and data
-
-- **bigquery** — Ad-hoc SQL against Mozilla telemetry tables via the bq CLI
-- **redash** — Saved queries and shareable results from sql.telemetry.mozilla.org
-- **costctl** — Lives in [jwmossmoz/costctl](https://github.com/jwmossmoz/costctl/tree/main/.agents/skills/costctl) with the CLI; install with `npx skills add jwmossmoz/costctl -s costctl -g -y`
-- **win11-files** — Local SQLite of Windows 11 cumulative-update file information
-
-### Productivity
-
-- **daily-log** — Compile a daily work log from Claude Code, Codex, and pi session JSONL files
-- **expensify-remote-expenses** — Create recurring Mozilla home-internet and on-call phone expense-report drafts from current Mana guidance and authenticated billing portals
-- **one-on-one** — Build topic-organized, linked 1:1/status bullets from `~/moz_artifacts` and copy them as rich text
-- **self-review** — Draft evidence-backed performance self-reviews and copy final Markdown as rich review-form text
-
-### Meta
-
-- **skill-checker** — Validate Agent Skills with waza, skill-validator, and skill-check
-- **writing-skills** — House style for authoring and maintaining the skills in this repo
-
-For overlap boundaries between similar skills (`taskcluster` vs `task-discovery`, `redash` vs `bigquery`, `papertrail` vs `tc-logview`, `worker-image-build` vs `worker-image-investigation`), see each skill's description and `## Related Skills` section.
-
-## Subagents
-
-- **agents/coder** - Code implementation specialist
-- **agents/explorer** - Fast codebase discovery
-- **agents/helper** - Planning, research, and explanation support
-
-## Usage
-
-### For Users
-
-Once skills are installed, ask your agent naturally:
-
-- "Check the treeherder status for my push"
-- "Run os-integration tests on Windows 11"
-- "Search bugzilla for crashes in Firefox"
-- "File a bug for the startup regression"
-
-The agent will invoke the appropriate skill and handle the technical details such as directory navigation and command execution.
-
-### For Installation / Manual Use
-
-#### Claude Code (preferred)
-
-Use `npx skills` to install — it manages the canonical location at `~/.agents/skills/` and creates the symlinks Claude Code reads from `~/.claude/skills/`:
+Use `npx skills` to install the three skills globally for supported agents:
 
 ```bash
-npx skills add jwmossmoz/agent-skills -g --agent '*' --skill taskcluster --skill treeherder -y
+npx skills add jwmossmoz/agent-skills -g --agent '*' \
+  --skill daily-log --skill one-on-one --skill self-review -y
 ```
 
-Install the operational skills that match your work. Add more `--skill <name>`
-options as needed. This keeps the global skill catalog small. The
-`writing-skills` skill is for repository contributors and is not needed for
-normal CI work.
-
-To install the complete collection, omit all `--skill` options:
-
-```bash
-npx skills add jwmossmoz/agent-skills -g --agent '*' -y
-```
-
-#### Manual symlinks (advanced)
-
-If you don't want to use `npx skills`, symlink each skill manually:
-
-```bash
-AGENT_SKILLS_ROOT="/path/to/agent-skills"
-for d in "$AGENT_SKILLS_ROOT"/skills/*/; do
-  name=$(basename "$d")
-  ln -sf "$d" "$HOME/.claude/skills/$name"
-done
-
-for f in "$AGENT_SKILLS_ROOT"/agents/*.md; do
-  ln -sf "$f" "$HOME/.claude/agents/$(basename "$f")"
-done
-```
-
-#### Other Agents
-
-For Codex, OpenCode, or any other agent that supports skills, point it at this repo's `skills/` directory or symlink individual skill directories into the agent's configured skills path.
-
-Each skill contains:
-- `SKILL.md` - Full documentation and examples for the agent's reference
-- `references/` - Optional supporting docs and examples
-- `scripts/` - The actual implementation scripts
-
-`uv.lock` files are tracked intentionally for reproducible Python dependencies.
-
-## Design Principles
-
-- **Official tools first** - Use Mozilla's official packages (`lando-cli`, `treeherder-client`, `mach`)
-- **Isolated execution** - All Python tools use `uv`/`uvx` for dependency isolation
-- **Single responsibility** - Each skill does one thing well
-- **Framework agnostic** - Works with any agent framework that supports terminal access
+For manual installation, symlink selected directories from this repository's `skills/` directory into the agent's configured skills directory. Each skill has a `SKILL.md` and may include references, scripts, or evals.
 
 ## Requirements
 
-- [uv](https://docs.astral.sh/uv/) - For running Python scripts in isolated environments
-- Skill-specific prerequisites are documented in each `SKILL.md`
+See each skill's prerequisites. Requirements differ by workflow and agent.

@@ -1,16 +1,17 @@
 ---
 name: one-on-one
 description: >
-  Use when turning indexed Mozilla work notes into topic-based manager or 1:1
-  bullets with links and copying them as rich text. DO NOT USE FOR raw logs.
+  Use when turning indexed Mozilla work notes into linked, topic-based manager
+  or 1:1 bullets and copying them as rich text. DO NOT USE FOR daily logs or
+  performance reviews.
 metadata:
-  version: "1.2"
+  version: "1.4"
 ---
 
 # One-on-One
 
-Build concise status bullets from `~/moz_artifacts` and copy HTML, RTF, and
-plain-text versions to the macOS clipboard.
+Build topic-based status bullets from `~/moz_artifacts`; copy HTML, RTF, and
+plain text to the macOS clipboard.
 
 ## Prerequisites
 
@@ -22,32 +23,26 @@ needs macOS and `/usr/bin/swift`.
 ```bash
 qmd query "work summary one on one <date range>" -c moz -n 20
 qmd get "daily-log-YYYY-MM-DD.md"
-swift ~/.claude/skills/one-on-one/scripts/copy-rich-bullets.swift \
-  /tmp/one-on-one.json
+swift ~/.claude/skills/one-on-one/scripts/copy-rich-bullets.swift /tmp/one-on-one.json
 ```
 
-Create a JSON object with a `sections` array. Each section has a `title` and
-`bullets`; each bullet has `segments` with `text` and an optional `url`.
+Write a JSON object with a `sections` array; each section has a `title` and
+`bullets`, and each bullet has `segments` with `text` and optional `url`.
 
 ## Workflow
 
-1. State the concrete date range.
-2. Query qmd before you inspect files directly.
-3. Group work by topic, not date. Lead with outcomes, risk, cost, or decisions.
-4. Link Bugzilla, JIRA, GitHub, Treeherder, and important Taskcluster items.
+1. State the date range and query qmd before opening files directly.
+2. Group by topic. Pick 4–6 topics with the most outcome, risk, cost, or decision value; put the rest in one "Other" bullet.
+3. Aim for about 15 bullets. Each is one sentence of 25 words or less: result, then why it matters. Skip sub-bullets, process steps, and non-actionable numbers.
+4. Add 1–2 links per bullet to the relevant bug, PR, or ticket. Link the noun; omit Treeherder or Taskcluster unless it is the main evidence.
 5. Write `/tmp/one-on-one.json`, run the helper, and report source gaps.
 
 ## Gotchas
 
-- Do not run `qmd update`, `qmd embed`, or `qmd collection add` unless the user
-  asks. `qmd query`, `search`, `get`, `ls`, and `status` are read-only.
-- Use the helper; plain `pbcopy` loses rich list formatting.
-- Do not drive Google Docs unless the user asks. Verify the target before an
-  automated paste.
-- If qmd can be stale, check recent files before you report a missing day.
+- Do not run `qmd update`, `qmd embed`, or `qmd collection add` unless asked; query, search, get, ls, and status are read-only.
+- Use the helper to preserve rich formatting. Do not drive Google Docs unless asked; verify the target before pasting.
+- If qmd may be stale, check recent files before reporting a missing day.
 
 ## Related Skills
 
-- Use **daily-log** to create missing source logs. Daily logs cover Claude
-  Code, Codex, and pi sessions.
-- Use data skills only when the summary needs fresh evidence, not prior notes.
+Use **daily-log** for missing session logs and **self-review** for performance reviews.
